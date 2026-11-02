@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Patrol · service prototype</title>
+    <title data-i18n="app.title">Patrol · service prototype</title>
     <meta name="description" content="Clickable prototype of Patrol: discovery, review, evidence, and notices for one rights holder." />
     <link rel="stylesheet" href="assets/pico.min.css" />
     <link rel="stylesheet" href="assets/theme.css" />
@@ -96,11 +96,11 @@
     <div class="scan-line" id="scan-line" aria-hidden="true"></div>
 
     <header class="topbar">
-      <a class="brand" href="#/dashboard" aria-label="Patrol dashboard">
+      <a class="brand" href="#/dashboard" aria-label="Patrol dashboard" data-i18n-aria-label="app.brand.dashboard">
         <span class="brand-mark"><svg class="icon"><use href="#i-shield" /></svg></span>
         <span class="brand-text">
           <span class="brand-name">Patrol</span>
-          <span class="brand-sub">Rights watch</span>
+          <span class="brand-sub" data-i18n="app.brand.sub">Rights watch</span>
         </span>
       </a>
 
@@ -112,12 +112,16 @@
       <nav class="tabs" id="tabs" aria-label="Sections"></nav>
 
       <div class="topbar-actions">
-        <button class="btn btn-ghost btn-icon" id="siren-toggle" type="button" aria-pressed="false" aria-label="Toggle siren mode" title="Siren mode">
+        <div class="lang-switch" role="group" data-i18n-aria-label="lang.label">
+          <button type="button" data-lang="en" aria-pressed="false" aria-label="English" lang="en">EN</button>
+          <button type="button" data-lang="ru" aria-pressed="false" aria-label="Русский" lang="ru">RU</button>
+        </div>
+        <button class="btn btn-ghost btn-icon" id="siren-toggle" type="button" aria-pressed="false" aria-label="Toggle siren mode" title="Siren mode" data-i18n-aria-label="app.siren.toggle" data-i18n-title="app.siren.title">
           <svg class="icon"><use href="#i-siren" /></svg>
         </button>
         <button class="btn btn-primary btn-sm" id="scan-btn" type="button" data-action="scan">
           <svg class="icon icon--sm"><use href="#i-radar" /></svg>
-          <span>Run scans</span>
+          <span data-i18n="app.scan.run">Run scans</span>
         </button>
       </div>
     </header>
@@ -125,8 +129,8 @@
     <main id="view" aria-live="polite"></main>
 
     <footer class="foot">
-      <span>Northlight Pictures · prototype · state resets on reload · <a href="./pitch.html">pitch deck</a></span>
-      <button type="button" data-action="reset">Reset demo</button>
+      <span><span data-i18n="app.footer.rights">Northlight Pictures</span> · <span data-i18n="app.footer.prototype">prototype</span> · <span data-i18n="app.footer.resetNote">state resets on reload</span> · <a href="./pitch.html" data-i18n="app.footer.pitch">pitch deck</a></span>
+      <button type="button" data-action="reset" data-i18n="app.footer.reset">Reset demo</button>
     </footer>
 
     <div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
@@ -134,8 +138,8 @@
     <dialog id="modal" aria-labelledby="modal-title">
       <article class="modal-card">
         <div class="modal-head">
-          <span id="modal-title">Detail</span>
-          <button type="button" data-action="close-modal" aria-label="Close">
+          <span id="modal-title" data-i18n="app.modal.detail">Detail</span>
+          <button type="button" data-action="close-modal" aria-label="Close" data-i18n-aria-label="app.modal.close">
             <svg class="icon icon--sm"><use href="#i-x" /></svg>
           </button>
         </div>
@@ -144,6 +148,7 @@
     </dialog>
 
     <noscript><p style="padding: 20px">This prototype needs JavaScript.</p></noscript>
+    <script src="assets/i18n.js"></script>
     <script src="assets/app.js"></script>
   </body>
 </html>

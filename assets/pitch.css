@@ -172,14 +172,26 @@ body.pitch {
   text-transform: uppercase;
 }
 
-.deck-count {
+.deck-tools {
   position: fixed;
-  top: 24px;
-  right: 24px;
+  top: 17px;
+  right: 22px;
   z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.deck-tools .lang-switch button {
+  padding: 6px 9px;
+  font-size: 10px;
+}
+
+.deck-count {
   color: var(--faint);
   font: 500 10px/1 var(--mono);
   letter-spacing: 0.16em;
+  white-space: nowrap;
 }
 
 .deck-count span {
@@ -1240,7 +1252,7 @@ button.scroll-hint:hover {
 
 .case-rows > div {
   display: grid;
-  grid-template-columns: 86px 1fr;
+  grid-template-columns: 104px 1fr;
   gap: 10px;
   padding: 9px 0;
   border-bottom: 1px dashed rgba(26, 35, 51, 0.18);
@@ -1759,7 +1771,7 @@ button.scroll-hint:hover {
     right: 12px;
   }
 
-  .deck-count {
+  .deck-tools {
     right: 16px;
   }
 }
@@ -1826,6 +1838,14 @@ button.scroll-hint:hover {
 
   .case-file {
     margin: 0 4px;
+    padding-bottom: 22px;
+  }
+
+  .case-stamp {
+    position: static;
+    width: max-content;
+    margin: 16px 4px 0 auto;
+    transform: rotate(-4deg);
   }
 }
 
