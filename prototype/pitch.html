@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Patrol · product pitch</title>
+    <title data-i18n="pitch.title">Patrol · product pitch</title>
     <meta name="description" content="Patrol finds unauthorized copies across search engines, seals the evidence, and serves the notices." />
     <link rel="stylesheet" href="assets/pico.min.css" />
     <link rel="stylesheet" href="assets/theme.css" />
@@ -12,12 +12,18 @@
   <body class="pitch">
     <div class="deck-progress" aria-hidden="true"><span id="progress-fill"></span></div>
 
-    <a class="deck-brand" href="./index.html" title="Open the clickable prototype">
+    <a class="deck-brand" href="./index.html" title="Open the clickable prototype" data-i18n-title="pitch.brand.title">
       <span class="brand-mark"><svg class="icon"><use href="#i-shield" /></svg></span>
       <span class="brand-name">Patrol</span>
     </a>
 
-    <div class="deck-count" aria-hidden="true"><span id="deck-current">01</span> / 10</div>
+    <div class="deck-tools">
+      <div class="lang-switch" role="group" data-i18n-aria-label="lang.label">
+        <button type="button" data-lang="en" aria-pressed="false" aria-label="English" lang="en">EN</button>
+        <button type="button" data-lang="ru" aria-pressed="false" aria-label="Русский" lang="ru">RU</button>
+      </div>
+      <div class="deck-count" aria-hidden="true"><span id="deck-current">01</span> / 10</div>
+    </div>
 
     <nav class="dots" id="dots" aria-label="Slides"></nav>
 
@@ -80,23 +86,23 @@
       <section class="slide hero is-active" id="s1" data-slide="1">
         <div class="slide-inner hero-inner">
           <div class="hero-copy">
-            <p class="eyebrow reveal"><span class="dot"></span>Rights protection, on patrol</p>
+            <p class="eyebrow reveal"><span class="dot"></span><span data-i18n="pitch.hero.eyebrow">Rights protection, on patrol</span></p>
             <div class="hero-beacon reveal" style="--d: 0.05s" aria-hidden="true">
               <span class="hero-lens hero-lens--blue"></span>
               <span class="hero-lens hero-lens--red"></span>
             </div>
             <h1 class="wordmark reveal" style="--d: 0.1s">Patrol</h1>
-            <p class="lede reveal" style="--d: 0.2s">Find the leaks. Keep the receipts.<br />Send the notices.</p>
+            <p class="lede reveal" style="--d: 0.2s" data-i18n-html="pitch.hero.lede">Find the leaks. Keep the receipts.<br />Send the notices.</p>
             <div class="hero-actions reveal" style="--d: 0.3s">
               <button class="btn btn-primary" type="button" data-goto="1">
-                Start the tour <svg class="icon icon--sm"><use href="#i-arrow" /></svg>
+                <span data-i18n="pitch.hero.start">Start the tour</span> <svg class="icon icon--sm"><use href="#i-arrow" /></svg>
               </button>
-              <span class="hint">Scroll or press <kbd>→</kbd></span>
+              <span class="hint" data-i18n-html="pitch.hero.hint">Scroll or press <kbd>→</kbd></span>
             </div>
             <div class="hero-stats reveal" style="--d: 0.4s">
-              <span><b>3</b> engines</span>
-              <span><b>1</b> queue</span>
-              <span><b>0</b> lost evidence</span>
+              <span><b>3</b> <span data-i18n="pitch.hero.engines">engines</span></span>
+              <span><b>1</b> <span data-i18n="pitch.hero.queue">queue</span></span>
+              <span><b>0</b> <span data-i18n="pitch.hero.lostEvidence">lost evidence</span></span>
             </div>
           </div>
 
@@ -183,17 +189,17 @@
             </div>
           </div>
         </div>
-        <span class="scroll-hint" aria-hidden="true">Scroll <span>↓</span></span>
+        <span class="scroll-hint" aria-hidden="true"><span data-i18n="pitch.hero.scroll">Scroll</span> <span>↓</span></span>
       </section>
 
       <!-- 02 · Problem. -->
       <section class="slide" id="s2" data-slide="2">
         <div class="slide-inner">
-          <p class="eyebrow reveal"><span class="dot dot--red"></span>The leak</p>
-          <h2 class="slide-title reveal" style="--d: 0.05s">One upload.<br /><em>A thousand mirrors.</em></h2>
-          <p class="slide-lede reveal" style="--d: 0.12s">Copies multiply overnight. Screenshots don't survive an appeal.</p>
+          <p class="eyebrow reveal"><span class="dot dot--red"></span><span data-i18n="pitch.s2.eyebrow">The leak</span></p>
+          <h2 class="slide-title reveal" style="--d: 0.05s" data-i18n-html="pitch.s2.title">One upload.<br /><em>A thousand mirrors.</em></h2>
+          <p class="slide-lede reveal" style="--d: 0.12s" data-i18n="pitch.s2.lede">Copies multiply overnight. Screenshots don't survive an appeal.</p>
 
-          <div class="ticker reveal" style="--d: 0.18s" aria-label="Example leak locations">
+          <div class="ticker reveal" style="--d: 0.18s" aria-label="Example leak locations" data-i18n-aria-label="pitch.s2.tickerLabel">
             <div class="ticker-track">
               <span><i></i>stream-hub.example/midnight-precinct</span>
               <span><i></i>mirror-vault.example/neon-pursuit</span>
@@ -217,20 +223,20 @@
           </div>
 
           <div class="problem-stats">
-            <div class="p-stat reveal" style="--d: 0.24s"><span class="p-num" data-count="1248">0</span><span class="p-label">copies in one week</span></div>
-            <div class="p-stat reveal" style="--d: 0.3s"><span class="p-num" data-count="3">0</span><span class="p-label">engines to chase</span></div>
-            <div class="p-stat reveal" style="--d: 0.36s"><span class="p-num" data-count="1">0</span><span class="p-label">operator, by hand</span></div>
+            <div class="p-stat reveal" style="--d: 0.24s"><span class="p-num" data-count="1248">0</span><span class="p-label" data-i18n="pitch.s2.copies">copies in one week</span></div>
+            <div class="p-stat reveal" style="--d: 0.3s"><span class="p-num" data-count="3">0</span><span class="p-label" data-i18n="pitch.s2.engines">engines to chase</span></div>
+            <div class="p-stat reveal" style="--d: 0.36s"><span class="p-num" data-count="1">0</span><span class="p-label" data-i18n="pitch.s2.operator">operator, by hand</span></div>
           </div>
-          <p class="footnote reveal" style="--d: 0.42s">Example case · demo data.</p>
+          <p class="footnote reveal" style="--d: 0.42s" data-i18n="pitch.s2.footnote">Example case · demo data.</p>
         </div>
       </section>
 
       <!-- 03 · Engines. -->
       <section class="slide" id="s3" data-slide="3">
         <div class="slide-inner">
-          <p class="eyebrow reveal"><span class="dot dot--amber"></span>The shell game</p>
-          <h2 class="slide-title reveal" style="--d: 0.05s">Same film.<br /><em>Different page.</em></h2>
-          <p class="slide-lede reveal" style="--d: 0.12s">A removal on one engine leaves the leak live on the other two.</p>
+          <p class="eyebrow reveal"><span class="dot dot--amber"></span><span data-i18n="pitch.s3.eyebrow">The shell game</span></p>
+          <h2 class="slide-title reveal" style="--d: 0.05s" data-i18n-html="pitch.s3.title">Same film.<br /><em>Different page.</em></h2>
+          <p class="slide-lede reveal" style="--d: 0.12s" data-i18n="pitch.s3.lede">A removal on one engine leaves the leak live on the other two.</p>
 
           <div class="engine-cards">
             <article class="engine-card reveal" style="--d: 0.18s">
@@ -241,8 +247,8 @@
               </header>
               <div class="serp">
                 <div class="serp-row serp-row--hot"><span class="serp-rank">1</span><span class="serp-url">stream-hub.example</span><span class="serp-score">97%</span></div>
-                <div class="serp-row"><span class="serp-rank">2</span><span class="serp-url">official.example</span><span class="serp-score serp-score--safe">allowed</span></div>
-                <div class="serp-row"><span class="serp-rank">3</span><span class="serp-url">review-site.example</span><span class="serp-score serp-score--safe">review</span></div>
+                <div class="serp-row"><span class="serp-rank">2</span><span class="serp-url">official.example</span><span class="serp-score serp-score--safe" data-i18n="pitch.s3.allowed">allowed</span></div>
+                <div class="serp-row"><span class="serp-rank">3</span><span class="serp-url">review-site.example</span><span class="serp-score serp-score--safe" data-i18n="pitch.s3.review">review</span></div>
               </div>
             </article>
 
@@ -253,8 +259,8 @@
                 <span class="rank-chip">#4</span>
               </header>
               <div class="serp">
-                <div class="serp-row"><span class="serp-rank">1</span><span class="serp-url">news.example</span><span class="serp-score serp-score--safe">news</span></div>
-                <div class="serp-row"><span class="serp-rank">2</span><span class="serp-url">official.example</span><span class="serp-score serp-score--safe">allowed</span></div>
+                <div class="serp-row"><span class="serp-rank">1</span><span class="serp-url">news.example</span><span class="serp-score serp-score--safe" data-i18n="pitch.s3.news">news</span></div>
+                <div class="serp-row"><span class="serp-rank">2</span><span class="serp-url">official.example</span><span class="serp-score serp-score--safe" data-i18n="pitch.s3.allowed">allowed</span></div>
                 <div class="serp-row serp-row--hot"><span class="serp-rank">3</span><span class="serp-url">mirror-vault.example</span><span class="serp-score">92%</span></div>
               </div>
             </article>
@@ -266,29 +272,29 @@
                 <span class="rank-chip">#9</span>
               </header>
               <div class="serp">
-                <div class="serp-row"><span class="serp-rank">1</span><span class="serp-url">official.example</span><span class="serp-score serp-score--safe">allowed</span></div>
-                <div class="serp-row"><span class="serp-rank">2</span><span class="serp-url">kino-guide.example</span><span class="serp-score serp-score--safe">guide</span></div>
+                <div class="serp-row"><span class="serp-rank">1</span><span class="serp-url">official.example</span><span class="serp-score serp-score--safe" data-i18n="pitch.s3.allowed">allowed</span></div>
+                <div class="serp-row"><span class="serp-rank">2</span><span class="serp-url">kino-guide.example</span><span class="serp-score serp-score--safe" data-i18n="pitch.s3.guide">guide</span></div>
                 <div class="serp-row serp-row--hot"><span class="serp-rank">3</span><span class="serp-url">ok-stream.example</span><span class="serp-score">86%</span></div>
               </div>
             </article>
           </div>
 
-          <p class="pitch-line reveal" style="--d: 0.42s">Three engines, three queues — <span>if you do it by hand.</span></p>
+          <p class="pitch-line reveal" style="--d: 0.42s" data-i18n-html="pitch.s3.line">Three engines, three queues — <span>if you do it by hand.</span></p>
         </div>
       </section>
 
       <!-- 04 · Solution. -->
       <section class="slide" id="s4" data-slide="4">
         <div class="slide-inner">
-          <p class="eyebrow reveal"><span class="dot"></span>The answer</p>
-          <h2 class="slide-title reveal" style="--d: 0.05s">Your patrol,<br /><em>on one screen.</em></h2>
-          <p class="slide-lede reveal" style="--d: 0.12s">Scan, review, and serve from a single beat.</p>
+          <p class="eyebrow reveal"><span class="dot"></span><span data-i18n="pitch.s4.eyebrow">The answer</span></p>
+          <h2 class="slide-title reveal" style="--d: 0.05s" data-i18n-html="pitch.s4.title">Your patrol,<br /><em>on one screen.</em></h2>
+          <p class="slide-lede reveal" style="--d: 0.12s" data-i18n="pitch.s4.lede">Scan, review, and serve from a single beat.</p>
 
           <div class="shot reveal" style="--d: 0.18s">
             <div class="shot-bar">
               <span class="shot-dots"><i></i><i></i><i></i></span>
-              <span class="shot-title">patrol · dashboard</span>
-              <span class="chip chip--live"><span class="dot"></span>watching</span>
+              <span class="shot-title" data-i18n="pitch.s4.dashboard">patrol · dashboard</span>
+              <span class="chip chip--live"><span class="dot"></span><span data-i18n="pitch.s4.watching">watching</span></span>
             </div>
             <div class="shot-body">
               <div class="mock-radar-wrap">
@@ -299,17 +305,17 @@
                   <span class="mock-blip mock-blip--red" style="top: 70%; left: 70%"></span>
                   <span class="mock-shield"><svg class="icon"><use href="#i-shield" /></svg></span>
                 </div>
-                <div class="mock-engine"><span class="engine-badge" data-engine="google">G</span>Google<span class="mock-when">2m</span></div>
-                <div class="mock-engine"><span class="engine-badge" data-engine="bing">b</span>Bing<span class="mock-when">9m</span></div>
-                <div class="mock-engine"><span class="engine-badge" data-engine="yandex">Y</span>Yandex<span class="mock-when">14m</span></div>
+                <div class="mock-engine"><span class="engine-badge" data-engine="google">G</span>Google<span class="mock-when" data-i18n="pitch.s4.m2">2m</span></div>
+                <div class="mock-engine"><span class="engine-badge" data-engine="bing">b</span>Bing<span class="mock-when" data-i18n="pitch.s4.m9">9m</span></div>
+                <div class="mock-engine"><span class="engine-badge" data-engine="yandex">Y</span>Yandex<span class="mock-when" data-i18n="pitch.s4.m14">14m</span></div>
               </div>
 
               <div class="shot-main">
                 <div class="shot-stats">
-                  <div><b>12</b><span>open</span></div>
-                  <div><b>4</b><span>review</span></div>
-                  <div><b>3</b><span>notices</span></div>
-                  <div><b>2</b><span>served</span></div>
+                  <div><b>12</b><span data-i18n="pitch.s4.open">open</span></div>
+                  <div><b>4</b><span data-i18n="pitch.s4.review">review</span></div>
+                  <div><b>3</b><span data-i18n="pitch.s4.notices">notices</span></div>
+                  <div><b>2</b><span data-i18n="pitch.s4.served">served</span></div>
                 </div>
 
                 <div class="mock-candidate">
@@ -317,24 +323,24 @@
                   <div class="mock-cand-main">
                     <b>Midnight Precinct</b>
                     <span>stream-hub.example/watch/2024</span>
-                    <div class="mock-chips"><span>Google</span><span>#1</span><span class="hot">97% match</span></div>
+                    <div class="mock-chips"><span>Google</span><span>#1</span><span class="hot">97% <span data-i18n="pitch.s4.match">match</span></span></div>
                   </div>
-                  <span class="mock-stamp">BUSTED</span>
+                  <span class="mock-stamp" data-i18n="pitch.s4.busted">BUSTED</span>
                 </div>
 
                 <div class="mock-activity">
-                  <div><span class="mock-dot mock-dot--red"></span>Violation logged · The Long Chase<span>now</span></div>
-                  <div><span class="mock-dot mock-dot--green"></span>Bing acknowledged N-1042<span>2m</span></div>
-                  <div><span class="mock-dot mock-dot--blue"></span>Scans finished · 3 engines<span>14m</span></div>
+                  <div><span class="mock-dot mock-dot--red"></span><span data-i18n="pitch.s4.activityLogged">Violation logged · The Long Chase</span><span data-i18n="pitch.s4.now">now</span></div>
+                  <div><span class="mock-dot mock-dot--green"></span><span data-i18n="pitch.s4.activityAck">Bing acknowledged N-1042</span><span data-i18n="pitch.s4.m2">2m</span></div>
+                  <div><span class="mock-dot mock-dot--blue"></span><span data-i18n="pitch.s4.activityScans">Scans finished · 3 engines</span><span data-i18n="pitch.s4.m14">14m</span></div>
                 </div>
               </div>
             </div>
           </div>
 
           <div class="hero-stats shot-stats-line reveal" style="--d: 0.26s">
-            <span><b>1</b> queue for every engine</span>
-            <span><b>∞</b> immutable captures</span>
-            <span><b>3</b> recipients, one approval</span>
+            <span><b>1</b> <span data-i18n="pitch.s4.queue">queue for every engine</span></span>
+            <span><b>∞</b> <span data-i18n="pitch.s4.captures">immutable captures</span></span>
+            <span><b>3</b> <span data-i18n="pitch.s4.recipients">recipients, one approval</span></span>
           </div>
         </div>
       </section>
@@ -342,29 +348,29 @@
       <!-- 05 · Flow. -->
       <section class="slide" id="s5" data-slide="5">
         <div class="slide-inner">
-          <p class="eyebrow reveal"><span class="dot"></span>How it works</p>
-          <h2 class="slide-title reveal" style="--d: 0.05s">Scan. Confirm.<br /><em>Serve.</em></h2>
-          <p class="slide-lede reveal" style="--d: 0.12s">Three moves from leak to notice.</p>
+          <p class="eyebrow reveal"><span class="dot"></span><span data-i18n="pitch.s5.eyebrow">How it works</span></p>
+          <h2 class="slide-title reveal" style="--d: 0.05s" data-i18n-html="pitch.s5.title">Scan. Confirm.<br /><em>Serve.</em></h2>
+          <p class="slide-lede reveal" style="--d: 0.12s" data-i18n="pitch.s5.lede">Three moves from leak to notice.</p>
 
           <div class="flow">
             <span class="flow-line" aria-hidden="true"></span>
             <article class="flow-step reveal" style="--d: 0.18s">
               <span class="flow-no">01</span>
               <span class="flow-icon"><svg class="icon icon--lg"><use href="#i-radar" /></svg></span>
-              <h3>Scan</h3>
-              <p>Every variant, locale, and engine. One scan per group.</p>
+              <h3 data-i18n="pitch.s5.scan">Scan</h3>
+              <p data-i18n="pitch.s5.scanBody">Every variant, locale, and engine. One scan per group.</p>
             </article>
             <article class="flow-step reveal" style="--d: 0.28s">
               <span class="flow-no">02</span>
               <span class="flow-icon"><svg class="icon icon--lg"><use href="#i-shield" /></svg></span>
-              <h3>Confirm</h3>
-              <p>One review queue. Allowlists decide before you do.</p>
+              <h3 data-i18n="pitch.s5.confirm">Confirm</h3>
+              <p data-i18n="pitch.s5.confirmBody">One review queue. Allowlists decide before you do.</p>
             </article>
             <article class="flow-step reveal" style="--d: 0.38s">
               <span class="flow-no">03</span>
               <span class="flow-icon"><svg class="icon icon--lg"><use href="#i-send" /></svg></span>
-              <h3>Serve</h3>
-              <p>Recipient-ready notices, signed, sealed, timestamped.</p>
+              <h3 data-i18n="pitch.s5.serve">Serve</h3>
+              <p data-i18n="pitch.s5.serveBody">Recipient-ready notices, signed, sealed, timestamped.</p>
             </article>
           </div>
         </div>
@@ -374,32 +380,32 @@
       <section class="slide" id="s6" data-slide="6">
         <div class="slide-inner evidence-grid-layout">
           <div>
-            <p class="eyebrow reveal"><span class="dot dot--amber"></span>The receipts</p>
-            <h2 class="slide-title reveal" style="--d: 0.05s">Evidence that<br /><em>holds up.</em></h2>
-            <p class="slide-lede reveal" style="--d: 0.12s">Every capture is content-addressed and immutable. A later capture is a new record, never an overwrite.</p>
+            <p class="eyebrow reveal"><span class="dot dot--amber"></span><span data-i18n="pitch.s6.eyebrow">The receipts</span></p>
+            <h2 class="slide-title reveal" style="--d: 0.05s" data-i18n-html="pitch.s6.title">Evidence that<br /><em>holds up.</em></h2>
+            <p class="slide-lede reveal" style="--d: 0.12s" data-i18n="pitch.s6.lede">Every capture is content-addressed and immutable. A later capture is a new record, never an overwrite.</p>
             <ul class="bullet-list reveal" style="--d: 0.2s">
-              <li><svg class="icon icon--sm"><use href="#i-lock" /></svg>SHA-256 hash per URL</li>
-              <li><svg class="icon icon--sm"><use href="#i-globe" /></svg>Full redirect chain retained</li>
-              <li><svg class="icon icon--sm"><use href="#i-file" /></svg>Shared by every violation citing it</li>
+              <li><svg class="icon icon--sm"><use href="#i-lock" /></svg><span data-i18n="pitch.s6.bulletHash">SHA-256 hash per URL</span></li>
+              <li><svg class="icon icon--sm"><use href="#i-globe" /></svg><span data-i18n="pitch.s6.bulletChain">Full redirect chain retained</span></li>
+              <li><svg class="icon icon--sm"><use href="#i-file" /></svg><span data-i18n="pitch.s6.bulletShared">Shared by every violation citing it</span></li>
             </ul>
           </div>
 
           <article class="case-file reveal" style="--d: 0.18s">
             <div class="case-head">
-              <span>Evidence</span>
+              <span data-i18n="pitch.s6.evidence">Evidence</span>
               <span class="case-id">EV-2381</span>
             </div>
             <div class="case-rows">
-              <div><span>Title</span><b>The Long Chase</b></div>
-              <div><span>URL</span><b class="mono">film-mirror.example/the-long-chase</b></div>
-              <div><span>Host</span><b class="mono">film-mirror.example</b></div>
-              <div><span>Captured</span><b class="mono">02:58 UTC</b></div>
+              <div><span data-i18n="pitch.s6.titleField">Title</span><b>The Long Chase</b></div>
+              <div><span data-i18n="pitch.s6.url">URL</span><b class="mono">film-mirror.example/the-long-chase</b></div>
+              <div><span data-i18n="pitch.s6.host">Host</span><b class="mono">film-mirror.example</b></div>
+              <div><span data-i18n="pitch.s6.captured">Captured</span><b class="mono">02:58 UTC</b></div>
               <div><span>SHA-256</span><b class="mono">9f3c1d0a77b4</b></div>
             </div>
             <div class="case-chain">
-              <span>301</span><i>→</i><span>302</span><i>→</i><span>200 landing</span>
+              <span>301</span><i>→</i><span>302</span><i>→</i><span data-i18n="pitch.s6.landing">200 landing</span>
             </div>
-            <div class="case-stamp">Evidence locked</div>
+            <div class="case-stamp" data-i18n="pitch.s6.stamp">Evidence locked</div>
             <div class="case-tape" aria-hidden="true"></div>
           </article>
         </div>
@@ -408,34 +414,34 @@
       <!-- 07 · Delivery. -->
       <section class="slide" id="s7" data-slide="7">
         <div class="slide-inner">
-          <p class="eyebrow reveal"><span class="dot dot--red"></span>The delivery</p>
-          <h2 class="slide-title reveal" style="--d: 0.05s">Filed where<br /><em>it counts.</em></h2>
-          <p class="slide-lede reveal" style="--d: 0.12s">One approval. Three recipients. A receipt for every send.</p>
+          <p class="eyebrow reveal"><span class="dot dot--red"></span><span data-i18n="pitch.s7.eyebrow">The delivery</span></p>
+          <h2 class="slide-title reveal" style="--d: 0.05s" data-i18n-html="pitch.s7.title">Filed where<br /><em>it counts.</em></h2>
+          <p class="slide-lede reveal" style="--d: 0.12s" data-i18n="pitch.s7.lede">One approval. Three recipients. A receipt for every send.</p>
 
           <div class="recipient-list">
             <div class="recipient reveal" style="--d: 0.18s">
               <span class="engine-badge" data-engine="google">G</span>
-              <span class="recipient-name">Google<span>Notice N-1043 · 2 violations</span></span>
+              <span class="recipient-name">Google<span data-i18n="pitch.s7.googleMeta">Notice N-1043 · 2 violations</span></span>
               <span class="recipient-bar"><i style="--w: 100%; --delay: 0.2s"></i></span>
-              <span class="recipient-state"><svg class="icon icon--sm"><use href="#i-check" /></svg>Acknowledged</span>
+              <span class="recipient-state"><svg class="icon icon--sm"><use href="#i-check" /></svg><span data-i18n="pitch.s7.acknowledged">Acknowledged</span></span>
             </div>
             <div class="recipient reveal" style="--d: 0.26s">
               <span class="engine-badge" data-engine="bing">b</span>
-              <span class="recipient-name">Bing<span>Notice N-1042 · 1 violation</span></span>
+              <span class="recipient-name">Bing<span data-i18n="pitch.s7.bingMeta">Notice N-1042 · 1 violation</span></span>
               <span class="recipient-bar"><i style="--w: 100%; --delay: 0.35s"></i></span>
-              <span class="recipient-state"><svg class="icon icon--sm"><use href="#i-check" /></svg>Delivered</span>
+              <span class="recipient-state"><svg class="icon icon--sm"><use href="#i-check" /></svg><span data-i18n="pitch.s7.delivered">Delivered</span></span>
             </div>
             <div class="recipient reveal" style="--d: 0.34s">
               <span class="engine-badge" data-engine="yandex">Y</span>
-              <span class="recipient-name">Yandex<span>Notice N-1044 · 1 violation</span></span>
+              <span class="recipient-name">Yandex<span data-i18n="pitch.s7.yandexMeta">Notice N-1044 · 1 violation</span></span>
               <span class="recipient-bar"><i style="--w: 72%; --delay: 0.5s"></i></span>
-              <span class="recipient-state recipient-state--wait">In flight</span>
+              <span class="recipient-state recipient-state--wait" data-i18n="pitch.s7.inFlight">In flight</span>
             </div>
           </div>
 
           <div class="receipt reveal" style="--d: 0.42s">
-            <span class="receipt-stamp">For the record</span>
-            <p>A notice is immutable once approved. Changes create a new notice, never an edit.</p>
+            <span class="receipt-stamp" data-i18n="pitch.s7.receiptStamp">For the record</span>
+            <p data-i18n="pitch.s7.receipt">A notice is immutable once approved. Changes create a new notice, never an edit.</p>
           </div>
         </div>
       </section>
@@ -443,25 +449,25 @@
       <!-- 08 · Values. -->
       <section class="slide" id="s8" data-slide="8">
         <div class="slide-inner">
-          <p class="eyebrow reveal"><span class="dot"></span>Why it sticks</p>
-          <h2 class="slide-title reveal" style="--d: 0.05s">Built like<br /><em>a case file.</em></h2>
-          <p class="slide-lede reveal" style="--d: 0.12s">Not another search tab. A record that survives review.</p>
+          <p class="eyebrow reveal"><span class="dot"></span><span data-i18n="pitch.s8.eyebrow">Why it sticks</span></p>
+          <h2 class="slide-title reveal" style="--d: 0.05s" data-i18n-html="pitch.s8.title">Built like<br /><em>a case file.</em></h2>
+          <p class="slide-lede reveal" style="--d: 0.12s" data-i18n="pitch.s8.lede">Not another search tab. A record that survives review.</p>
 
           <div class="value-grid">
             <article class="value-card reveal" style="--d: 0.18s">
               <span class="value-icon"><svg class="icon icon--lg"><use href="#i-radar" /></svg></span>
-              <h3>One queue</h3>
-              <p>Triage candidates once, across all three engines.</p>
+              <h3 data-i18n="pitch.s8.queue">One queue</h3>
+              <p data-i18n="pitch.s8.queueBody">Triage candidates once, across all three engines.</p>
             </article>
             <article class="value-card reveal" style="--d: 0.27s">
               <span class="value-icon value-icon--red"><svg class="icon icon--lg"><use href="#i-lock" /></svg></span>
-              <h3>Immutable</h3>
-              <p>Evidence is never edited or replaced. Every capture keeps its own receipt.</p>
+              <h3 data-i18n="pitch.s8.immutable">Immutable</h3>
+              <p data-i18n="pitch.s8.immutableBody">Evidence is never edited or replaced. Every capture keeps its own receipt.</p>
             </article>
             <article class="value-card reveal" style="--d: 0.36s">
               <span class="value-icon value-icon--amber"><svg class="icon icon--lg"><use href="#i-send" /></svg></span>
-              <h3>Recipient-aware</h3>
-              <p>Each notice carries exactly what its recipient requires.</p>
+              <h3 data-i18n="pitch.s8.recipient">Recipient-aware</h3>
+              <p data-i18n="pitch.s8.recipientBody">Each notice carries exactly what its recipient requires.</p>
             </article>
           </div>
         </div>
@@ -470,47 +476,47 @@
       <!-- 09 · Plans. -->
       <section class="slide" id="s9" data-slide="9">
         <div class="slide-inner">
-          <p class="eyebrow reveal"><span class="dot"></span>The plans</p>
-          <h2 class="slide-title reveal" style="--d: 0.05s">Pick your<br /><em>beat.</em></h2>
-          <p class="slide-lede reveal" style="--d: 0.12s">Start with one slate. Grow to the whole catalogue.</p>
+          <p class="eyebrow reveal"><span class="dot"></span><span data-i18n="pitch.s9.eyebrow">The plans</span></p>
+          <h2 class="slide-title reveal" style="--d: 0.05s" data-i18n-html="pitch.s9.title">Pick your<br /><em>beat.</em></h2>
+          <p class="slide-lede reveal" style="--d: 0.12s" data-i18n="pitch.s9.lede">Start with one slate. Grow to the whole catalogue.</p>
 
           <div class="plans">
             <article class="plan reveal" style="--d: 0.18s">
-              <h3>Solo</h3>
-              <p class="plan-sub">One rights holder, one slate.</p>
+              <h3 data-i18n="pitch.s9.solo">Solo</h3>
+              <p class="plan-sub" data-i18n="pitch.s9.soloSub">One rights holder, one slate.</p>
               <ul>
-                <li>Up to 10 tracked titles</li>
-                <li>Google and Bing</li>
-                <li>Single operator queue</li>
+                <li data-i18n="pitch.s9.soloOne">Up to 10 tracked titles</li>
+                <li data-i18n="pitch.s9.soloTwo">Google and Bing</li>
+                <li data-i18n="pitch.s9.soloThree">Single operator queue</li>
               </ul>
-              <a class="btn btn-ghost plan-cta" href="mailto:hello@patrol.example?subject=Patrol%20Solo">Request access</a>
+              <a class="btn btn-ghost plan-cta" href="mailto:hello@patrol.example?subject=Patrol%20Solo" data-i18n="pitch.s9.request">Request access</a>
             </article>
 
             <article class="plan plan--featured reveal" style="--d: 0.27s">
-              <span class="plan-flag">Most booked</span>
-              <h3>Studio</h3>
-              <p class="plan-sub">A slate that needs all three engines.</p>
+              <span class="plan-flag" data-i18n="pitch.s9.studioFlag">Most booked</span>
+              <h3 data-i18n="pitch.s9.studio">Studio</h3>
+              <p class="plan-sub" data-i18n="pitch.s9.studioSub">A slate that needs all three engines.</p>
               <ul>
-                <li>Up to 100 tracked titles</li>
-                <li>Google, Bing, and Yandex</li>
-                <li>Team review and evidence archive</li>
-                <li>Recipient profiles included</li>
+                <li data-i18n="pitch.s9.studioOne">Up to 100 tracked titles</li>
+                <li data-i18n="pitch.s9.studioTwo">Google, Bing, and Yandex</li>
+                <li data-i18n="pitch.s9.studioThree">Team review and evidence archive</li>
+                <li data-i18n="pitch.s9.studioFour">Recipient profiles included</li>
               </ul>
-              <a class="btn btn-primary plan-cta" href="mailto:hello@patrol.example?subject=Patrol%20Studio">Request access</a>
+              <a class="btn btn-primary plan-cta" href="mailto:hello@patrol.example?subject=Patrol%20Studio" data-i18n="pitch.s9.request">Request access</a>
             </article>
 
             <article class="plan reveal" style="--d: 0.36s">
-              <h3>Catalogue</h3>
-              <p class="plan-sub">Volume, variants, and territories.</p>
+              <h3 data-i18n="pitch.s9.catalogue">Catalogue</h3>
+              <p class="plan-sub" data-i18n="pitch.s9.catalogueSub">Volume, variants, and territories.</p>
               <ul>
-                <li>Unlimited tracked titles</li>
-                <li>Custom allowlist scopes</li>
-                <li>Priority support</li>
+                <li data-i18n="pitch.s9.catalogueOne">Unlimited tracked titles</li>
+                <li data-i18n="pitch.s9.catalogueTwo">Custom allowlist scopes</li>
+                <li data-i18n="pitch.s9.catalogueThree">Priority support</li>
               </ul>
-              <a class="btn btn-ghost plan-cta" href="mailto:hello@patrol.example?subject=Patrol%20Catalogue">Talk to us</a>
+              <a class="btn btn-ghost plan-cta" href="mailto:hello@patrol.example?subject=Patrol%20Catalogue" data-i18n="pitch.s9.talk">Talk to us</a>
             </article>
           </div>
-          <p class="footnote reveal" style="--d: 0.44s">Prototype · plans are illustrative, no live billing.</p>
+          <p class="footnote reveal" style="--d: 0.44s" data-i18n="pitch.s9.footnote">Prototype · plans are illustrative, no live billing.</p>
         </div>
       </section>
 
@@ -522,20 +528,21 @@
             <span class="seal-ring"></span>
             <span class="seal-core"><svg class="icon icon--lg"><use href="#i-shield" /></svg></span>
           </div>
-          <p class="eyebrow reveal" style="--d: 0.05s"><span class="dot"></span>End of the tour</p>
-          <h2 class="close-title reveal" style="--d: 0.1s">Keep the beat.</h2>
-          <p class="slide-lede close-lede reveal" style="--d: 0.18s">Your titles, staying where they belong.</p>
+          <p class="eyebrow reveal" style="--d: 0.05s"><span class="dot"></span><span data-i18n="pitch.close.eyebrow">End of the tour</span></p>
+          <h2 class="close-title reveal" style="--d: 0.1s" data-i18n="pitch.close.title">Keep the beat.</h2>
+          <p class="slide-lede close-lede reveal" style="--d: 0.18s" data-i18n="pitch.close.lede">Your titles, staying where they belong.</p>
           <div class="hero-actions close-actions reveal" style="--d: 0.26s">
-            <a class="btn btn-primary" href="mailto:hello@patrol.example?subject=Patrol">Request access <svg class="icon icon--sm"><use href="#i-arrow" /></svg></a>
-            <a class="btn btn-ghost" href="./index.html">Open the prototype</a>
+            <a class="btn btn-primary" href="mailto:hello@patrol.example?subject=Patrol"><span data-i18n="pitch.close.request">Request access</span> <svg class="icon icon--sm"><use href="#i-arrow" /></svg></a>
+            <a class="btn btn-ghost" href="./index.html" data-i18n="pitch.close.open">Open the prototype</a>
           </div>
-          <p class="footnote reveal" style="--d: 0.34s">hello@patrol.example · Northlight Pictures demo</p>
+          <p class="footnote reveal" style="--d: 0.34s" data-i18n="pitch.close.footnote">hello@patrol.example · Northlight Pictures demo</p>
         </div>
         <div class="road" aria-hidden="true"></div>
-        <button class="scroll-hint scroll-hint--top" type="button" data-goto="0">Back to start <span>↑</span></button>
+        <button class="scroll-hint scroll-hint--top" type="button" data-goto="0"><span data-i18n="pitch.close.back">Back to start</span> <span>↑</span></button>
       </section>
     </div>
 
+    <script src="assets/i18n.js"></script>
     <script src="assets/pitch.js"></script>
   </body>
 </html>

@@ -1,0 +1,775 @@
+/* Shared English and Russian copy for the Patrol prototype. */
+(() => {
+  "use strict";
+
+  const STORAGE_KEY = "patrol.lang";
+
+  const EN = {
+    "app.title": "Patrol · service prototype",
+    "pitch.title": "Patrol · product pitch",
+    "lang.label": "Language",
+
+    "time.now": "now",
+    "time.minutes": "{n}m",
+    "time.hours": "{n}h",
+    "time.yesterdayAt": "Yesterday, {time}",
+
+    "app.brand.dashboard": "Patrol dashboard",
+    "app.brand.sub": "Rights watch",
+    "app.siren.toggle": "Toggle siren mode",
+    "app.siren.title": "Siren mode",
+    "app.siren.on": "Siren mode. Eyes up.",
+    "app.siren.off": "Siren off.",
+    "app.scan.run": "Run scans",
+    "app.scan.scanning": "Scanning…",
+    "app.scan.finished": "Scans finished · {candidates}.",
+    "app.scan.none": "Scans finished · no new candidates.",
+    "app.scan.newCandidates": { one: "{n} new candidate", other: "{n} new candidates" },
+    "app.reset.toast": "Demo reset.",
+    "app.unknownTitle": "Unknown title",
+    "app.group.feature": "Feature slate",
+    "app.group.winter": "Winter slate",
+    "app.group.archive": "Archive",
+    "app.modal.detail": "Detail",
+    "app.modal.close": "Close",
+    "app.footer.rights": "Northlight Pictures",
+    "app.footer.prototype": "prototype",
+    "app.footer.resetNote": "state resets on reload",
+    "app.footer.pitch": "pitch deck",
+    "app.footer.reset": "Reset demo",
+
+    "app.nav.dashboard": "Dashboard",
+    "app.nav.review": "Review",
+    "app.nav.violations": "Violations",
+    "app.nav.notices": "Notices",
+    "app.nav.titles": "Titles",
+
+    "app.common.pending": "{n} pending",
+    "app.common.candidates": { one: "{n} candidate", other: "{n} candidates" },
+    "app.common.titles": { one: "{n} title", other: "{n} titles" },
+
+    "app.dashboard.allEngines": "all engines up",
+    "app.dashboard.queueClear": "Queue clear",
+    "app.dashboard.openCases": { one: "{n} open case.", other: "{n} open cases." },
+    "app.dashboard.quietLead": "All quiet.",
+    "app.dashboard.forNow": "For now.",
+    "app.dashboard.keepMoving": "Keep moving.",
+    "app.dashboard.note": "One rights holder. Every engine. Evidence sealed at capture.",
+    "app.dashboard.openViolations": "Open violations",
+    "app.dashboard.toReview": "Candidates to review",
+    "app.dashboard.noticesOnFile": "Notices on file",
+    "app.dashboard.acknowledged": "Acknowledged",
+    "app.dashboard.activity": "Activity",
+    "app.dashboard.noticesLink": "Notices",
+    "app.dashboard.latest": "Latest candidates",
+    "app.dashboard.reviewLink": "Review",
+    "app.dashboard.noCandidates": "No candidates waiting.",
+    "app.dashboard.liveSweep": "Live sweep",
+    "app.dashboard.watching": "Watching",
+    "app.dashboard.violation": "Violation",
+    "app.dashboard.candidate": "Candidate",
+    "app.dashboard.clean": "Clean",
+    "app.dashboard.guardrails": "Guardrails",
+    "app.dashboard.guardrailsNote": "Every candidate passes the allowlist before a violation can be opened.",
+    "app.dashboard.allowlistEnforced": "Allowlist enforced",
+    "app.dashboard.immutableEvidence": "Immutable evidence",
+    "app.dashboard.oneQueue": "One queue",
+
+    "app.review.eyebrow": "Review queue",
+    "app.review.title": "Pick the <span class=\"accent\">real ones.</span>",
+    "app.review.note": "Confirming opens a violation and seals evidence. Allowlisted hosts can never be confirmed.",
+    "app.review.emptyTitle": "Queue clear.",
+    "app.review.emptyBody": "No candidates left. Run scans across Google, Bing, and Yandex to restock the beat.",
+    "app.review.rank": "Rank #{n}",
+    "app.review.allowlisted": "Allowlisted",
+    "app.review.allowlistedTitle": "Allowlisted hosts cannot be confirmed",
+    "app.review.confirm": "Confirm violation",
+    "app.review.match": "Match",
+    "app.review.dismiss": "Not a copy",
+    "app.review.wrong": "Wrong title",
+    "app.review.authorized": "Authorized here",
+    "app.review.dead": "Page dead",
+    "app.review.dismissed": "Candidate dismissed.",
+    "app.review.wrongMarked": "Marked as the wrong work.",
+    "app.review.authorizedMarked": "Host allowlisted for this title.",
+    "app.review.deadMarked": "Candidate marked as a dead page.",
+    "app.review.allowlistBlocked": "Allowlisted host. Confirmation blocked.",
+    "app.review.confirmed": "Violation logged. Evidence sealed.",
+
+    "app.violations.eyebrow": "Violations",
+    "app.violations.openCount": "{n} open",
+    "app.violations.title": "Open <span class=\"siren-text\">cases.</span>",
+    "app.violations.note": "Select open violations to draft a notice for one recipient. Evidence stays attached.",
+    "app.violations.inNotice": "In notice",
+    "app.violations.removed": "Removed",
+    "app.violations.open": "Open",
+    "app.violations.select": "Select {host} for a notice",
+    "app.violations.selected": "selected",
+    "app.violations.recipient": "Notice recipient",
+    "app.violations.draft": "Draft notice",
+    "app.violations.emptyTitle": "No open violations.",
+    "app.violations.emptyBody": "Confirm a candidate in the review queue to open the first case.",
+    "app.violations.goReview": "Go to review",
+
+    "app.evidence.title": "Evidence · {id}",
+    "app.evidence.titleField": "Title",
+    "app.evidence.url": "URL",
+    "app.evidence.host": "Host",
+    "app.evidence.captured": "Captured",
+    "app.evidence.note": "Immutable record. A later capture creates new evidence and never replaces this one.",
+    "app.evidence.unknown": "Unknown",
+
+    "app.notices.eyebrow": "Notices",
+    "app.notices.awaiting": "{n} awaiting approval",
+    "app.notices.title": "Signed, sealed, <span class=\"accent\">served.</span>",
+    "app.notices.note": "An approved notice is immutable. A change creates a new notice.",
+    "app.notices.violations": { one: "{n} violation", other: "{n} violations" },
+    "app.notices.drafted": "drafted {when}",
+    "app.notices.sent": "sent {when}",
+    "app.notices.status.draft": "Draft",
+    "app.notices.status.approved": "Approved",
+    "app.notices.status.sending": "Sending",
+    "app.notices.status.delivered": "Delivered",
+    "app.notices.status.acknowledged": "Acknowledged",
+    "app.notices.step.draft": "Draft",
+    "app.notices.step.approved": "Approved",
+    "app.notices.step.delivered": "Delivered",
+    "app.notices.step.acknowledged": "Acknowledged",
+    "app.notices.approve": "Approve",
+    "app.notices.send": "Send",
+    "app.notices.sending": "Sending",
+    "app.notices.view": "View",
+    "app.notices.recipientOne": "Recipient: {recipient} · one violation",
+    "app.notices.recipientMany": "Recipient: {recipient} · one notice, several violations",
+    "app.notices.openDocument": "Open document",
+    "app.notices.emptyTitle": "No notices yet.",
+    "app.notices.emptyBody": "Select open violations to draft the first notice.",
+    "app.notices.openViolations": "Open violations",
+    "app.notices.approvedToast": "Approved. Ready to send to {recipient}.",
+    "app.notices.submissionOpened": "Submission opened for {recipient}.",
+    "app.notices.delivered": "Delivered.",
+    "app.notices.acknowledged": "{recipient} acknowledged {id}.",
+    "app.notices.docTitle": "Notice of copyright infringement",
+    "app.notices.docTo": "To: {recipient} · {id} · {when}",
+    "app.notices.claimant": "Claimant",
+    "app.notices.claimantName": "Northlight Pictures, the rights holder.",
+    "app.notices.signatory": "Signatory",
+    "app.notices.signatoryName": "{name}, Rights Director.",
+    "app.notices.works": "Works identified",
+    "app.notices.statements": "Statements",
+    "app.notices.statement": "The claimant owns the exclusive rights in each work above. The material identified is not authorised by the claimant, its agents, or the law.",
+    "app.notices.signedAt": "Signed at approval · Northlight Pictures",
+    "app.notices.evidence": "evidence",
+    "app.notices.stamp.draft": "DRAFT",
+    "app.notices.stamp.approved": "APPROVED",
+    "app.notices.stamp.served": "SERVED",
+    "app.notices.draftToast": "Draft {id} ready for approval.",
+
+    "app.titles.eyebrow": "Catalogue",
+    "app.titles.title": "On the <span class=\"accent\">watch.</span>",
+    "app.titles.note": "Every title lives in one group. Pausing stops new scans without losing its history.",
+    "app.titles.variants": { one: "{n} variant", other: "{n} variants" },
+    "app.titles.allowlistedCount": "{n} allowlisted",
+    "app.titles.noAllowlist": "No allowlist",
+    "app.titles.paused": "Paused",
+    "app.titles.watching": "Watching",
+    "app.titles.rules": { one: "{n} rule", other: "{n} rules" },
+    "app.titles.toggle": "Toggle tracking for {name}",
+    "app.titles.pausedToast": "{name} paused.",
+    "app.titles.resumedToast": "{name} back on patrol.",
+
+    "app.activity.bingAck": "Bing acknowledged notice {id}.",
+    "app.activity.yandexScan": "Yandex scan finished · {candidates}.",
+    "app.activity.violationLogged": "Violation logged · {name}.",
+    "app.activity.allowlistMatch": "Allowlist match · {host}.",
+    "app.activity.noticeDrafted": "Notice {id} drafted for {recipient}.",
+    "app.activity.allowlistUpdated": "Allowlist updated · {host}.",
+    "app.activity.review": "Review · {decision} · {host}.",
+    "app.activity.scansFinished": "Scans finished · {engines} engines · {candidates}.",
+    "app.activity.noticeApproved": "Notice {id} approved · {recipient}.",
+    "app.activity.submissionOpened": "Submission opened · {id} → {recipient}.",
+    "app.activity.noticeDelivered": "Notice {id} delivered · {recipient}.",
+    "app.activity.acknowledged": "{recipient} acknowledged {id}.",
+
+    "pitch.brand.title": "Open the clickable prototype",
+    "pitch.hero.eyebrow": "Rights protection, on patrol",
+    "pitch.hero.lede": "Find the leaks. Keep the receipts.<br />Send the notices.",
+    "pitch.hero.start": "Start the tour",
+    "pitch.hero.hint": "Scroll or press <kbd>→</kbd>",
+    "pitch.hero.engines": "engines",
+    "pitch.hero.queue": "queue",
+    "pitch.hero.lostEvidence": "lost evidence",
+    "pitch.hero.car": "A patrol car with its lightbar flashing",
+    "pitch.hero.scroll": "Scroll",
+
+    "pitch.s2.eyebrow": "The leak",
+    "pitch.s2.tickerLabel": "Example leak locations",
+    "pitch.s2.title": "One upload.<br /><em>A thousand mirrors.</em>",
+    "pitch.s2.lede": "Copies multiply overnight. Screenshots don't survive an appeal.",
+    "pitch.s2.copies": "copies in one week",
+    "pitch.s2.engines": "engines to chase",
+    "pitch.s2.operator": "operator, by hand",
+    "pitch.s2.footnote": "Example case · demo data.",
+
+    "pitch.s3.eyebrow": "The shell game",
+    "pitch.s3.title": "Same film.<br /><em>Different page.</em>",
+    "pitch.s3.lede": "A removal on one engine leaves the leak live on the other two.",
+    "pitch.s3.allowed": "allowed",
+    "pitch.s3.review": "review",
+    "pitch.s3.news": "news",
+    "pitch.s3.guide": "guide",
+    "pitch.s3.line": "Three engines, three queues — <span>if you do it by hand.</span>",
+
+    "pitch.s4.eyebrow": "The answer",
+    "pitch.s4.title": "Your patrol,<br /><em>on one screen.</em>",
+    "pitch.s4.lede": "Scan, review, and serve from a single beat.",
+    "pitch.s4.dashboard": "patrol · dashboard",
+    "pitch.s4.watching": "watching",
+    "pitch.s4.open": "open",
+    "pitch.s4.review": "review",
+    "pitch.s4.notices": "notices",
+    "pitch.s4.served": "served",
+    "pitch.s4.match": "match",
+    "pitch.s4.activityLogged": "Violation logged · The Long Chase",
+    "pitch.s4.activityAck": "Bing acknowledged N-1042",
+    "pitch.s4.activityScans": "Scans finished · 3 engines",
+    "pitch.s4.now": "now",
+    "pitch.s4.m2": "2m",
+    "pitch.s4.m9": "9m",
+    "pitch.s4.m14": "14m",
+    "pitch.s4.busted": "BUSTED",
+    "pitch.s4.queue": "queue for every engine",
+    "pitch.s4.captures": "immutable captures",
+    "pitch.s4.recipients": "recipients, one approval",
+
+    "pitch.s5.eyebrow": "How it works",
+    "pitch.s5.title": "Scan. Confirm.<br /><em>Serve.</em>",
+    "pitch.s5.lede": "Three moves from leak to notice.",
+    "pitch.s5.scan": "Scan",
+    "pitch.s5.scanBody": "Every variant, locale, and engine. One scan per group.",
+    "pitch.s5.confirm": "Confirm",
+    "pitch.s5.confirmBody": "One review queue. Allowlists decide before you do.",
+    "pitch.s5.serve": "Serve",
+    "pitch.s5.serveBody": "Recipient-ready notices, signed, sealed, timestamped.",
+
+    "pitch.s6.eyebrow": "The receipts",
+    "pitch.s6.title": "Evidence that<br /><em>holds up.</em>",
+    "pitch.s6.lede": "Every capture is content-addressed and immutable. A later capture is a new record, never an overwrite.",
+    "pitch.s6.bulletHash": "SHA-256 hash per URL",
+    "pitch.s6.bulletChain": "Full redirect chain retained",
+    "pitch.s6.bulletShared": "Shared by every violation citing it",
+    "pitch.s6.evidence": "Evidence",
+    "pitch.s6.titleField": "Title",
+    "pitch.s6.url": "URL",
+    "pitch.s6.host": "Host",
+    "pitch.s6.captured": "Captured",
+    "pitch.s6.landing": "200 landing",
+    "pitch.s6.stamp": "Evidence locked",
+
+    "pitch.s7.eyebrow": "The delivery",
+    "pitch.s7.title": "Filed where<br /><em>it counts.</em>",
+    "pitch.s7.lede": "One approval. Three recipients. A receipt for every send.",
+    "pitch.s7.googleMeta": "Notice N-1043 · 2 violations",
+    "pitch.s7.bingMeta": "Notice N-1042 · 1 violation",
+    "pitch.s7.yandexMeta": "Notice N-1044 · 1 violation",
+    "pitch.s7.acknowledged": "Acknowledged",
+    "pitch.s7.delivered": "Delivered",
+    "pitch.s7.inFlight": "In flight",
+    "pitch.s7.receiptStamp": "For the record",
+    "pitch.s7.receipt": "A notice is immutable once approved. Changes create a new notice, never an edit.",
+
+    "pitch.s8.eyebrow": "Why it sticks",
+    "pitch.s8.title": "Built like<br /><em>a case file.</em>",
+    "pitch.s8.lede": "Not another search tab. A record that survives review.",
+    "pitch.s8.queue": "One queue",
+    "pitch.s8.queueBody": "Triage candidates once, across all three engines.",
+    "pitch.s8.immutable": "Immutable",
+    "pitch.s8.immutableBody": "Evidence is never edited or replaced. Every capture keeps its own receipt.",
+    "pitch.s8.recipient": "Recipient-aware",
+    "pitch.s8.recipientBody": "Each notice carries exactly what its recipient requires.",
+
+    "pitch.s9.eyebrow": "The plans",
+    "pitch.s9.title": "Pick your<br /><em>beat.</em>",
+    "pitch.s9.lede": "Start with one slate. Grow to the whole catalogue.",
+    "pitch.s9.solo": "Solo",
+    "pitch.s9.soloSub": "One rights holder, one slate.",
+    "pitch.s9.soloOne": "Up to 10 tracked titles",
+    "pitch.s9.soloTwo": "Google and Bing",
+    "pitch.s9.soloThree": "Single operator queue",
+    "pitch.s9.studio": "Studio",
+    "pitch.s9.studioFlag": "Most booked",
+    "pitch.s9.studioSub": "A slate that needs all three engines.",
+    "pitch.s9.studioOne": "Up to 100 tracked titles",
+    "pitch.s9.studioTwo": "Google, Bing, and Yandex",
+    "pitch.s9.studioThree": "Team review and evidence archive",
+    "pitch.s9.studioFour": "Recipient profiles included",
+    "pitch.s9.catalogue": "Catalogue",
+    "pitch.s9.catalogueSub": "Volume, variants, and territories.",
+    "pitch.s9.catalogueOne": "Unlimited tracked titles",
+    "pitch.s9.catalogueTwo": "Custom allowlist scopes",
+    "pitch.s9.catalogueThree": "Priority support",
+    "pitch.s9.request": "Request access",
+    "pitch.s9.talk": "Talk to us",
+    "pitch.s9.footnote": "Prototype · plans are illustrative, no live billing.",
+
+    "pitch.close.eyebrow": "End of the tour",
+    "pitch.close.title": "Keep the beat.",
+    "pitch.close.lede": "Your titles, staying where they belong.",
+    "pitch.close.request": "Request access",
+    "pitch.close.open": "Open the prototype",
+    "pitch.close.footnote": "hello@patrol.example · Northlight Pictures demo",
+    "pitch.close.back": "Back to start",
+    "pitch.dots": "Go to slide {n}",
+  };
+
+  const RU = {
+    "app.title": "Patrol · прототип сервиса",
+    "pitch.title": "Patrol · презентация продукта",
+    "lang.label": "Язык",
+
+    "time.now": "сейчас",
+    "time.minutes": "{n} мин",
+    "time.hours": "{n} ч",
+    "time.yesterdayAt": "Вчера, {time}",
+
+    "app.brand.dashboard": "Панель Patrol",
+    "app.brand.sub": "Контроль прав",
+    "app.siren.toggle": "Переключить режим сирены",
+    "app.siren.title": "Режим сирены",
+    "app.siren.on": "Режим сирены. Внимание.",
+    "app.siren.off": "Сирена выключена.",
+    "app.scan.run": "Сканы",
+    "app.scan.scanning": "Сканирую…",
+    "app.scan.finished": "Сканы завершены · {candidates}.",
+    "app.scan.none": "Сканы завершены · новых кандидатов нет.",
+    "app.scan.newCandidates": {
+      one: "{n} новый кандидат",
+      few: "{n} новых кандидата",
+      many: "{n} новых кандидатов",
+      other: "{n} новых кандидата",
+    },
+    "app.reset.toast": "Демо сброшено.",
+    "app.unknownTitle": "Неизвестное произведение",
+    "app.group.feature": "Основная линейка",
+    "app.group.winter": "Зимняя линейка",
+    "app.group.archive": "Архив",
+    "app.modal.detail": "Детали",
+    "app.modal.close": "Закрыть",
+    "app.footer.rights": "Northlight Pictures",
+    "app.footer.prototype": "прототип",
+    "app.footer.resetNote": "состояние сбрасывается при перезагрузке",
+    "app.footer.pitch": "презентация",
+    "app.footer.reset": "Сбросить демо",
+
+    "app.nav.dashboard": "Обзор",
+    "app.nav.review": "Проверка",
+    "app.nav.violations": "Нарушения",
+    "app.nav.notices": "Уведомления",
+    "app.nav.titles": "Произведения",
+
+    "app.common.pending": "Ожидает: {n}",
+    "app.common.candidates": {
+      one: "{n} кандидат",
+      few: "{n} кандидата",
+      many: "{n} кандидатов",
+      other: "{n} кандидата",
+    },
+    "app.common.titles": "Произведений: {n}",
+
+    "app.dashboard.allEngines": "все поисковики на связи",
+    "app.dashboard.queueClear": "Очередь пуста",
+    "app.dashboard.openCases": {
+      one: "{n} открытое дело.",
+      few: "{n} открытых дела.",
+      many: "{n} открытых дел.",
+      other: "{n} открытых дела.",
+    },
+    "app.dashboard.quietLead": "Тихо.",
+    "app.dashboard.forNow": "Пока что.",
+    "app.dashboard.keepMoving": "Держим темп.",
+    "app.dashboard.note": "Один правообладатель. Все поисковики. Доказательства запечатываются при захвате.",
+    "app.dashboard.openViolations": "Открытые нарушения",
+    "app.dashboard.toReview": "Кандидаты на проверку",
+    "app.dashboard.noticesOnFile": "Уведомления",
+    "app.dashboard.acknowledged": "Подтверждено",
+    "app.dashboard.activity": "Активность",
+    "app.dashboard.noticesLink": "Уведомления",
+    "app.dashboard.latest": "Последние кандидаты",
+    "app.dashboard.reviewLink": "Проверить",
+    "app.dashboard.noCandidates": "Кандидатов нет.",
+    "app.dashboard.liveSweep": "Живой радар",
+    "app.dashboard.watching": "Наблюдение",
+    "app.dashboard.violation": "Нарушение",
+    "app.dashboard.candidate": "Кандидат",
+    "app.dashboard.clean": "Чисто",
+    "app.dashboard.guardrails": "Защита",
+    "app.dashboard.guardrailsNote": "Каждый кандидат проходит белый список до открытия нарушения.",
+    "app.dashboard.allowlistEnforced": "Белый список",
+    "app.dashboard.immutableEvidence": "Неизменяемые доказательства",
+    "app.dashboard.oneQueue": "Одна очередь",
+
+    "app.review.eyebrow": "Очередь проверки",
+    "app.review.title": "Выберите <span class=\"accent\">настоящие.</span>",
+    "app.review.note": "Подтверждение открывает нарушение и запечатывает доказательства. Хосты из белого списка подтвердить нельзя.",
+    "app.review.emptyTitle": "Очередь пуста.",
+    "app.review.emptyBody": "Кандидатов не осталось. Запустите сканы Google, Bing и Yandex, чтобы наполнить очередь.",
+    "app.review.rank": "Позиция #{n}",
+    "app.review.allowlisted": "Белый список",
+    "app.review.allowlistedTitle": "Хосты из белого списка нельзя подтвердить",
+    "app.review.confirm": "Подтвердить нарушение",
+    "app.review.match": "Совпадение",
+    "app.review.dismiss": "Это не копия",
+    "app.review.wrong": "Другой фильм",
+    "app.review.authorized": "Разрешено здесь",
+    "app.review.dead": "Страница недоступна",
+    "app.review.dismissed": "Кандидат отклонён.",
+    "app.review.wrongMarked": "Отмечено как другое произведение.",
+    "app.review.authorizedMarked": "Хост добавлен в белый список для этого произведения.",
+    "app.review.deadMarked": "Кандидат отмечен как недоступная страница.",
+    "app.review.allowlistBlocked": "Хост в белом списке. Подтверждение заблокировано.",
+    "app.review.confirmed": "Нарушение зафиксировано. Доказательства запечатаны.",
+
+    "app.violations.eyebrow": "Нарушения",
+    "app.violations.openCount": "Открыто: {n}",
+    "app.violations.title": "Открытые <span class=\"siren-text\">дела.</span>",
+    "app.violations.note": "Выберите открытые нарушения, чтобы создать уведомление для одного получателя. Доказательства остаются прикреплёнными.",
+    "app.violations.inNotice": "В уведомлении",
+    "app.violations.removed": "Удалено",
+    "app.violations.open": "Открыто",
+    "app.violations.select": "Выбрать {host} для уведомления",
+    "app.violations.selected": "выбрано",
+    "app.violations.recipient": "Получатель уведомления",
+    "app.violations.draft": "Черновик уведомления",
+    "app.violations.emptyTitle": "Открытых нарушений нет.",
+    "app.violations.emptyBody": "Подтвердите кандидата в очереди проверки, чтобы открыть первое дело.",
+    "app.violations.goReview": "Перейти к проверке",
+
+    "app.evidence.title": "Доказательство · {id}",
+    "app.evidence.titleField": "Произведение",
+    "app.evidence.url": "URL",
+    "app.evidence.host": "Хост",
+    "app.evidence.captured": "Захвачено",
+    "app.evidence.note": "Неизменяемая запись. Новый захват создаёт новое доказательство и никогда не заменяет это.",
+    "app.evidence.unknown": "Неизвестно",
+
+    "app.notices.eyebrow": "Уведомления",
+    "app.notices.awaiting": "Ждут утверждения: {n}",
+    "app.notices.title": "Подписано, запечатано, <span class=\"accent\">отправлено.</span>",
+    "app.notices.note": "Утверждённое уведомление неизменяемо. Изменение создаёт новое уведомление.",
+    "app.notices.violations": "Нарушений: {n}",
+    "app.notices.drafted": "создано {when}",
+    "app.notices.sent": "отправлено {when}",
+    "app.notices.status.draft": "Черновик",
+    "app.notices.status.approved": "Утверждено",
+    "app.notices.status.sending": "Отправляется",
+    "app.notices.status.delivered": "Доставлено",
+    "app.notices.status.acknowledged": "Подтверждено",
+    "app.notices.step.draft": "Черновик",
+    "app.notices.step.approved": "Утверждено",
+    "app.notices.step.delivered": "Доставлено",
+    "app.notices.step.acknowledged": "Подтверждено",
+    "app.notices.approve": "Утвердить",
+    "app.notices.send": "Отправить",
+    "app.notices.sending": "Отправка",
+    "app.notices.view": "Открыть",
+    "app.notices.recipientOne": "Получатель: {recipient} · одно нарушение",
+    "app.notices.recipientMany": "Получатель: {recipient} · несколько нарушений в одном уведомлении",
+    "app.notices.openDocument": "Открыть документ",
+    "app.notices.emptyTitle": "Уведомлений пока нет.",
+    "app.notices.emptyBody": "Выберите открытые нарушения, чтобы создать первое уведомление.",
+    "app.notices.openViolations": "Открытые нарушения",
+    "app.notices.approvedToast": "Утверждено. Можно отправлять в {recipient}.",
+    "app.notices.submissionOpened": "Отправка открыта для {recipient}.",
+    "app.notices.delivered": "Доставлено.",
+    "app.notices.acknowledged": "{recipient} подтвердил {id}.",
+    "app.notices.docTitle": "Уведомление о нарушении авторских прав",
+    "app.notices.docTo": "Кому: {recipient} · {id} · {when}",
+    "app.notices.claimant": "Правообладатель",
+    "app.notices.claimantName": "Northlight Pictures, правообладатель.",
+    "app.notices.signatory": "Подписант",
+    "app.notices.signatoryName": "{name}, директор по правам.",
+    "app.notices.works": "Произведения",
+    "app.notices.statements": "Заявления",
+    "app.notices.statement": "Правообладатель владеет исключительными правами на каждое произведение выше. Указанный материал не разрешён правообладателем, его агентами или законом.",
+    "app.notices.signedAt": "Подписано при утверждении · Northlight Pictures",
+    "app.notices.evidence": "доказательство",
+    "app.notices.stamp.draft": "ЧЕРНОВИК",
+    "app.notices.stamp.approved": "УТВЕРЖДЕНО",
+    "app.notices.stamp.served": "ОТПРАВЛЕНО",
+    "app.notices.draftToast": "Черновик {id} готов к утверждению.",
+
+    "app.titles.eyebrow": "Каталог",
+    "app.titles.title": "Под <span class=\"accent\">наблюдением.</span>",
+    "app.titles.note": "Каждое произведение входит в одну группу. Пауза останавливает новые сканы без потери истории.",
+    "app.titles.variants": "Вариантов: {n}",
+    "app.titles.allowlistedCount": "В белом списке: {n}",
+    "app.titles.noAllowlist": "Нет белого списка",
+    "app.titles.paused": "Пауза",
+    "app.titles.watching": "Наблюдение",
+    "app.titles.rules": "Правил: {n}",
+    "app.titles.toggle": "Переключить наблюдение за {name}",
+    "app.titles.pausedToast": "{name} на паузе.",
+    "app.titles.resumedToast": "{name} снова под наблюдением.",
+
+    "app.activity.bingAck": "Bing подтвердил уведомление {id}.",
+    "app.activity.yandexScan": "Скан Yandex завершён · {candidates}.",
+    "app.activity.violationLogged": "Нарушение зафиксировано · {name}.",
+    "app.activity.allowlistMatch": "Совпадение с белым списком · {host}.",
+    "app.activity.noticeDrafted": "Уведомление {id} создано для {recipient}.",
+    "app.activity.allowlistUpdated": "Белый список обновлён · {host}.",
+    "app.activity.review": "Проверка · {decision} · {host}.",
+    "app.activity.scansFinished": "Сканы завершены · поисковиков: {engines} · {candidates}.",
+    "app.activity.noticeApproved": "Уведомление {id} утверждено · {recipient}.",
+    "app.activity.submissionOpened": "Отправка открыта · {id} → {recipient}.",
+    "app.activity.noticeDelivered": "Уведомление {id} доставлено · {recipient}.",
+    "app.activity.acknowledged": "{recipient} подтвердил {id}.",
+
+    "pitch.brand.title": "Открыть интерактивный прототип",
+    "pitch.hero.eyebrow": "Защита прав на патруле",
+    "pitch.hero.lede": "Найдите утечки. Соберите доказательства.<br />Отправьте уведомления.",
+    "pitch.hero.start": "Начать тур",
+    "pitch.hero.hint": "Листайте или нажмите <kbd>→</kbd>",
+    "pitch.hero.engines": "поисковика",
+    "pitch.hero.queue": "очередь",
+    "pitch.hero.lostEvidence": "потерянных доказательств",
+    "pitch.hero.car": "Патрульная машина с мигающей мигалкой",
+    "pitch.hero.scroll": "Листайте",
+
+    "pitch.s2.eyebrow": "Утечка",
+    "pitch.s2.tickerLabel": "Примеры утечек",
+    "pitch.s2.title": "Одна загрузка.<br /><em>Тысяча зеркал.</em>",
+    "pitch.s2.lede": "Копии множатся за ночь. Скриншоты не выдерживают апелляции.",
+    "pitch.s2.copies": "копий за неделю",
+    "pitch.s2.engines": "поисковика в погоне",
+    "pitch.s2.operator": "оператор вручную",
+    "pitch.s2.footnote": "Пример · демо-данные.",
+
+    "pitch.s3.eyebrow": "Напёрстки",
+    "pitch.s3.title": "Тот же фильм.<br /><em>Другая страница.</em>",
+    "pitch.s3.lede": "Удаление на одном поисковике оставляет утечку на двух других.",
+    "pitch.s3.allowed": "разрешено",
+    "pitch.s3.review": "обзор",
+    "pitch.s3.news": "новости",
+    "pitch.s3.guide": "гид",
+    "pitch.s3.line": "Три поисковика, три очереди — <span>если делать вручную.</span>",
+
+    "pitch.s4.eyebrow": "Решение",
+    "pitch.s4.title": "Ваш патруль<br /><em>на одном экране.</em>",
+    "pitch.s4.lede": "Сканируйте, проверяйте и отправляйте с одного пульта.",
+    "pitch.s4.dashboard": "patrol · обзор",
+    "pitch.s4.watching": "наблюдение",
+    "pitch.s4.open": "открыто",
+    "pitch.s4.review": "проверка",
+    "pitch.s4.notices": "уведомления",
+    "pitch.s4.served": "отправлено",
+    "pitch.s4.match": "совпадение",
+    "pitch.s4.activityLogged": "Нарушение зафиксировано · The Long Chase",
+    "pitch.s4.activityAck": "Bing подтвердил N-1042",
+    "pitch.s4.activityScans": "Сканы завершены · 3 поисковика",
+    "pitch.s4.now": "сейчас",
+    "pitch.s4.m2": "2 мин",
+    "pitch.s4.m9": "9 мин",
+    "pitch.s4.m14": "14 мин",
+    "pitch.s4.busted": "ПОЙМАН",
+    "pitch.s4.queue": "очередь для всех поисковиков",
+    "pitch.s4.captures": "неизменяемых фиксаций",
+    "pitch.s4.recipients": "получателя, одно утверждение",
+
+    "pitch.s5.eyebrow": "Как это работает",
+    "pitch.s5.title": "Скан. Проверка.<br /><em>Отправка.</em>",
+    "pitch.s5.lede": "Три шага от утечки до уведомления.",
+    "pitch.s5.scan": "Скан",
+    "pitch.s5.scanBody": "Все варианты, локали и поисковики. Один скан на группу.",
+    "pitch.s5.confirm": "Проверка",
+    "pitch.s5.confirmBody": "Одна очередь. Белый список решает раньше вас.",
+    "pitch.s5.serve": "Отправка",
+    "pitch.s5.serveBody": "Готовые уведомления: подписаны, запечатаны, с отметкой времени.",
+
+    "pitch.s6.eyebrow": "Доказательства",
+    "pitch.s6.title": "Доказательства,<br /><em>которые выстоят.</em>",
+    "pitch.s6.lede": "Каждая фиксация адресуется по содержимому и неизменна. Новый захват — новая запись, а не перезапись.",
+    "pitch.s6.bulletHash": "SHA-256 для каждого URL",
+    "pitch.s6.bulletChain": "Сохранена вся цепочка редиректов",
+    "pitch.s6.bulletShared": "Одна фиксация для всех нарушений",
+    "pitch.s6.evidence": "Доказательство",
+    "pitch.s6.titleField": "Произведение",
+    "pitch.s6.url": "URL",
+    "pitch.s6.host": "Хост",
+    "pitch.s6.captured": "Захвачено",
+    "pitch.s6.landing": "200 посадочная",
+    "pitch.s6.stamp": "Запечатано",
+
+    "pitch.s7.eyebrow": "Доставка",
+    "pitch.s7.title": "Подано туда,<br /><em>где решают.</em>",
+    "pitch.s7.lede": "Одно утверждение. Три получателя. Квитанция по каждой отправке.",
+    "pitch.s7.googleMeta": "Уведомление N-1043 · 2 нарушения",
+    "pitch.s7.bingMeta": "Уведомление N-1042 · 1 нарушение",
+    "pitch.s7.yandexMeta": "Уведомление N-1044 · 1 нарушение",
+    "pitch.s7.acknowledged": "Подтверждено",
+    "pitch.s7.delivered": "Доставлено",
+    "pitch.s7.inFlight": "В пути",
+    "pitch.s7.receiptStamp": "Для протокола",
+    "pitch.s7.receipt": "После утверждения уведомление неизменяемо. Изменения создают новое уведомление, а не правку.",
+
+    "pitch.s8.eyebrow": "Почему это работает",
+    "pitch.s8.title": "Собрано как<br /><em>дело.</em>",
+    "pitch.s8.lede": "Не очередная вкладка поиска. Запись, которая выдерживает проверку.",
+    "pitch.s8.queue": "Одна очередь",
+    "pitch.s8.queueBody": "Проверяйте кандидатов один раз, сразу по всем поисковикам.",
+    "pitch.s8.immutable": "Неизменяемость",
+    "pitch.s8.immutableBody": "Доказательства не редактируются и не заменяются. У каждой фиксации своя квитанция.",
+    "pitch.s8.recipient": "Под получателя",
+    "pitch.s8.recipientBody": "Каждое уведомление содержит ровно то, что требует его получатель.",
+
+    "pitch.s9.eyebrow": "Тарифы",
+    "pitch.s9.title": "Выберите<br /><em>свой темп.</em>",
+    "pitch.s9.lede": "Начните с одной линейки. Растите до всего каталога.",
+    "pitch.s9.solo": "Соло",
+    "pitch.s9.soloSub": "Один правообладатель, одна линейка.",
+    "pitch.s9.soloOne": "До 10 произведений",
+    "pitch.s9.soloTwo": "Google и Bing",
+    "pitch.s9.soloThree": "Очередь одного оператора",
+    "pitch.s9.studio": "Студия",
+    "pitch.s9.studioFlag": "Самый популярный",
+    "pitch.s9.studioSub": "Линейка, которой нужны все три поисковика.",
+    "pitch.s9.studioOne": "До 100 произведений",
+    "pitch.s9.studioTwo": "Google, Bing и Yandex",
+    "pitch.s9.studioThree": "Командная проверка и архив доказательств",
+    "pitch.s9.studioFour": "Профили получателей включены",
+    "pitch.s9.catalogue": "Каталог",
+    "pitch.s9.catalogueSub": "Объём, варианты и территории.",
+    "pitch.s9.catalogueOne": "Неограниченно произведений",
+    "pitch.s9.catalogueTwo": "Свои области белого списка",
+    "pitch.s9.catalogueThree": "Приоритетная поддержка",
+    "pitch.s9.request": "Запросить доступ",
+    "pitch.s9.talk": "Связаться",
+    "pitch.s9.footnote": "Прототип · тарифы иллюстративны, оплата не подключена.",
+
+    "pitch.close.eyebrow": "Конец тура",
+    "pitch.close.title": "Держите темп.",
+    "pitch.close.lede": "Ваши произведения остаются там, где должны быть.",
+    "pitch.close.request": "Запросить доступ",
+    "pitch.close.open": "Открыть прототип",
+    "pitch.close.footnote": "hello@patrol.example · демо Northlight Pictures",
+    "pitch.close.back": "В начало",
+    "pitch.dots": "Перейти к слайду {n}",
+  };
+
+  const DICTS = { en: EN, ru: RU };
+  const listeners = new Set();
+  let lang = detect();
+
+  function detect() {
+    const query = new URLSearchParams(location.search).get("lang");
+    if (DICTS[query]) return query;
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (DICTS[stored]) return stored;
+    } catch {
+      /* localStorage can be unavailable; fall back to the browser language. */
+    }
+    return (navigator.language || "en").toLowerCase().startsWith("ru") ? "ru" : "en";
+  }
+
+  function interpolate(text, vars) {
+    return String(text).replace(/\{(\w+)\}/g, (match, key) =>
+      Object.prototype.hasOwnProperty.call(vars, key) ? String(vars[key]) : match,
+    );
+  }
+
+  function t(key, vars = {}) {
+    const value = (DICTS[lang] && DICTS[lang][key]) ?? EN[key];
+    return typeof value === "string" ? interpolate(value, vars) : key;
+  }
+
+  function tn(key, n) {
+    const value = (DICTS[lang] && DICTS[lang][key]) ?? EN[key];
+    if (typeof value === "string") return interpolate(value, { n });
+    if (!value) return key;
+    const rule = new Intl.PluralRules(lang).select(n);
+    const form = value[rule] || value.other || value.many || value.one;
+    return interpolate(form, { n });
+  }
+
+  function translateDom(root = document) {
+    root.querySelectorAll("[data-i18n]").forEach((element) => {
+      element.textContent = t(element.dataset.i18n);
+    });
+    root.querySelectorAll("[data-i18n-html]").forEach((element) => {
+      element.innerHTML = t(element.dataset.i18nHtml);
+    });
+    root.querySelectorAll("[data-i18n-aria-label]").forEach((element) => {
+      element.setAttribute("aria-label", t(element.dataset.i18nAriaLabel));
+    });
+    root.querySelectorAll("[data-i18n-title]").forEach((element) => {
+      element.setAttribute("title", t(element.dataset.i18nTitle));
+    });
+  }
+
+  function refreshSwitches(root = document) {
+    root.querySelectorAll("[data-lang]").forEach((button) => {
+      const active = button.dataset.lang === lang;
+      button.setAttribute("aria-pressed", String(active));
+      button.classList.toggle("is-active", active);
+    });
+  }
+
+  function setLang(next) {
+    if (!DICTS[next] || next === lang) {
+      refreshSwitches();
+      return;
+    }
+    lang = next;
+    try {
+      if (localStorage.getItem(STORAGE_KEY) !== lang) localStorage.setItem(STORAGE_KEY, lang);
+    } catch {
+      /* Ignore unavailable storage. */
+    }
+    try {
+      const url = new URL(location.href);
+      if (url.searchParams.has("lang")) {
+        url.searchParams.set("lang", lang);
+        history.replaceState(null, "", url);
+      }
+    } catch {
+      /* Ignore URLs that cannot be rewritten, such as about:blank. */
+    }
+    document.documentElement.lang = lang;
+    translateDom();
+    refreshSwitches();
+    listeners.forEach((listener) => listener(lang));
+  }
+
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-lang]");
+    if (button) setLang(button.dataset.lang);
+  });
+
+  window.addEventListener("storage", (event) => {
+    if (event.key === STORAGE_KEY && DICTS[event.newValue]) setLang(event.newValue);
+  });
+
+  document.documentElement.lang = lang;
+
+  function init() {
+    translateDom();
+    refreshSwitches();
+  }
+
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+  else init();
+
+  window.PatrolI18n = {
+    t,
+    tn,
+    setLang,
+    translateDom,
+    onChange(listener) {
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    get lang() {
+      return lang;
+    },
+  };
+})();

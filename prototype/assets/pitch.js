@@ -7,6 +7,7 @@
   const dots = document.getElementById("dots");
   const progress = document.getElementById("progress-fill");
   const current = document.getElementById("deck-current");
+  const { t } = PatrolI18n;
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   const ratios = new Map(slides.map((slide) => [slide, 0]));
   let active = 0;
@@ -14,10 +15,21 @@
   dots.innerHTML = slides
     .map(
       (slide, index) =>
-        `<button class="dot" type="button" data-goto="${index}" aria-label="Go to slide ${index + 1}" title="Slide ${index + 1}"></button>`,
+        `<button class="dot" type="button" data-goto="${index}" aria-label="${t("pitch.dots", { n: index + 1 })}" title="${t(
+          "pitch.dots",
+          { n: index + 1 },
+        )}"></button>`,
     )
     .join("");
   const dotNodes = [...dots.querySelectorAll(".dot")];
+
+  function refreshDots() {
+    dotNodes.forEach((dot, index) => {
+      const label = t("pitch.dots", { n: index + 1 });
+      dot.setAttribute("aria-label", label);
+      dot.setAttribute("title", label);
+    });
+  }
 
   function countTo(element) {
     const target = Number(element.dataset.count || 0);
@@ -129,6 +141,8 @@
       car.style.setProperty("--py", "0px");
     });
   }
+
+  PatrolI18n.onChange(refreshDots);
 
   setActive(0);
 })();

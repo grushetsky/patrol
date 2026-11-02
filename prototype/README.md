@@ -19,6 +19,7 @@ mise run pitch  # http://localhost:4174
 - Confirm a violation; an allowlisted candidate refuses confirmation.
 - Select open violations, draft a notice, approve it, then send it.
 - Toggle siren mode in the top bar.
+- Switch the interface language with EN/RU; the choice carries between the prototype and the pitch.
 - In the pitch, move with the arrow keys, space, or the dots.
 
 ## Demo Data
