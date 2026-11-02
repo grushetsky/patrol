@@ -3,11 +3,13 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="assets/theme-init.js"></script>
     <title data-i18n="pitch.title">Patrol · product pitch</title>
     <meta name="description" content="Patrol finds unauthorized copies across search engines, seals the evidence, and serves the notices." />
     <link rel="stylesheet" href="assets/pico.min.css" />
     <link rel="stylesheet" href="assets/theme.css" />
     <link rel="stylesheet" href="assets/pitch.css" />
+    <link rel="stylesheet" href="assets/light.css" />
   </head>
   <body class="pitch">
     <div class="deck-progress" aria-hidden="true"><span id="progress-fill"></span></div>
@@ -22,6 +24,10 @@
         <button type="button" data-lang="en" aria-pressed="false" aria-label="English" lang="en">EN</button>
         <button type="button" data-lang="ru" aria-pressed="false" aria-label="Русский" lang="ru">RU</button>
       </div>
+      <button class="btn btn-ghost btn-icon theme-toggle" type="button" data-theme-toggle aria-pressed="false" aria-label="Switch to light mode" title="Switch to light mode">
+        <svg class="icon icon--sun"><use href="#i-sun" /></svg>
+        <svg class="icon icon--moon"><use href="#i-moon" /></svg>
+      </button>
       <div class="deck-count" aria-hidden="true"><span id="deck-current">01</span> / 10</div>
     </div>
 
@@ -73,6 +79,13 @@
         <circle cx="12" cy="12" r="9" />
         <path d="M3 12h18" />
         <path d="M12 3c2.5 2.6 3.8 5.7 3.8 9S14.5 18.4 12 21c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3Z" />
+      </symbol>
+      <symbol id="i-sun" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="4" />
+        <path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" />
+      </symbol>
+      <symbol id="i-moon" viewBox="0 0 24 24">
+        <path d="M20 14.5A8.5 8.5 0 0 1 9.5 4a8.5 8.5 0 1 0 10.5 10.5Z" />
       </symbol>
       <symbol id="i-gavel" viewBox="0 0 24 24">
         <path d="m14 4 6 6M17 7l-9.5 9.5" />
@@ -543,6 +556,7 @@
     </div>
 
     <script src="assets/i18n.js"></script>
+    <script src="assets/theme.js"></script>
     <script src="assets/pitch.js"></script>
   </body>
 </html>

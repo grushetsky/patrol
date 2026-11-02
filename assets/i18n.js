@@ -6,6 +6,8 @@
 
   const EN = {
     "app.title": "Patrol · service prototype",
+    "theme.toLight": "Switch to light mode",
+    "theme.toDark": "Switch to dark mode",
     "pitch.title": "Patrol · product pitch",
     "lang.label": "Language",
 
@@ -324,6 +326,8 @@
 
   const RU = {
     "app.title": "Patrol · прототип сервиса",
+    "theme.toLight": "Включить светлую тему",
+    "theme.toDark": "Включить тёмную тему",
     "pitch.title": "Patrol · презентация продукта",
     "lang.label": "Язык",
 

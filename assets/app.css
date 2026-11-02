@@ -1805,8 +1805,38 @@ dialog#modal::backdrop {
   }
 
   .topbar {
-    padding: 10px 14px;
-    gap: 10px;
+    padding: 10px;
+    gap: 8px;
+  }
+
+  .brand {
+    gap: 8px;
+  }
+
+  .brand-mark {
+    width: 34px;
+    height: 34px;
+  }
+
+  .topbar-actions {
+    gap: 6px;
+  }
+
+  .btn-icon {
+    padding: 8px;
+  }
+
+  .lang-switch {
+    padding: 1px;
+  }
+
+  .lang-switch button {
+    padding: 5px 6px;
+  }
+
+  #scan-btn {
+    padding: 8px;
+    gap: 6px;
   }
 
   .stats {
