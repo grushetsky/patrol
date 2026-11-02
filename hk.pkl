@@ -4,7 +4,7 @@ import "package://github.com/jdx/hk/releases/download/v2.11.0/hk@2.11.0#/Builtin
 
 local linters = new Mapping {
   ["harper"] = (Builtins.harper) {
-    exclude = List(".agents/**", ".gitignore", "hk.pkl", "LICENSE", "skills-lock.json")
+    exclude = List("**/**")
   }
 
   ["mise"] = Builtins.mise
