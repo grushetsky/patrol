@@ -1,0 +1,21 @@
+emit:
+  - "@typespec/openapi3"
+  - "@typespec/json-schema"
+  - "@kattebak/typespec-zod-emitter"
+options:
+  "@typespec/openapi3":
+    emitter-output-dir: "{project-root}/../generated/gaps/openapi"
+    file-type: yaml
+    output-file: "gaps.openapi.yaml"
+    openapi-versions:
+      - 3.1.0
+  "@typespec/json-schema":
+    emitter-output-dir: "{project-root}/../generated/gaps/json-schema"
+    file-type: json
+    bundleId: gaps
+    emitAllModels: true
+    polymorphic-models-strategy: oneOf
+    seal-object-schemas: true
+  "@kattebak/typespec-zod-emitter":
+    emitter-output-dir: "{project-root}/../generated/gaps/zod"
+    output-file: schemas.ts

@@ -1,0 +1,47 @@
+{
+  "name": "patrol-typespec-repro",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "tsp:compile": "tsp compile tsp/main.tsp",
+    "tsp:compile:gaps": "tsp compile tsp-gaps/main.tsp --config tsp-gaps/tspconfig.yaml",
+    "types:openapi": "openapi-typescript generated/openapi/Patrol.openapi.yaml -o generated/openapi.d.ts",
+    "client:orval": "orval --config orval.config.ts",
+    "pipeline": "npm run tsp:compile && npm run tsp:compile:gaps && npm run types:openapi && npm run types:openapi:gaps && npm run client:orval",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "check:server": "node --experimental-strip-types scripts/validate-node.ts",
+    "check:zod": "node --experimental-strip-types scripts/check-zod.ts",
+    "check:gaps": "node --experimental-strip-types scripts/validate-gaps.ts",
+    "check": "npm run typecheck && npm run check:server && npm run check:gaps && npm run check:zod",
+    "types:openapi:gaps": "openapi-typescript generated/gaps/openapi/gaps.openapi.yaml -o generated/gaps/openapi.d.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.105.3",
+    "@tanstack/react-router": "1.170.46",
+    "@tanstack/react-start": "1.169.4",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "openapi-fetch": "0.17.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@kattebak/typespec-zod-emitter": "2.4.3",
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@typespec/compiler": "1.17.0",
+    "@typespec/http": "1.17.0",
+    "@typespec/json-schema": "1.17.0",
+    "@typespec/openapi": "1.17.0",
+    "@typespec/openapi3": "1.17.0",
+    "@vitejs/plugin-react": "6.2.1",
+    "openapi-typescript": "7.13.0",
+    "orval": "8.46.0",
+    "typescript": "5.9.3",
+    "vite": "8.3.5"
+  },
+  "version": "0.1.0"
+}

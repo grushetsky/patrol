@@ -1,0 +1,238 @@
+openapi: 3.1.0
+info:
+  title: Gaps
+  version: 0.0.0
+tags: []
+paths: {}
+components:
+  schemas:
+    Animal:
+      type: object
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+      discriminator:
+        propertyName: kind
+        mapping:
+          duck: '#/components/schemas/Duck'
+          swan: '#/components/schemas/Swan'
+    Cat:
+      type: object
+      required:
+        - kind
+        - lives
+      properties:
+        kind:
+          type: string
+          enum:
+            - cat
+        lives:
+          type: integer
+          format: int32
+          default: 9
+    Cat2:
+      type: object
+      required:
+        - kind
+        - lives
+      properties:
+        kind:
+          type: string
+          enum:
+            - cat
+        lives:
+          type: integer
+          format: int32
+    Channel:
+      type: string
+      enum:
+        - google
+        - bing
+    Code:
+      type: number
+      enum:
+        - 1
+        - 2
+    Coded:
+      type: object
+      required:
+        - code
+      properties:
+        code:
+          $ref: '#/components/schemas/Code'
+          default: 1
+    Color:
+      type: string
+      enum:
+        - red
+        - blue
+    Dog:
+      type: object
+      required:
+        - bark
+      properties:
+        bark:
+          type: boolean
+    Dog2:
+      type: object
+      required:
+        - kind
+        - bark
+      properties:
+        kind:
+          type: string
+          enum:
+            - dog
+        bark:
+          type: boolean
+    Duck:
+      type: object
+      required:
+        - kind
+        - quacks
+      properties:
+        kind:
+          type: string
+          enum:
+            - duck
+        quacks:
+          type: boolean
+      allOf:
+        - $ref: '#/components/schemas/Animal'
+    GoogleNotice:
+      type: object
+      required:
+        - channel
+        - retryCount
+      properties:
+        channel:
+          type: string
+          enum:
+            - google
+        retryCount:
+          type: integer
+          format: int32
+          default: 0
+      allOf:
+        - $ref: '#/components/schemas/NoticeBase'
+    Level:
+      type: string
+      enum:
+        - Low
+        - Medium
+        - High
+    NoticeBase:
+      type: object
+      required:
+        - channel
+        - id
+      properties:
+        channel:
+          type: string
+        id:
+          type: string
+      discriminator:
+        propertyName: channel
+        mapping:
+          google: '#/components/schemas/GoogleNotice'
+          yandex: '#/components/schemas/YandexNotice'
+    Pet:
+      anyOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+    Pet2:
+      anyOf:
+        - $ref: '#/components/schemas/Cat2'
+        - $ref: '#/components/schemas/Dog2'
+    PetEnvelope:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/PetEnvelopeCat'
+        - $ref: '#/components/schemas/PetEnvelopeDog'
+      discriminator:
+        propertyName: kind
+        mapping:
+          cat: '#/components/schemas/PetEnvelopeCat'
+          dog: '#/components/schemas/PetEnvelopeDog'
+    PetEnvelopeCat:
+      type: object
+      required:
+        - kind
+        - value
+      properties:
+        kind:
+          type: string
+          enum:
+            - cat
+        value:
+          $ref: '#/components/schemas/Cat'
+    PetEnvelopeDog:
+      type: object
+      required:
+        - kind
+        - value
+      properties:
+        kind:
+          type: string
+          enum:
+            - dog
+        value:
+          $ref: '#/components/schemas/Dog'
+    PetFlat:
+      type: object
+      oneOf:
+        - $ref: '#/components/schemas/Cat'
+        - $ref: '#/components/schemas/Dog'
+      discriminator:
+        propertyName: kind
+        mapping:
+          cat: '#/components/schemas/Cat'
+          dog: '#/components/schemas/Dog'
+    Pref:
+      type: object
+      required:
+        - level
+      properties:
+        level:
+          $ref: '#/components/schemas/Level'
+          default: Low
+    SelfRef:
+      type: object
+      required:
+        - id
+      properties:
+        id:
+          $ref: '#/components/schemas/UserId'
+        parent:
+          $ref: '#/components/schemas/SelfRef'
+    Swan:
+      type: object
+      required:
+        - kind
+      properties:
+        kind:
+          type: string
+          enum:
+            - swan
+      allOf:
+        - $ref: '#/components/schemas/Animal'
+    UserId:
+      type: string
+    YandexNotice:
+      type: object
+      required:
+        - channel
+        - retryCount
+      properties:
+        channel:
+          type: string
+          enum:
+            - yandex
+        retryCount:
+          type: integer
+          format: int32
+          default: 0
+      allOf:
+        - $ref: '#/components/schemas/NoticeBase'

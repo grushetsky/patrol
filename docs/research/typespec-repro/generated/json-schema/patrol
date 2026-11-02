@@ -1,0 +1,283 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "patrol",
+    "$defs": {
+        "Evidence": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/schemas/Evidence.json",
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "kind": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "const": "screenshot"
+                        },
+                        {
+                            "type": "string",
+                            "const": "html"
+                        },
+                        {
+                            "type": "string",
+                            "const": "video"
+                        }
+                    ]
+                },
+                "capturedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "sha256": {
+                    "type": "string"
+                },
+                "derivedFrom": {
+                    "description": "Recursion: an artefact may be derived from a previous capture.",
+                    "$ref": "https://patrol.example/schemas/Evidence.json"
+                }
+            },
+            "required": [
+                "id",
+                "kind",
+                "capturedAt",
+                "sha256"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            }
+        },
+        "Violation": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/schemas/Violation.json",
+            "type": "object",
+            "properties": {
+                "id": {
+                    "$ref": "https://patrol.example/schemas/ViolationId.json"
+                },
+                "titleId": {
+                    "type": "string"
+                },
+                "status": {
+                    "$ref": "https://patrol.example/schemas/CaseStatus.json",
+                    "default": "open"
+                },
+                "confidence": {
+                    "$ref": "https://patrol.example/schemas/DetectionConfidence.json",
+                    "default": "low"
+                },
+                "detectedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "sourceUrl": {
+                    "$ref": "https://patrol.example/schemas/SourceUrl.json"
+                },
+                "evidence": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "https://patrol.example/schemas/Evidence.json"
+                    }
+                },
+                "note": {
+                    "anyOf": [
+                        {
+                            "type": "string"
+                        },
+                        {
+                            "type": "null"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "id",
+                "titleId",
+                "status",
+                "confidence",
+                "detectedAt",
+                "sourceUrl",
+                "evidence"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            }
+        },
+        "ViolationId": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/schemas/ViolationId.json",
+            "type": "string",
+            "format": "uuid",
+            "description": "Opaque identifier of a recorded violation."
+        },
+        "CaseStatus": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/schemas/CaseStatus.json",
+            "type": "string",
+            "enum": [
+                "open",
+                "triage",
+                "notice_sent",
+                "closed"
+            ]
+        },
+        "DetectionConfidence": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/schemas/DetectionConfidence.json",
+            "type": "string",
+            "enum": [
+                "low",
+                "medium",
+                "high"
+            ]
+        },
+        "SourceUrl": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/schemas/SourceUrl.json",
+            "type": "string",
+            "format": "uri"
+        },
+        "NotFound": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/schemas/NotFound.json",
+            "type": "object",
+            "properties": {
+                "_": {
+                    "type": "number",
+                    "const": 404
+                },
+                "message": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "_",
+                "message"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            }
+        },
+        "DmcaNotice": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/schemas/DmcaNotice.json",
+            "type": "object",
+            "properties": {
+                "channel": {
+                    "type": "string",
+                    "const": "google"
+                },
+                "id": {
+                    "$ref": "https://patrol.example/schemas/NoticeId.json"
+                },
+                "violationId": {
+                    "$ref": "https://patrol.example/schemas/ViolationId.json"
+                },
+                "submittedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "retryCount": {
+                    "type": "integer",
+                    "minimum": -2147483648,
+                    "maximum": 2147483647,
+                    "default": 0,
+                    "description": "Workflow state, defaults are part of the contract."
+                }
+            },
+            "required": [
+                "channel",
+                "id",
+                "violationId",
+                "retryCount"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            }
+        },
+        "NoticeId": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/schemas/NoticeId.json",
+            "type": "string",
+            "format": "uuid"
+        },
+        "InfringementNotice": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/schemas/InfringementNotice.json",
+            "type": "object",
+            "properties": {
+                "channel": {
+                    "type": "string",
+                    "const": "yandex"
+                },
+                "id": {
+                    "$ref": "https://patrol.example/schemas/NoticeId.json"
+                },
+                "violationId": {
+                    "$ref": "https://patrol.example/schemas/ViolationId.json"
+                },
+                "submittedAt": {
+                    "type": "string",
+                    "format": "date-time"
+                },
+                "retryCount": {
+                    "type": "integer",
+                    "minimum": -2147483648,
+                    "maximum": 2147483647,
+                    "default": 0
+                }
+            },
+            "required": [
+                "channel",
+                "id",
+                "violationId",
+                "retryCount"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            }
+        },
+        "CreateNoticeRequest": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/schemas/CreateNoticeRequest.json",
+            "type": "object",
+            "properties": {
+                "violationId": {
+                    "$ref": "https://patrol.example/schemas/ViolationId.json"
+                },
+                "channel": {
+                    "anyOf": [
+                        {
+                            "type": "string",
+                            "const": "google"
+                        },
+                        {
+                            "type": "string",
+                            "const": "yandex"
+                        }
+                    ]
+                }
+            },
+            "required": [
+                "violationId",
+                "channel"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            }
+        },
+        "Notice": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/schemas/Notice.json",
+            "anyOf": [
+                {
+                    "$ref": "https://patrol.example/schemas/DmcaNotice.json"
+                },
+                {
+                    "$ref": "https://patrol.example/schemas/InfringementNotice.json"
+                }
+            ]
+        }
+    }
+}

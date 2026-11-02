@@ -1,0 +1,416 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "gaps",
+    "$defs": {
+        "Cat": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/Cat.json",
+            "type": "object",
+            "properties": {
+                "kind": {
+                    "type": "string",
+                    "const": "cat"
+                },
+                "lives": {
+                    "type": "integer",
+                    "minimum": -2147483648,
+                    "maximum": 2147483647,
+                    "default": 9
+                }
+            },
+            "required": [
+                "kind",
+                "lives"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            }
+        },
+        "Dog": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/Dog.json",
+            "type": "object",
+            "properties": {
+                "bark": {
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "bark"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            }
+        },
+        "SelfRef": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/SelfRef.json",
+            "type": "object",
+            "properties": {
+                "id": {
+                    "$ref": "https://patrol.example/gaps/UserId.json"
+                },
+                "parent": {
+                    "$ref": "https://patrol.example/gaps/SelfRef.json"
+                }
+            },
+            "required": [
+                "id"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            }
+        },
+        "UserId": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/UserId.json",
+            "type": "string"
+        },
+        "Animal": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/Animal.json",
+            "type": "object",
+            "properties": {
+                "kind": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "kind"
+            ],
+            "oneOf": [
+                {
+                    "$ref": "https://patrol.example/gaps/Duck.json"
+                },
+                {
+                    "$ref": "https://patrol.example/gaps/Swan.json"
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "kind": {
+                            "type": "string",
+                            "not": {
+                                "enum": [
+                                    "duck",
+                                    "swan"
+                                ]
+                            }
+                        }
+                    },
+                    "required": [
+                        "kind"
+                    ]
+                }
+            ]
+        },
+        "Duck": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/Duck.json",
+            "type": "object",
+            "properties": {
+                "kind": {
+                    "type": "string",
+                    "const": "duck"
+                },
+                "quacks": {
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "kind",
+                "quacks"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            }
+        },
+        "Swan": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/Swan.json",
+            "type": "object",
+            "properties": {
+                "kind": {
+                    "type": "string",
+                    "const": "swan"
+                }
+            },
+            "required": [
+                "kind"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            }
+        },
+        "Pref": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/Pref.json",
+            "type": "object",
+            "properties": {
+                "level": {
+                    "$ref": "https://patrol.example/gaps/Level.json",
+                    "default": "Low"
+                }
+            },
+            "required": [
+                "level"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            }
+        },
+        "Level": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/Level.json",
+            "type": "string",
+            "enum": [
+                "Low",
+                "Medium",
+                "High"
+            ]
+        },
+        "NoticeBase": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/NoticeBase.json",
+            "type": "object",
+            "properties": {
+                "channel": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "channel",
+                "id"
+            ],
+            "oneOf": [
+                {
+                    "$ref": "https://patrol.example/gaps/GoogleNotice.json"
+                },
+                {
+                    "$ref": "https://patrol.example/gaps/YandexNotice.json"
+                },
+                {
+                    "type": "object",
+                    "properties": {
+                        "channel": {
+                            "type": "string",
+                            "not": {
+                                "enum": [
+                                    "google",
+                                    "yandex"
+                                ]
+                            }
+                        },
+                        "id": {
+                            "type": "string"
+                        }
+                    },
+                    "required": [
+                        "channel",
+                        "id"
+                    ]
+                }
+            ]
+        },
+        "GoogleNotice": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/GoogleNotice.json",
+            "type": "object",
+            "properties": {
+                "channel": {
+                    "type": "string",
+                    "const": "google"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "retryCount": {
+                    "type": "integer",
+                    "minimum": -2147483648,
+                    "maximum": 2147483647,
+                    "default": 0
+                }
+            },
+            "required": [
+                "channel",
+                "id",
+                "retryCount"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            }
+        },
+        "YandexNotice": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/YandexNotice.json",
+            "type": "object",
+            "properties": {
+                "channel": {
+                    "type": "string",
+                    "const": "yandex"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "retryCount": {
+                    "type": "integer",
+                    "minimum": -2147483648,
+                    "maximum": 2147483647,
+                    "default": 0
+                }
+            },
+            "required": [
+                "channel",
+                "id",
+                "retryCount"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            }
+        },
+        "Cat2": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/Cat2.json",
+            "type": "object",
+            "properties": {
+                "kind": {
+                    "type": "string",
+                    "const": "cat"
+                },
+                "lives": {
+                    "type": "integer",
+                    "minimum": -2147483648,
+                    "maximum": 2147483647
+                }
+            },
+            "required": [
+                "kind",
+                "lives"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            }
+        },
+        "Dog2": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/Dog2.json",
+            "type": "object",
+            "properties": {
+                "kind": {
+                    "type": "string",
+                    "const": "dog"
+                },
+                "bark": {
+                    "type": "boolean"
+                }
+            },
+            "required": [
+                "kind",
+                "bark"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            }
+        },
+        "Coded": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/Coded.json",
+            "type": "object",
+            "properties": {
+                "code": {
+                    "$ref": "https://patrol.example/gaps/Code.json",
+                    "default": 1
+                }
+            },
+            "required": [
+                "code"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            }
+        },
+        "Code": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/Code.json",
+            "type": "number",
+            "enum": [
+                1,
+                2
+            ]
+        },
+        "Color": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/Color.json",
+            "type": "string",
+            "enum": [
+                "red",
+                "blue"
+            ]
+        },
+        "Pet": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/Pet.json",
+            "anyOf": [
+                {
+                    "$ref": "https://patrol.example/gaps/Cat.json"
+                },
+                {
+                    "$ref": "https://patrol.example/gaps/Dog.json"
+                }
+            ]
+        },
+        "PetFlat": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/PetFlat.json",
+            "anyOf": [
+                {
+                    "$ref": "https://patrol.example/gaps/Cat.json"
+                },
+                {
+                    "$ref": "https://patrol.example/gaps/Dog.json"
+                }
+            ]
+        },
+        "PetEnvelope": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/PetEnvelope.json",
+            "anyOf": [
+                {
+                    "$ref": "https://patrol.example/gaps/Cat.json"
+                },
+                {
+                    "$ref": "https://patrol.example/gaps/Dog.json"
+                }
+            ]
+        },
+        "Channel": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/Channel.json",
+            "anyOf": [
+                {
+                    "type": "string",
+                    "const": "google"
+                },
+                {
+                    "type": "string",
+                    "const": "bing"
+                }
+            ]
+        },
+        "Pet2": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/gaps/Pet2.json",
+            "anyOf": [
+                {
+                    "$ref": "https://patrol.example/gaps/Cat2.json"
+                },
+                {
+                    "$ref": "https://patrol.example/gaps/Dog2.json"
+                }
+            ]
+        }
+    }
+}

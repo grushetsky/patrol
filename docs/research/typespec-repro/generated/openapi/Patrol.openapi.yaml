@@ -1,0 +1,262 @@
+openapi: 3.1.0
+info:
+  title: Patrol API
+  version: 0.1.0
+tags: []
+paths:
+  /violations:
+    get:
+      operationId: Violations_list
+      parameters:
+        - name: page
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 1
+          explode: false
+        - name: pageSize
+          in: query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 20
+          explode: false
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/CaseStatus'
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - items
+                  - total
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Violation'
+                  total:
+                    type: integer
+                    format: int32
+                  nextCursor:
+                    type: string
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFound'
+  /violations/{id}:
+    get:
+      operationId: Violations_read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ViolationId'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Violation'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFound'
+  /violations/{id}/notices:
+    post:
+      operationId: Violations_createNotice
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            $ref: '#/components/schemas/ViolationId'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notice'
+        '404':
+          description: The server cannot find the requested resource.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotFound'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateNoticeRequest'
+components:
+  schemas:
+    CaseStatus:
+      type: string
+      enum:
+        - open
+        - triage
+        - notice_sent
+        - closed
+    CreateNoticeRequest:
+      type: object
+      required:
+        - violationId
+        - channel
+      properties:
+        violationId:
+          $ref: '#/components/schemas/ViolationId'
+        channel:
+          type: string
+          enum:
+            - google
+            - yandex
+    DetectionConfidence:
+      type: string
+      enum:
+        - low
+        - medium
+        - high
+    DmcaNotice:
+      type: object
+      required:
+        - channel
+        - id
+        - violationId
+        - retryCount
+      properties:
+        channel:
+          type: string
+          enum:
+            - google
+        id:
+          $ref: '#/components/schemas/NoticeId'
+        violationId:
+          $ref: '#/components/schemas/ViolationId'
+        submittedAt:
+          type: string
+          format: date-time
+        retryCount:
+          type: integer
+          format: int32
+          description: Workflow state, defaults are part of the contract.
+          default: 0
+    Evidence:
+      type: object
+      required:
+        - id
+        - kind
+        - capturedAt
+        - sha256
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+          enum:
+            - screenshot
+            - html
+            - video
+        capturedAt:
+          type: string
+          format: date-time
+        sha256:
+          type: string
+        derivedFrom:
+          description: 'Recursion: an artefact may be derived from a previous capture.'
+          $ref: '#/components/schemas/Evidence'
+    InfringementNotice:
+      type: object
+      required:
+        - channel
+        - id
+        - violationId
+        - retryCount
+      properties:
+        channel:
+          type: string
+          enum:
+            - yandex
+        id:
+          $ref: '#/components/schemas/NoticeId'
+        violationId:
+          $ref: '#/components/schemas/ViolationId'
+        submittedAt:
+          type: string
+          format: date-time
+        retryCount:
+          type: integer
+          format: int32
+          default: 0
+    NotFound:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+    Notice:
+      anyOf:
+        - $ref: '#/components/schemas/DmcaNotice'
+        - $ref: '#/components/schemas/InfringementNotice'
+    NoticeId:
+      type: string
+      format: uuid
+    SourceUrl:
+      type: string
+      format: uri
+    Violation:
+      type: object
+      required:
+        - id
+        - titleId
+        - status
+        - confidence
+        - detectedAt
+        - sourceUrl
+        - evidence
+      properties:
+        id:
+          $ref: '#/components/schemas/ViolationId'
+        titleId:
+          type: string
+        status:
+          $ref: '#/components/schemas/CaseStatus'
+          default: open
+        confidence:
+          $ref: '#/components/schemas/DetectionConfidence'
+          default: low
+        detectedAt:
+          type: string
+          format: date-time
+        sourceUrl:
+          $ref: '#/components/schemas/SourceUrl'
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/Evidence'
+        note:
+          anyOf:
+            - type: string
+            - type: 'null'
+    ViolationId:
+      type: string
+      format: uuid
+      description: Opaque identifier of a recorded violation.
