@@ -1,0 +1,34 @@
+amends "package://github.com/jdx/hk/releases/download/v2.11.0/hk@2.11.0#/Config.pkl"
+import "package://github.com/jdx/hk/releases/download/v2.11.0/hk@2.11.0#/Builtins.pkl"
+// Using a coding agent? See https://hk.jdx.dev/agents
+
+local linters = new Mapping {
+  ["harper"] = (Builtins.harper) {
+    exclude = List(".agents/**", ".gitignore", "hk.pkl", "LICENSE", "skills-lock.json")
+  }
+
+  ["mise"] = Builtins.mise
+  ["mixed_line_ending"] = Builtins.mixed_line_ending
+  ["newlines"] = Builtins.newlines
+  ["shellcheck"] = (Builtins.shellcheck) {
+    exclude = List(".agents/**")
+  }
+
+  ["taplo"] = Builtins.taplo
+  ["taplo_format"] = Builtins.taplo_format
+  ["trailing_whitespace"] = Builtins.trailing_whitespace
+}
+
+steps = linters
+
+hooks {
+  ["check"] {
+    steps = linters
+  }
+
+  ["commit-msg"] {
+    steps {
+      ["check_conventional_commit"] = Builtins.check_conventional_commit
+    }
+  }
+}

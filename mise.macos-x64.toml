@@ -1,0 +1,6 @@
+[settings]
+disable_tools = ["hk"]
+
+[tools]
+"cargo:hk" = "2.11.0"
+rust = "1.99.1"
