@@ -110,7 +110,7 @@ _Avoid_: Delivery, send, filing.
 
 ## Lifecycle
 
-The journey from discovery to closure crosses four records rather than one status field.
+The journey from discovery to closure crosses four lifecycle records rather than one status field; a scan records the execution that produces their search results.
 
 | Record | States |
 |---|---|
