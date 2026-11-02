@@ -6,7 +6,12 @@ Throwaway UI prototype and pitch deck, kept off `main` until a decision lands. S
 
 Open "_prototype/index.html_" for the clickable service prototype, or "_prototype/pitch.html_" for the pitch deck. Both run from the file system; no build step.
 
-To serve both over HTTP, run `python3 -m http.server 4173 --directory prototype`.
+Or serve them over HTTP with mise:
+
+```bash
+mise run app    # http://localhost:4173
+mise run pitch  # http://localhost:4174/pitch.html
+```
 
 ## What to Try
 
