@@ -13,6 +13,10 @@ mise run app    # http://localhost:4173
 mise run pitch  # http://localhost:4174
 ```
 
+## Publish
+
+GitHub Pages serves the "_gh-pages_" branch at https://grushetsky.github.io/patrol/. Publish the current prototype with `git subtree push --prefix prototype origin gh-pages`.
+
 ## What to Try
 
 - Run scans from the top bar and review the new candidates.
