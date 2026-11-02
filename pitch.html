@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Patrol · product pitch</title>
+    <meta name="description" content="Patrol finds unauthorized copies across search engines, seals the evidence, and serves the notices." />
+    <link rel="stylesheet" href="assets/pico.min.css" />
+    <link rel="stylesheet" href="assets/theme.css" />
+    <link rel="stylesheet" href="assets/pitch.css" />
+  </head>
+  <body class="pitch">
+    <div class="deck-progress" aria-hidden="true"><span id="progress-fill"></span></div>
+
+    <a class="deck-brand" href="./index.html" title="Open the clickable prototype">
+      <span class="brand-mark"><svg class="icon"><use href="#i-shield" /></svg></span>
+      <span class="brand-name">Patrol</span>
+    </a>
+
+    <div class="deck-count" aria-hidden="true"><span id="deck-current">01</span> / 10</div>
+
+    <nav class="dots" id="dots" aria-label="Slides"></nav>
+
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none" aria-hidden="true">
+      <symbol id="i-shield" viewBox="0 0 24 24">
+        <path d="M12 2.8 19 5.8v5.4c0 4.4-2.9 7.7-7 9.4-4.1-1.7-7-5-7-9.4V5.8l7-3Z" />
+        <path d="m8.8 12.1 2.2 2.2 4.2-4.4" />
+      </symbol>
+      <symbol id="i-siren" viewBox="0 0 24 24">
+        <path d="M7 18v-4.6a5 5 0 0 1 10 0V18" />
+        <path d="M4.4 18h15.2" />
+        <path d="M12 3v2.1" />
+        <path d="m5.1 6.1 1.5 1.5" />
+        <path d="m18.9 6.1-1.5 1.5" />
+      </symbol>
+      <symbol id="i-radar" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="8.6" />
+        <circle cx="12" cy="12" r="4.6" />
+        <path d="M12 12 17.6 6.4" />
+        <circle cx="15.4" cy="14.8" r=".9" fill="currentColor" stroke="none" />
+      </symbol>
+      <symbol id="i-film" viewBox="0 0 24 24">
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <path d="M8 5v14M16 5v14" />
+        <path d="M3 10h5M3 14h5M16 10h5M16 14h5" />
+      </symbol>
+      <symbol id="i-check" viewBox="0 0 24 24">
+        <path d="m5 12.6 4.4 4.4L19 7" />
+      </symbol>
+      <symbol id="i-lock" viewBox="0 0 24 24">
+        <rect x="5" y="10" width="14" height="10" rx="2" />
+        <path d="M8.5 10V7.6a3.5 3.5 0 0 1 7 0V10" />
+      </symbol>
+      <symbol id="i-file" viewBox="0 0 24 24">
+        <path d="M6 3h8l4 4v14H6z" />
+        <path d="M14 3v4h4" />
+        <path d="M9 13h6M9 17h6M9 9h2" />
+      </symbol>
+      <symbol id="i-send" viewBox="0 0 24 24">
+        <path d="M21 4 3 11l7 2 2 7 9-16Z" />
+        <path d="m10 13 5-5" />
+      </symbol>
+      <symbol id="i-arrow" viewBox="0 0 24 24">
+        <path d="M4 12h15M13 6l6 6-6 6" />
+      </symbol>
+      <symbol id="i-globe" viewBox="0 0 24 24">
+        <circle cx="12" cy="12" r="9" />
+        <path d="M3 12h18" />
+        <path d="M12 3c2.5 2.6 3.8 5.7 3.8 9S14.5 18.4 12 21c-2.5-2.6-3.8-5.7-3.8-9S9.5 5.6 12 3Z" />
+      </symbol>
+      <symbol id="i-gavel" viewBox="0 0 24 24">
+        <path d="m14 4 6 6M17 7l-9.5 9.5" />
+        <path d="M5 20h9" />
+        <path d="m9 10 5 5" />
+      </symbol>
+    </svg>
+
+    <div id="deck">
+      <!-- 01 · Hero. -->
+      <section class="slide hero is-active" id="s1" data-slide="1">
+        <div class="slide-inner hero-inner">
+          <div class="hero-copy">
+            <p class="eyebrow reveal"><span class="dot"></span>Rights protection, on patrol</p>
+            <div class="hero-beacon reveal" style="--d: 0.05s" aria-hidden="true">
+              <span class="hero-lens hero-lens--blue"></span>
+              <span class="hero-lens hero-lens--red"></span>
+            </div>
+            <h1 class="wordmark reveal" style="--d: 0.1s">Patrol</h1>
+            <p class="lede reveal" style="--d: 0.2s">Find the leaks. Keep the receipts.<br />Send the notices.</p>
+            <div class="hero-actions reveal" style="--d: 0.3s">
+              <button class="btn btn-primary" type="button" data-goto="1">
+                Start the tour <svg class="icon icon--sm"><use href="#i-arrow" /></svg>
+              </button>
+              <span class="hint">Scroll or press <kbd>→</kbd></span>
+            </div>
+            <div class="hero-stats reveal" style="--d: 0.4s">
+              <span><b>3</b> engines</span>
+              <span><b>1</b> queue</span>
+              <span><b>0</b> lost evidence</span>
+            </div>
+          </div>
+
+          <div class="hero-stage reveal" style="--d: 0.15s" aria-hidden="true">
+            <div class="hero-glow"></div>
+            <div class="car-parallax">
+              <div class="car-rig">
+                <svg class="car" viewBox="0 0 620 260" role="img" aria-label="A patrol car with its lightbar flashing">
+                  <defs>
+                    <linearGradient id="bodyPaint" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0" stop-color="#23406b" />
+                      <stop offset="0.55" stop-color="#142744" />
+                      <stop offset="1" stop-color="#0a1424" />
+                    </linearGradient>
+                    <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0" stop-color="#9cc6ff" stop-opacity="0.55" />
+                      <stop offset="1" stop-color="#2f6fe0" stop-opacity="0.16" />
+                    </linearGradient>
+                    <linearGradient id="beam" x1="0" y1="0" x2="1" y2="0">
+                      <stop offset="0" stop-color="#ffe9a8" stop-opacity="0.5" />
+                      <stop offset="1" stop-color="#ffe9a8" stop-opacity="0" />
+                    </linearGradient>
+                    <pattern id="checker" width="14" height="14" patternUnits="userSpaceOnUse">
+                      <rect width="7" height="7" fill="#f4f7ff" />
+                      <rect x="7" y="7" width="7" height="7" fill="#f4f7ff" />
+                    </pattern>
+                    <radialGradient id="sirenBlue">
+                      <stop offset="0" stop-color="#4d9dff" />
+                      <stop offset="1" stop-color="#4d9dff" stop-opacity="0" />
+                    </radialGradient>
+                    <radialGradient id="sirenRed">
+                      <stop offset="0" stop-color="#ff4d68" />
+                      <stop offset="1" stop-color="#ff4d68" stop-opacity="0" />
+                    </radialGradient>
+                  </defs>
+
+                  <ellipse class="car-shadow" cx="315" cy="226" rx="254" ry="13" fill="#02060c" opacity="0.65" />
+                  <polygon class="beam" points="566,138 620,106 620,202 566,158" fill="url(#beam)" />
+
+                  <g class="wheel">
+                    <circle cx="166" cy="190" r="36" fill="#070d17" stroke="#2b3c56" stroke-width="2" />
+                    <circle cx="166" cy="190" r="22" fill="#111d30" stroke="#3e5677" stroke-width="1.5" />
+                    <circle cx="166" cy="190" r="9" fill="#7d90ad" />
+                    <path d="M166 168v10M166 202v10M144 190h10M178 190h10" stroke="#27374f" stroke-width="2" />
+                  </g>
+                  <g class="wheel">
+                    <circle cx="462" cy="190" r="36" fill="#070d17" stroke="#2b3c56" stroke-width="2" />
+                    <circle cx="462" cy="190" r="22" fill="#111d30" stroke="#3e5677" stroke-width="1.5" />
+                    <circle cx="462" cy="190" r="9" fill="#7d90ad" />
+                    <path d="M462 168v10M462 202v10M440 190h10M474 190h10" stroke="#27374f" stroke-width="2" />
+                  </g>
+
+                  <path class="car-body" d="M70 178 L76 142 Q80 124 100 120 L194 110 L246 68 Q258 56 280 56 L372 56 Q396 56 412 72 L452 110 L536 120 Q564 124 568 146 L570 178 Q570 190 558 190 L84 190 Q70 190 70 178 Z" fill="url(#bodyPaint)" stroke="#3a5a8c" stroke-opacity="0.55" stroke-width="1.5" />
+
+                  <path d="M274 106 L286 70 Q288 66 294 66 L326 66 L326 106 Z" fill="url(#glass)" />
+                  <path d="M340 106 L340 66 L364 66 Q370 66 374 70 L420 102 Q424 106 418 106 Z" fill="url(#glass)" />
+                  <path d="M330 108 L330 180" stroke="#08111f" stroke-opacity="0.8" stroke-width="2" />
+                  <path d="M444 110 L444 178" stroke="#08111f" stroke-opacity="0.8" stroke-width="2" />
+
+                  <rect x="112" y="133" width="410" height="11" fill="url(#checker)" opacity="0.82" />
+                  <rect x="112" y="133" width="410" height="11" fill="none" stroke="#dbe7ff" stroke-opacity="0.3" />
+
+                  <text x="352" y="168" fill="#dbe8ff" font-family="SF Pro Display, system-ui, sans-serif" font-size="14" font-weight="800" letter-spacing="4">PATROL</text>
+                  <rect x="116" y="150" width="10" height="4" rx="2" fill="#dbe8ff" opacity="0.6" />
+                  <rect x="206" y="150" width="10" height="4" rx="2" fill="#dbe8ff" opacity="0.6" />
+                  <rect x="352" y="150" width="10" height="4" rx="2" fill="#dbe8ff" opacity="0.6" />
+                  <rect x="500" y="150" width="10" height="4" rx="2" fill="#dbe8ff" opacity="0.6" />
+
+                  <path d="M126 190 A38 38 0 0 1 202 190" fill="none" stroke="#0a1524" stroke-width="3" />
+                  <path d="M422 190 A38 38 0 0 1 498 190" fill="none" stroke="#0a1524" stroke-width="3" />
+
+                  <rect x="558" y="133" width="11" height="10" rx="3" fill="#ffe9a8" />
+                  <rect x="72" y="133" width="8" height="11" rx="2" fill="#ff4d68" />
+
+                  <ellipse class="siren-glow siren-glow--blue" cx="311" cy="36" rx="58" ry="24" fill="url(#sirenBlue)" />
+                  <ellipse class="siren-glow siren-glow--red" cx="357" cy="36" rx="58" ry="24" fill="url(#sirenRed)" />
+                  <rect x="282" y="43" width="104" height="14" rx="5" fill="#050b14" stroke="#2a3d5c" />
+                  <rect class="lens lens--blue" x="288" y="46" width="44" height="8" rx="3" fill="#4d9dff" />
+                  <rect class="lens lens--red" x="336" y="46" width="44" height="8" rx="3" fill="#ff4d68" />
+
+                  <path d="M60 228h500" stroke="#2a3c57" stroke-opacity="0.4" stroke-width="2" stroke-linecap="round" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        <span class="scroll-hint" aria-hidden="true">Scroll <span>↓</span></span>
+      </section>
+
+      <!-- 02 · Problem. -->
+      <section class="slide" id="s2" data-slide="2">
+        <div class="slide-inner">
+          <p class="eyebrow reveal"><span class="dot dot--red"></span>The leak</p>
+          <h2 class="slide-title reveal" style="--d: 0.05s">One upload.<br /><em>A thousand mirrors.</em></h2>
+          <p class="slide-lede reveal" style="--d: 0.12s">Copies multiply overnight. Screenshots don't survive an appeal.</p>
+
+          <div class="ticker reveal" style="--d: 0.18s" aria-label="Example leak locations">
+            <div class="ticker-track">
+              <span><i></i>stream-hub.example/midnight-precinct</span>
+              <span><i></i>mirror-vault.example/neon-pursuit</span>
+              <span><i></i>film-mirror.example/the-long-chase</span>
+              <span><i></i>ok-stream.example/cc41</span>
+              <span><i></i>rapid-video.example/watch/2291</span>
+              <span><i></i>vidnest.example/neon-pursuit-hd</span>
+              <span><i></i>telly.example/midnight-precinct</span>
+              <span><i></i>archive-copy.example/cold-case-41</span>
+            </div>
+            <div class="ticker-track" aria-hidden="true">
+              <span><i></i>stream-hub.example/midnight-precinct</span>
+              <span><i></i>mirror-vault.example/neon-pursuit</span>
+              <span><i></i>film-mirror.example/the-long-chase</span>
+              <span><i></i>ok-stream.example/cc41</span>
+              <span><i></i>rapid-video.example/watch/2291</span>
+              <span><i></i>vidnest.example/neon-pursuit-hd</span>
+              <span><i></i>telly.example/midnight-precinct</span>
+              <span><i></i>archive-copy.example/cold-case-41</span>
+            </div>
+          </div>
+
+          <div class="problem-stats">
+            <div class="p-stat reveal" style="--d: 0.24s"><span class="p-num" data-count="1248">0</span><span class="p-label">copies in one week</span></div>
+            <div class="p-stat reveal" style="--d: 0.3s"><span class="p-num" data-count="3">0</span><span class="p-label">engines to chase</span></div>
+            <div class="p-stat reveal" style="--d: 0.36s"><span class="p-num" data-count="1">0</span><span class="p-label">operator, by hand</span></div>
+          </div>
+          <p class="footnote reveal" style="--d: 0.42s">Example case · demo data.</p>
+        </div>
+      </section>
+
+      <!-- 03 · Engines. -->
+      <section class="slide" id="s3" data-slide="3">
+        <div class="slide-inner">
+          <p class="eyebrow reveal"><span class="dot dot--amber"></span>The shell game</p>
+          <h2 class="slide-title reveal" style="--d: 0.05s">Same film.<br /><em>Different page.</em></h2>
+          <p class="slide-lede reveal" style="--d: 0.12s">A removal on one engine leaves the leak live on the other two.</p>
+
+          <div class="engine-cards">
+            <article class="engine-card reveal" style="--d: 0.18s">
+              <header>
+                <span class="engine-badge" data-engine="google">G</span>
+                <span class="engine-name">Google</span>
+                <span class="rank-chip">#1</span>
+              </header>
+              <div class="serp">
+                <div class="serp-row serp-row--hot"><span class="serp-rank">1</span><span class="serp-url">stream-hub.example</span><span class="serp-score">97%</span></div>
+                <div class="serp-row"><span class="serp-rank">2</span><span class="serp-url">official.example</span><span class="serp-score serp-score--safe">allowed</span></div>
+                <div class="serp-row"><span class="serp-rank">3</span><span class="serp-url">review-site.example</span><span class="serp-score serp-score--safe">review</span></div>
+              </div>
+            </article>
+
+            <article class="engine-card reveal" style="--d: 0.26s">
+              <header>
+                <span class="engine-badge" data-engine="bing">b</span>
+                <span class="engine-name">Bing</span>
+                <span class="rank-chip">#4</span>
+              </header>
+              <div class="serp">
+                <div class="serp-row"><span class="serp-rank">1</span><span class="serp-url">news.example</span><span class="serp-score serp-score--safe">news</span></div>
+                <div class="serp-row"><span class="serp-rank">2</span><span class="serp-url">official.example</span><span class="serp-score serp-score--safe">allowed</span></div>
+                <div class="serp-row serp-row--hot"><span class="serp-rank">3</span><span class="serp-url">mirror-vault.example</span><span class="serp-score">92%</span></div>
+              </div>
+            </article>
+
+            <article class="engine-card reveal" style="--d: 0.34s">
+              <header>
+                <span class="engine-badge" data-engine="yandex">Y</span>
+                <span class="engine-name">Yandex</span>
+                <span class="rank-chip">#9</span>
+              </header>
+              <div class="serp">
+                <div class="serp-row"><span class="serp-rank">1</span><span class="serp-url">official.example</span><span class="serp-score serp-score--safe">allowed</span></div>
+                <div class="serp-row"><span class="serp-rank">2</span><span class="serp-url">kino-guide.example</span><span class="serp-score serp-score--safe">guide</span></div>
+                <div class="serp-row serp-row--hot"><span class="serp-rank">3</span><span class="serp-url">ok-stream.example</span><span class="serp-score">86%</span></div>
+              </div>
+            </article>
+          </div>
+
+          <p class="pitch-line reveal" style="--d: 0.42s">Three engines, three queues — <span>if you do it by hand.</span></p>
+        </div>
+      </section>
+
+      <!-- 04 · Solution. -->
+      <section class="slide" id="s4" data-slide="4">
+        <div class="slide-inner">
+          <p class="eyebrow reveal"><span class="dot"></span>The answer</p>
+          <h2 class="slide-title reveal" style="--d: 0.05s">Your patrol,<br /><em>on one screen.</em></h2>
+          <p class="slide-lede reveal" style="--d: 0.12s">Scan, review, and serve from a single beat.</p>
+
+          <div class="shot reveal" style="--d: 0.18s">
+            <div class="shot-bar">
+              <span class="shot-dots"><i></i><i></i><i></i></span>
+              <span class="shot-title">patrol · dashboard</span>
+              <span class="chip chip--live"><span class="dot"></span>watching</span>
+            </div>
+            <div class="shot-body">
+              <div class="mock-radar-wrap">
+                <div class="mock-radar">
+                  <div class="mock-sweep"></div>
+                  <span class="mock-blip mock-blip--red" style="top: 28%; left: 64%"></span>
+                  <span class="mock-blip mock-blip--amber" style="top: 62%; left: 34%"></span>
+                  <span class="mock-blip mock-blip--red" style="top: 70%; left: 70%"></span>
+                  <span class="mock-shield"><svg class="icon"><use href="#i-shield" /></svg></span>
+                </div>
+                <div class="mock-engine"><span class="engine-badge" data-engine="google">G</span>Google<span class="mock-when">2m</span></div>
+                <div class="mock-engine"><span class="engine-badge" data-engine="bing">b</span>Bing<span class="mock-when">9m</span></div>
+                <div class="mock-engine"><span class="engine-badge" data-engine="yandex">Y</span>Yandex<span class="mock-when">14m</span></div>
+              </div>
+
+              <div class="shot-main">
+                <div class="shot-stats">
+                  <div><b>12</b><span>open</span></div>
+                  <div><b>4</b><span>review</span></div>
+                  <div><b>3</b><span>notices</span></div>
+                  <div><b>2</b><span>served</span></div>
+                </div>
+
+                <div class="mock-candidate">
+                  <span class="mock-thumb"><svg class="icon"><use href="#i-film" /></svg></span>
+                  <div class="mock-cand-main">
+                    <b>Midnight Precinct</b>
+                    <span>stream-hub.example/watch/2024</span>
+                    <div class="mock-chips"><span>Google</span><span>#1</span><span class="hot">97% match</span></div>
+                  </div>
+                  <span class="mock-stamp">BUSTED</span>
+                </div>
+
+                <div class="mock-activity">
+                  <div><span class="mock-dot mock-dot--red"></span>Violation logged · The Long Chase<span>now</span></div>
+                  <div><span class="mock-dot mock-dot--green"></span>Bing acknowledged N-1042<span>2m</span></div>
+                  <div><span class="mock-dot mock-dot--blue"></span>Scans finished · 3 engines<span>14m</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="hero-stats shot-stats-line reveal" style="--d: 0.26s">
+            <span><b>1</b> queue for every engine</span>
+            <span><b>∞</b> immutable captures</span>
+            <span><b>3</b> recipients, one approval</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- 05 · Flow. -->
+      <section class="slide" id="s5" data-slide="5">
+        <div class="slide-inner">
+          <p class="eyebrow reveal"><span class="dot"></span>How it works</p>
+          <h2 class="slide-title reveal" style="--d: 0.05s">Scan. Confirm.<br /><em>Serve.</em></h2>
+          <p class="slide-lede reveal" style="--d: 0.12s">Three moves from leak to notice.</p>
+
+          <div class="flow">
+            <span class="flow-line" aria-hidden="true"></span>
+            <article class="flow-step reveal" style="--d: 0.18s">
+              <span class="flow-no">01</span>
+              <span class="flow-icon"><svg class="icon icon--lg"><use href="#i-radar" /></svg></span>
+              <h3>Scan</h3>
+              <p>Every variant, locale, and engine. One scan per group.</p>
+            </article>
+            <article class="flow-step reveal" style="--d: 0.28s">
+              <span class="flow-no">02</span>
+              <span class="flow-icon"><svg class="icon icon--lg"><use href="#i-shield" /></svg></span>
+              <h3>Confirm</h3>
+              <p>One review queue. Allowlists decide before you do.</p>
+            </article>
+            <article class="flow-step reveal" style="--d: 0.38s">
+              <span class="flow-no">03</span>
+              <span class="flow-icon"><svg class="icon icon--lg"><use href="#i-send" /></svg></span>
+              <h3>Serve</h3>
+              <p>Recipient-ready notices, signed, sealed, timestamped.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- 06 · Evidence. -->
+      <section class="slide" id="s6" data-slide="6">
+        <div class="slide-inner evidence-grid-layout">
+          <div>
+            <p class="eyebrow reveal"><span class="dot dot--amber"></span>The receipts</p>
+            <h2 class="slide-title reveal" style="--d: 0.05s">Evidence that<br /><em>holds up.</em></h2>
+            <p class="slide-lede reveal" style="--d: 0.12s">Every capture is content-addressed and immutable. A later capture is a new record, never an overwrite.</p>
+            <ul class="bullet-list reveal" style="--d: 0.2s">
+              <li><svg class="icon icon--sm"><use href="#i-lock" /></svg>SHA-256 hash per URL</li>
+              <li><svg class="icon icon--sm"><use href="#i-globe" /></svg>Full redirect chain retained</li>
+              <li><svg class="icon icon--sm"><use href="#i-file" /></svg>Shared by every violation citing it</li>
+            </ul>
+          </div>
+
+          <article class="case-file reveal" style="--d: 0.18s">
+            <div class="case-head">
+              <span>Evidence</span>
+              <span class="case-id">EV-2381</span>
+            </div>
+            <div class="case-rows">
+              <div><span>Title</span><b>The Long Chase</b></div>
+              <div><span>URL</span><b class="mono">film-mirror.example/the-long-chase</b></div>
+              <div><span>Host</span><b class="mono">film-mirror.example</b></div>
+              <div><span>Captured</span><b class="mono">02:58 UTC</b></div>
+              <div><span>SHA-256</span><b class="mono">9f3c1d0a77b4</b></div>
+            </div>
+            <div class="case-chain">
+              <span>301</span><i>→</i><span>302</span><i>→</i><span>200 landing</span>
+            </div>
+            <div class="case-stamp">Evidence locked</div>
+            <div class="case-tape" aria-hidden="true"></div>
+          </article>
+        </div>
+      </section>
+
+      <!-- 07 · Delivery. -->
+      <section class="slide" id="s7" data-slide="7">
+        <div class="slide-inner">
+          <p class="eyebrow reveal"><span class="dot dot--red"></span>The delivery</p>
+          <h2 class="slide-title reveal" style="--d: 0.05s">Filed where<br /><em>it counts.</em></h2>
+          <p class="slide-lede reveal" style="--d: 0.12s">One approval. Three recipients. A receipt for every send.</p>
+
+          <div class="recipient-list">
+            <div class="recipient reveal" style="--d: 0.18s">
+              <span class="engine-badge" data-engine="google">G</span>
+              <span class="recipient-name">Google<span>Notice N-1043 · 2 violations</span></span>
+              <span class="recipient-bar"><i style="--w: 100%; --delay: 0.2s"></i></span>
+              <span class="recipient-state"><svg class="icon icon--sm"><use href="#i-check" /></svg>Acknowledged</span>
+            </div>
+            <div class="recipient reveal" style="--d: 0.26s">
+              <span class="engine-badge" data-engine="bing">b</span>
+              <span class="recipient-name">Bing<span>Notice N-1042 · 1 violation</span></span>
+              <span class="recipient-bar"><i style="--w: 100%; --delay: 0.35s"></i></span>
+              <span class="recipient-state"><svg class="icon icon--sm"><use href="#i-check" /></svg>Delivered</span>
+            </div>
+            <div class="recipient reveal" style="--d: 0.34s">
+              <span class="engine-badge" data-engine="yandex">Y</span>
+              <span class="recipient-name">Yandex<span>Notice N-1044 · 1 violation</span></span>
+              <span class="recipient-bar"><i style="--w: 72%; --delay: 0.5s"></i></span>
+              <span class="recipient-state recipient-state--wait">In flight</span>
+            </div>
+          </div>
+
+          <div class="receipt reveal" style="--d: 0.42s">
+            <span class="receipt-stamp">For the record</span>
+            <p>A notice is immutable once approved. Changes create a new notice, never an edit.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 08 · Values. -->
+      <section class="slide" id="s8" data-slide="8">
+        <div class="slide-inner">
+          <p class="eyebrow reveal"><span class="dot"></span>Why it sticks</p>
+          <h2 class="slide-title reveal" style="--d: 0.05s">Built like<br /><em>a case file.</em></h2>
+          <p class="slide-lede reveal" style="--d: 0.12s">Not another search tab. A record that survives review.</p>
+
+          <div class="value-grid">
+            <article class="value-card reveal" style="--d: 0.18s">
+              <span class="value-icon"><svg class="icon icon--lg"><use href="#i-radar" /></svg></span>
+              <h3>One queue</h3>
+              <p>Triage candidates once, across all three engines.</p>
+            </article>
+            <article class="value-card reveal" style="--d: 0.27s">
+              <span class="value-icon value-icon--red"><svg class="icon icon--lg"><use href="#i-lock" /></svg></span>
+              <h3>Immutable</h3>
+              <p>Evidence is never edited or replaced. Every capture keeps its own receipt.</p>
+            </article>
+            <article class="value-card reveal" style="--d: 0.36s">
+              <span class="value-icon value-icon--amber"><svg class="icon icon--lg"><use href="#i-send" /></svg></span>
+              <h3>Recipient-aware</h3>
+              <p>Each notice carries exactly what its recipient requires.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- 09 · Plans. -->
+      <section class="slide" id="s9" data-slide="9">
+        <div class="slide-inner">
+          <p class="eyebrow reveal"><span class="dot"></span>The plans</p>
+          <h2 class="slide-title reveal" style="--d: 0.05s">Pick your<br /><em>beat.</em></h2>
+          <p class="slide-lede reveal" style="--d: 0.12s">Start with one slate. Grow to the whole catalogue.</p>
+
+          <div class="plans">
+            <article class="plan reveal" style="--d: 0.18s">
+              <h3>Solo</h3>
+              <p class="plan-sub">One rights holder, one slate.</p>
+              <ul>
+                <li>Up to 10 tracked titles</li>
+                <li>Google and Bing</li>
+                <li>Single operator queue</li>
+              </ul>
+              <a class="btn btn-ghost plan-cta" href="mailto:hello@patrol.example?subject=Patrol%20Solo">Request access</a>
+            </article>
+
+            <article class="plan plan--featured reveal" style="--d: 0.27s">
+              <span class="plan-flag">Most booked</span>
+              <h3>Studio</h3>
+              <p class="plan-sub">A slate that needs all three engines.</p>
+              <ul>
+                <li>Up to 100 tracked titles</li>
+                <li>Google, Bing, and Yandex</li>
+                <li>Team review and evidence archive</li>
+                <li>Recipient profiles included</li>
+              </ul>
+              <a class="btn btn-primary plan-cta" href="mailto:hello@patrol.example?subject=Patrol%20Studio">Request access</a>
+            </article>
+
+            <article class="plan reveal" style="--d: 0.36s">
+              <h3>Catalogue</h3>
+              <p class="plan-sub">Volume, variants, and territories.</p>
+              <ul>
+                <li>Unlimited tracked titles</li>
+                <li>Custom allowlist scopes</li>
+                <li>Priority support</li>
+              </ul>
+              <a class="btn btn-ghost plan-cta" href="mailto:hello@patrol.example?subject=Patrol%20Catalogue">Talk to us</a>
+            </article>
+          </div>
+          <p class="footnote reveal" style="--d: 0.44s">Prototype · plans are illustrative, no live billing.</p>
+        </div>
+      </section>
+
+      <!-- 10 · Close. -->
+      <section class="slide close" id="s10" data-slide="10">
+        <div class="close-glow" aria-hidden="true"></div>
+        <div class="slide-inner close-inner">
+          <div class="seal reveal" aria-hidden="true">
+            <span class="seal-ring"></span>
+            <span class="seal-core"><svg class="icon icon--lg"><use href="#i-shield" /></svg></span>
+          </div>
+          <p class="eyebrow reveal" style="--d: 0.05s"><span class="dot"></span>End of the tour</p>
+          <h2 class="close-title reveal" style="--d: 0.1s">Keep the beat.</h2>
+          <p class="slide-lede close-lede reveal" style="--d: 0.18s">Your titles, staying where they belong.</p>
+          <div class="hero-actions close-actions reveal" style="--d: 0.26s">
+            <a class="btn btn-primary" href="mailto:hello@patrol.example?subject=Patrol">Request access <svg class="icon icon--sm"><use href="#i-arrow" /></svg></a>
+            <a class="btn btn-ghost" href="./index.html">Open the prototype</a>
+          </div>
+          <p class="footnote reveal" style="--d: 0.34s">hello@patrol.example · Northlight Pictures demo</p>
+        </div>
+        <div class="road" aria-hidden="true"></div>
+        <button class="scroll-hint scroll-hint--top" type="button" data-goto="0">Back to start <span>↑</span></button>
+      </section>
+    </div>
+
+    <script src="assets/pitch.js"></script>
+  </body>
+</html>
