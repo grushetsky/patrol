@@ -1,0 +1,424 @@
+/* Shared tokens and primitives for the Patrol prototype. */
+
+:root {
+  color-scheme: dark;
+  --ink: #e9eefb;
+  --muted: #93a3c2;
+  --faint: #64748f;
+  --bg: #070c16;
+  --bg-soft: #0b1322;
+  --surface: #0f1a2d;
+  --surface-2: #142238;
+  --border: #22314c;
+  --border-soft: #1a2740;
+  --blue: #3d8bff;
+  --blue-soft: #7db4ff;
+  --red: #ff3d5e;
+  --red-soft: #ff8095;
+  --amber: #ffb020;
+  --green: #2fd6a5;
+  --violet: #8b7bff;
+  --radius: 16px;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+  --sans: "SF Pro Text", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --display: "SF Pro Display", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --shadow: 0 24px 60px -30px rgba(0, 0, 0, 0.8);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  background: var(--bg);
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 520px at 10% -12%, rgba(61, 139, 255, 0.15), transparent 62%),
+    radial-gradient(820px 480px at 94% -4%, rgba(255, 61, 94, 0.1), transparent 62%),
+    radial-gradient(760px 520px at 52% 112%, rgba(139, 123, 255, 0.08), transparent 64%);
+}
+
+::selection {
+  background: rgba(61, 139, 255, 0.35);
+  color: #fff;
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--display);
+  letter-spacing: -0.02em;
+}
+
+a {
+  color: var(--blue-soft);
+}
+
+.icon {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.icon--sm {
+  width: 14px;
+  height: 14px;
+}
+
+.icon--lg {
+  width: 22px;
+  height: 22px;
+}
+
+article {
+  margin: 0;
+  padding: 0;
+  background: none;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Checkered tape motif. */
+.checker {
+  background-image:
+    repeating-conic-gradient(rgba(255, 255, 255, 0.9) 0% 25%, transparent 0% 50%);
+  background-size: 12px 12px;
+  opacity: 0.07;
+}
+
+/* Siren lightbar. */
+.lightbar {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 6px;
+  background: #04080f;
+  border: 1px solid #1d2b44;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 4px 14px -8px rgba(0, 0, 0, 0.9);
+}
+
+.light {
+  width: 17px;
+  height: 6px;
+  border-radius: 2px;
+}
+
+.light--blue {
+  background: linear-gradient(180deg, #a8cdff, #2f6fe0);
+  animation: flash-blue 1.8s ease-in-out infinite;
+}
+
+.light--red {
+  background: linear-gradient(180deg, #ffb3c0, #e0223f);
+  animation: flash-red 1.8s ease-in-out infinite;
+}
+
+@keyframes flash-blue {
+  0%,
+  42% {
+    filter: brightness(1.45);
+    box-shadow: 0 0 12px 2px rgba(61, 139, 255, 0.85);
+  }
+  50%,
+  100% {
+    filter: brightness(0.55);
+    box-shadow: 0 0 2px rgba(61, 139, 255, 0.15);
+  }
+}
+
+@keyframes flash-red {
+  0%,
+  42% {
+    filter: brightness(0.55);
+    box-shadow: 0 0 2px rgba(255, 61, 94, 0.15);
+  }
+  50%,
+  100% {
+    filter: brightness(1.45);
+    box-shadow: 0 0 12px 2px rgba(255, 61, 94, 0.85);
+  }
+}
+
+/* Buttons. */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: 600 13px/1 var(--sans);
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  cursor: pointer;
+  transition:
+    transform 0.18s var(--ease),
+    border-color 0.18s,
+    background 0.18s,
+    box-shadow 0.18s;
+  box-shadow: none;
+}
+
+.btn:hover {
+  border-color: #31456a;
+  background: #182846;
+  transform: translateY(-1px);
+}
+
+.btn:active {
+  transform: translateY(0);
+}
+
+.btn:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.btn[disabled],
+.btn[aria-disabled="true"] {
+  opacity: 0.42;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, #4d97ff, #2b66d6);
+  border-color: #5a9dff;
+  color: #fff;
+  box-shadow: 0 10px 26px -14px rgba(61, 139, 255, 0.95);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(180deg, #5ea3ff, #3372e6);
+  border-color: #79b2ff;
+  box-shadow: 0 14px 30px -14px rgba(61, 139, 255, 1);
+}
+
+.btn-danger {
+  background: linear-gradient(180deg, #ff5470, #d61f3e);
+  border-color: #ff6a83;
+  color: #fff;
+  box-shadow: 0 10px 26px -14px rgba(255, 61, 94, 0.9);
+}
+
+.btn-danger:hover {
+  background: linear-gradient(180deg, #ff6a83, #e02b49);
+  border-color: #ff8a9d;
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--border-soft);
+  color: var(--muted);
+}
+
+.btn-ghost:hover {
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.04);
+  border-color: var(--border);
+}
+
+.btn-sm {
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.btn-icon {
+  padding: 9px;
+  border-radius: 10px;
+}
+
+.btn .spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  border-top-color: #fff;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Chips and badges. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--muted);
+  font: 600 10px/1.2 var(--sans);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.chip .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 8px currentColor;
+}
+
+.chip--live {
+  color: var(--green);
+  border-color: rgba(47, 214, 165, 0.32);
+  background: rgba(47, 214, 165, 0.08);
+}
+
+.chip--danger {
+  color: var(--red-soft);
+  border-color: rgba(255, 61, 94, 0.34);
+  background: rgba(255, 61, 94, 0.08);
+}
+
+.chip--blue {
+  color: var(--blue-soft);
+  border-color: rgba(61, 139, 255, 0.34);
+  background: rgba(61, 139, 255, 0.08);
+}
+
+.chip--green {
+  color: var(--green);
+  border-color: rgba(47, 214, 165, 0.34);
+  background: rgba(47, 214, 165, 0.08);
+}
+
+.chip--amber {
+  color: var(--amber);
+  border-color: rgba(255, 176, 32, 0.32);
+  background: rgba(255, 176, 32, 0.08);
+}
+
+.chip--muted {
+  color: var(--faint);
+}
+
+.chip--locked {
+  color: var(--amber);
+  border-color: rgba(255, 176, 32, 0.34);
+  background: rgba(255, 176, 32, 0.07);
+}
+
+/* Engine badge. */
+.engine-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: 800 13px/1 var(--display);
+}
+
+.engine-badge[data-engine="google"] {
+  color: #8ab4f8;
+  border-color: rgba(138, 180, 248, 0.3);
+  background: rgba(138, 180, 248, 0.09);
+}
+
+.engine-badge[data-engine="bing"] {
+  color: #4dd6a4;
+  border-color: rgba(77, 214, 164, 0.3);
+  background: rgba(77, 214, 164, 0.09);
+}
+
+.engine-badge[data-engine="yandex"] {
+  color: #ff7a8f;
+  border-color: rgba(255, 122, 143, 0.3);
+  background: rgba(255, 122, 143, 0.09);
+}
+
+/* Siren mode: everything gets a little more urgent. */
+body.siren .light--blue,
+body.siren .light--red {
+  animation-duration: 0.55s;
+}
+
+body.siren .topbar {
+  border-bottom-color: rgba(255, 61, 94, 0.35);
+  box-shadow: 0 1px 0 rgba(255, 61, 94, 0.2), 0 18px 50px -30px rgba(255, 61, 94, 0.5);
+}
+
+body.siren .radar::before,
+body.siren .radar-sweep {
+  animation-duration: 2.2s;
+}
+
+/* Utility. */
+.mono {
+  font-family: var(--mono);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
