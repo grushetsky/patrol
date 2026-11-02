@@ -10,7 +10,7 @@ Or serve them over HTTP with mise:
 
 ```bash
 mise run app    # http://localhost:4173
-mise run pitch  # http://localhost:4174/pitch.html
+mise run pitch  # http://localhost:4174
 ```
 
 ## What to Try

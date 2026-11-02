@@ -1,15 +1,16 @@
 [tools]
 harper-cli = "3.0.0"
 hk = "2.11.0"
+miniserve = "0.35.0"
 shellcheck = "0.11.0"
 taplo = "0.10.0"
 
 [tasks.app]
 description = "Run the service prototype at http://localhost:4173"
 dir = "prototype"
-run = "python3 -m http.server 4173"
+run = "miniserve --interfaces 127.0.0.1 --port 4173 --index index.html ."
 
 [tasks.pitch]
-description = "Run the pitch deck at http://localhost:4174/pitch.html"
+description = "Run the pitch deck at http://localhost:4174"
 dir = "prototype"
-run = "python3 -m http.server 4174"
+run = "miniserve --interfaces 127.0.0.1 --port 4174 --index pitch.html ."
