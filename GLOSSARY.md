@@ -94,9 +94,17 @@ _Avoid_: Domain, site.
 The eTLD+1 grouping of a host, used to aggregate reputation and reporting across subdomains.
 _Avoid_: Root domain, base domain, apex domain.
 
+**Capture** (`Capture`):
+The act of fetching one URL and recording what it served. Its reason is detection, review, or pre-handoff, and its outcome is captured, dead, blocked, or error.
+_Avoid_: Fetch, crawl, scrape, snapshot.
+
 **Evidence** (`Evidence`):
 An immutable, content-addressed record of what a URL served at one capture time. Evidence is captured per URL and shared by every violation that cites that URL.
 _Avoid_: Capture, snapshot, artefact, proof.
+
+**Legal hold** (`LegalHold`):
+A recorded restriction that suspends deletion of the evidence it covers until an operator releases it.
+_Avoid_: Retention lock, freeze, preservation flag.
 
 ### Notices and submission
 
@@ -150,3 +158,8 @@ The journey from discovery to closure crosses four lifecycle records rather than
 - A scan targets exactly one title group and exactly one engine; a notice targets exactly one recipient.
 - A search result is never edited; a candidate deduplicates results across queries and engines.
 - Evidence is immutable. A later capture is a new evidence record and never replaces an earlier one.
+- A capture records exactly one reason and exactly one outcome; an absence is recorded, never omitted.
+- Every violation cites at least one captured evidence record for its page; a violation whose newest capture is dead is flagged for the operator, never dropped.
+- A notice cites only captures that existed before its approval, and a later capture never changes what a cited notice claims.
+- An allowlisted URL is never captured.
+- Purging removes evidence bytes after their retention window and leaves the record that explains them; a legal hold suspends every purge it covers.

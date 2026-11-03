@@ -81,7 +81,7 @@ Precedence runs from the rights holder's official domains, to global neutral sou
 
 Learning proposes entries and an operator confirms them. An `authorized_here` decision pre-fills a licensed destination entry scoped to the candidate's tracked title or title group and the candidate's territory. Three consecutive `not_a_violation` decisions on the same registrable domain within 90 days propose a neutral host entry. Nothing is added silently.
 
-An allowlist hit routes the candidate to an allowlist review task, where the operator can correct or remove the entry; it never routes to a notice.
+An allowlist hit routes the candidate to an allowlist review task, where the operator can correct or remove the entry; it never routes to a notice. The check runs against the URL before any capture, so an allowlisted URL is never fetched and its row carries no evidence, per "_docs/design/evidence-capture.md_".
 
 ## Dismissal and reopening
 
@@ -103,7 +103,7 @@ The queue orders by score descending, then SERP rank ascending, then observation
 - The tracked title, engine, query, locale, territory, and SERP rank.
 - The requested URL, final URL, host, and registrable domain.
 - The score and its components: title match, each strong signal, and reputation.
-- Evidence thumbnails and links: screenshot, captured HTML hash, and capture time.
+- Evidence thumbnails and links: screenshot, captured HTML hash, and capture time; an allowlisted row shows the matching entry instead, since it is never captured.
 - Allowlist status with the matching entry's kind and scope.
 - Host reputation and the pair's prior review decisions.
 
