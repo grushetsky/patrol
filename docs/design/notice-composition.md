@@ -57,7 +57,7 @@ An operator approves a draft by confirming that every cited violation was review
 3. Queues the `pre_handoff` capture for every cited URL whose newest live capture is older than seven days, as "_docs/design/evidence-capture.md_" requires.
 4. Creates one `Submission` in state `Pending` with the handoff pack once the captures settle.
 
-Any `Operator` may approve; the approving operator is recorded. The role set is settled by "Operator authentication and roles", and the signatory is a profile rather than an account.
+Any `Operator` may approve; the approving operator is recorded. The role set is settled in "_docs/design/operator-authentication.md_", and the signatory is a profile rather than an account.
 
 A draft may be **withdrawn** by an operator while it is still a draft, and an approved notice may be withdrawn while its submission is still `Pending`. Withdrawal releases the cited violations for a later draft. Once a submission is `Delivered` or `Acknowledged`, the notice can no longer be withdrawn; a wrong notice is corrected by a new notice, and the recipient's process, not Patrol's, handles the old one.
 
@@ -91,7 +91,7 @@ The operator either files the notice and records what the recipient returned, or
 
 The operator's attestation that the notice was filed as presented is mandatory. Without it the submission stays `Pending`. `Delivered` means the operator filed and supplied an attestation; `Acknowledged` means the recipient's identifier is recorded; `Failed` means the operator reported a recipient error and the pack can be retried.
 
-Retries, quota accounting for submission attempts, and the rule that a retry never double-submits belong to "Scan cadence, quota budget, and re-check policy".
+Retries, quota accounting for submission attempts, and the rule that a retry never double-submits are settled in "_docs/design/scan-scheduling.md_".
 
 ## Re-verification before handoff
 

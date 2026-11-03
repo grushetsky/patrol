@@ -47,9 +47,9 @@ The adapter owns request shaping, paging, parsing, retry, and the provider's err
 
 ## Modes and budget
 
-Scheduled scans use the asynchronous route: DataForSEO's standard queue and Yandex's deferred mode, at $0.60 and $0.25 per 1,000. Operator-triggered re-checks may use the synchronous routes — DataForSEO priority or live, Yandex synchronous — where a result is needed within the session. Ten thousand queries each per month cost $6.00 for Google and $2.50 for Yandex.
+Scheduled scans and operator-triggered re-checks both use the asynchronous route: DataForSEO's standard queue and Yandex's deferred mode, at $0.60 and $0.25 per 1,000. The synchronous routes — DataForSEO priority or live, Yandex synchronous — stay off in v1: they cost two to sixteen times the asynchronous price and buy latency that a scan whose results a person reviews later does not need. Ten thousand queries each per month cost $6.00 for Google and $2.50 for Yandex.
 
-These figures feed "Scan cadence, quota budget, and re-check policy".
+These figures feed "_docs/design/scan-scheduling.md_" and "_docs/design/budget-envelope.md_".
 
 ## When a route fails
 

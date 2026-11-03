@@ -71,7 +71,7 @@ Alerts go to every operator through the UI and to the configured operator mailbo
 | Threshold | Severity | Meaning and action |
 | --- | --- | --- |
 | 75% of the monthly allowance | Warning | The month is running hot; review cadence, group priorities, and open violations |
-| 90% of the scan share or of the re-check share | Critical | Degrade in the order "Budget envelope and supported title count" sets: low-priority groups stop scanning, re-checks already starve first |
+| 90% of the scan share or of the re-check share | Critical | Degrade in the order "_docs/design/budget-envelope.md_" sets: low-priority groups stop scanning, re-checks already starve first |
 | 100% of a bucket | Critical | New work in that bucket queues with `budget_exhausted`; nothing is truncated or silently skipped |
 | Provider balance below 10% of the engine's monthly cap, or below one day's average burn where that is larger | Critical | Top up the provider; the route disables when the balance actually runs out |
 | An engine disabled by a route failure | Critical | The engine scans nothing until it recovers; manual URL entry keeps working |

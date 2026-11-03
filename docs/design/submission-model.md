@@ -28,7 +28,7 @@ An approved notice with no operator action stays `Pending` forever. Nothing ages
 3. Patrol creates one `Submission` per delivery the recipient's channel requires, in state `Pending`, carrying the resolved field values and the generated upload file.
 4. The operator submits in their own signed-in browser session, then records the acknowledgement: the reference number or ticket id where the recipient issues one, and an attestation that they submitted.
 5. The submission moves to `Delivered` or `Acknowledged` on that input, or to `Failed` when the operator reports a recipient error; `Rejected` records a refusal.
-6. Retries, quota accounting, and the rule that a retry never double-submits belong to "Scan cadence, quota budget, and re-check policy".
+6. Retries, quota accounting, and the rule that a retry never double-submits are settled in "_docs/design/scan-scheduling.md_".
 
 ## Composition trigger replaces submission mode
 
