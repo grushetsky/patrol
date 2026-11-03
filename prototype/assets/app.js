@@ -73,6 +73,9 @@
         resolved: [1, 2, 1, 2, 3, 2, 4, 3, 2, 3, 4, 2, 3, 2],
         notices: [0, 1, 0, 1, 2, 1, 2, 2, 1, 2, 1, 1, 2, 1],
       },
+      trendRange: 14,
+      trendHidden: [],
+      trendSelected: null,
       deepseekBrief: null,
       deepseekBriefMode: null,
       deepseekLoading: false,
@@ -513,9 +516,44 @@
 
 
   /* Analytics and DeepSeek. */
+  function trendDayLabel(index, count) {
+    return index === count - 1 ? t("app.chart.today") : t("app.chart.daysAgo", { n: count - 1 - index });
+  }
+
+  function trendInspector(values) {
+    return `<span class="trend-inspector-date">${esc(values.label)}</span><span class="trend-inspector-values">${t("app.chart.dayValues", {
+      detected: values.detected,
+      resolved: values.resolved,
+      notices: values.notices,
+    })}</span>`;
+  }
+
+  function resetTrendInspector() {
+    const inspector = document.getElementById("trend-inspector");
+    if (!inspector) return;
+    const selected = document.querySelector('.trend-hit[data-selected="true"]');
+    inspector.innerHTML = selected
+      ? trendInspector(selected.dataset)
+      : `<span class="trend-inspector-hint">${esc(t("app.chart.inspect"))}</span>`;
+  }
+
   function renderInsights() {
-    const { detected, resolved, notices } = state.trend;
+    const all = state.trend;
+    const range = state.trendRange === 7 ? 7 : 14;
+    const start = all.detected.length - range;
+    const detected = all.detected.slice(start);
+    const resolved = all.resolved.slice(start);
+    const notices = all.notices.slice(start);
     const count = detected.length;
+    const hidden = new Set(
+      (Array.isArray(state.trendHidden) ? state.trendHidden : []).filter((series) =>
+        ["detected", "resolved", "notices"].includes(series),
+      ),
+    );
+    const selected =
+      Number.isInteger(state.trendSelected) && state.trendSelected >= 0 && state.trendSelected < count
+        ? state.trendSelected
+        : null;
     const width = 720;
     const height = 220;
     const pad = { left: 38, right: 18, top: 18, bottom: 32 };
@@ -543,7 +581,7 @@
     const labelIndexes = [0, Math.floor((count - 1) / 2), count - 1];
     const xLabels = labelIndexes
       .map((index) => {
-        const label = index === count - 1 ? t("app.chart.today") : t("app.chart.daysAgo", { n: count - 1 - index });
+        const label = trendDayLabel(index, count);
         const anchor = index === 0 ? "start" : index === count - 1 ? "end" : "middle";
         return `<text class="trend-axis" x="${x(index).toFixed(1)}" y="${height - 8}" text-anchor="${anchor}">${esc(label)}</text>`;
       })
@@ -558,26 +596,72 @@
       ["detected", detected],
       ["resolved", resolved],
     ]
+      .filter(([series]) => !hidden.has(series))
       .map(([series, values]) => {
         const value = values[values.length - 1];
         return `<circle class="trend-dot trend-dot--${series}" cx="${x(count - 1).toFixed(1)}" cy="${y(value).toFixed(1)}" r="3.5" />`;
       })
       .join("");
-    const chart = `<svg class="trend-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(
+    const hitWidth = plotWidth / count;
+    const hits = detected
+      .map((value, index) => {
+        const label = trendDayLabel(index, count);
+        return `<rect class="trend-hit" data-action="trend-select" data-index="${index}" data-label="${esc(
+          label,
+        )}" data-detected="${detected[index]}" data-resolved="${resolved[index]}" data-notices="${notices[index]}" x="${(
+          pad.left +
+          index * hitWidth
+        ).toFixed(1)}" y="${pad.top}" width="${hitWidth.toFixed(1)}" height="${plotHeight}" fill="transparent" ${
+          selected === index ? 'data-selected="true"' : ""
+        } />`;
+      })
+      .join("");
+    const guide =
+      selected === null
+        ? ""
+        : `<line class="trend-guide" x1="${x(selected).toFixed(1)}" x2="${x(selected).toFixed(1)}" y1="${pad.top}" y2="${bottom}" />`;
+    const chart = `<svg class="trend-chart" data-count="${count}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(
       t("app.chart.aria", { detected: totalDetected, resolved: totalResolved }),
     )}">
         ${grid}
-        <path class="trend-area" d="${area}" />
-        <path class="trend-line trend-line--detected" d="${path(detected)}" />
-        <path class="trend-line trend-line--resolved" d="${path(resolved)}" />
-        <path class="trend-line trend-line--notices" d="${path(notices)}" />
+        ${guide}
+        ${hidden.has("detected") ? "" : `<path class="trend-area" d="${area}" />`}
+        ${hidden.has("detected") ? "" : `<path class="trend-line trend-line--detected" d="${path(detected)}" />`}
+        ${hidden.has("resolved") ? "" : `<path class="trend-line trend-line--resolved" d="${path(resolved)}" />`}
+        ${hidden.has("notices") ? "" : `<path class="trend-line trend-line--notices" d="${path(notices)}" />`}
         ${dots}
+        ${hits}
         ${xLabels}
       </svg>`;
+    const rangeSwitch = `<div class="trend-range-switch" role="group" aria-label="${esc(t("app.chart.range"))}">
+      <button class="trend-range-btn" type="button" data-action="trend-range" data-range="7" aria-pressed="${range === 7}">${t("app.chart.range7")}</button>
+      <button class="trend-range-btn" type="button" data-action="trend-range" data-range="14" aria-pressed="${range === 14}">${t("app.chart.range14")}</button>
+    </div>`;
+    const legend = [
+      ["detected", "app.chart.detected", "legend-dot--detected"],
+      ["resolved", "app.chart.resolved", "legend-dot--resolved"],
+      ["notices", "app.chart.notices", "legend-dot--notices"],
+    ]
+      .map(
+        ([series, key, dot]) =>
+          `<button class="trend-legend-item" type="button" data-action="trend-series" data-series="${series}" aria-pressed="${
+            hidden.has(series) ? "false" : "true"
+          }"><i class="legend-dot ${dot}"></i>${t(key)}</button>`,
+      )
+      .join("");
+    const inspector =
+      selected === null
+        ? `<span class="trend-inspector-hint">${esc(t("app.chart.inspect"))}</span>`
+        : trendInspector({
+            label: trendDayLabel(selected, count),
+            detected: detected[selected],
+            resolved: resolved[selected],
+            notices: notices[selected],
+          });
 
     return `<div class="insight-grid">
       <section class="panel trend-panel">
-        <div class="panel-head"><span>${t("app.chart.title")}</span><span class="trend-range">${t("app.chart.range")}</span></div>
+        <div class="panel-head"><span>${t("app.chart.title")}</span>${rangeSwitch}</div>
         <div class="trend-body">
           <div class="trend-kpis">
             <div class="trend-kpi"><span class="trend-kpi-num">${avgDetected}</span><span class="trend-kpi-label">${t("app.chart.detectedRate")}</span></div>
@@ -585,11 +669,8 @@
             <div class="trend-kpi"><span class="trend-kpi-num">${resolutionRate}%</span><span class="trend-kpi-label">${t("app.chart.resolutionRate")}</span></div>
           </div>
           ${chart}
-          <div class="trend-legend">
-            <span><i class="legend-dot legend-dot--detected"></i>${t("app.chart.detected")}</span>
-            <span><i class="legend-dot legend-dot--resolved"></i>${t("app.chart.resolved")}</span>
-            <span><i class="legend-dot legend-dot--notices"></i>${t("app.chart.notices")}</span>
-          </div>
+          <div class="trend-legend">${legend}</div>
+          <div class="trend-inspector" id="trend-inspector" aria-live="polite">${inspector}</div>
         </div>
       </section>
       ${renderDeepSeekCard()}
@@ -1338,6 +1419,38 @@
     if (!trigger) return;
     const action = trigger.dataset.action;
 
+    if (action === "trend-range") {
+      const range = Number(trigger.dataset.range);
+      if (range === 7 || range === 14) {
+        state.trendRange = range;
+        state.trendSelected = null;
+        render();
+      }
+      return;
+    }
+    if (action === "trend-series") {
+      const series = trigger.dataset.series;
+      if (!["detected", "resolved", "notices"].includes(series)) return;
+      const hidden = new Set(state.trendHidden);
+      if (hidden.has(series)) hidden.delete(series);
+      else if (hidden.size >= 2) {
+        toast(t("app.chart.keepSeries"), "amber", "i-gauge");
+        return;
+      } else hidden.add(series);
+      state.trendHidden = [...hidden];
+      state.trendSelected = null;
+      render();
+      return;
+    }
+    if (action === "trend-select") {
+      const index = Number(trigger.dataset.index);
+      if (Number.isInteger(index)) {
+        state.trendSelected = state.trendSelected === index ? null : index;
+        render();
+      }
+      return;
+    }
+
     if (action === "scan") runScan();
     if (action === "reset") reset();
     if (action === "review") handleReview(trigger.dataset.id, trigger.dataset.decision, trigger);
@@ -1379,6 +1492,22 @@
         );
       }
     }
+  });
+
+  document.addEventListener("pointerover", (event) => {
+    if (!(event.target instanceof Element)) return;
+    const hit = event.target.closest(".trend-hit");
+    if (!hit) return;
+    const inspector = document.getElementById("trend-inspector");
+    if (inspector) inspector.innerHTML = trendInspector(hit.dataset);
+  });
+
+  document.addEventListener("pointerout", (event) => {
+    if (!(event.target instanceof Element)) return;
+    const chart = event.target.closest(".trend-chart");
+    if (!chart) return;
+    if (event.relatedTarget instanceof Node && chart.contains(event.relatedTarget)) return;
+    resetTrendInspector();
   });
 
   document.addEventListener("submit", (event) => {
