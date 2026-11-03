@@ -6,9 +6,9 @@ The prototype is a rough artifact, not production UI. Its spacing, typography, a
 
 ## Shell
 
-Six sections share one navigation, each a hash route: Dashboard, Review, Violations, Notices, Titles, and Settings. Review, Violations, and Notices carry a badge with their pending count, where pending is candidates awaiting review, open violations, and draft notices respectively.
+Six sections form the interface, each a hash route: Dashboard, Review, Violations, Notices, Titles, and Settings. The tab bar holds the first five; Settings is reached from the footer. Review, Violations, and Notices carry a badge with their pending count, where pending is candidates awaiting review, open violations, and draft notices respectively.
 
-A persistent top bar holds the section tabs, the language switch, the theme toggle, and Run scans. Settings is reachable from the footer as well as the tabs, and the footer carries the reset control. The prototype's language switch (English and Russian) proves that strings externalise; the product's UI language is still open.
+A persistent top bar holds the section tabs, the language switch, the theme toggle, and Run scans. The footer carries Settings and the reset control. The prototype's language switch (English and Russian) proves that strings externalise; the product's UI language is still open.
 
 ## Dashboard
 
