@@ -101,7 +101,7 @@ An organisation to which Patrol submits notices. The recipients are Google, Bing
 _Avoid_: Target, addressee, engine, platform.
 
 **Recipient profile** (`RecipientProfile`):
-The configuration for submitting to one recipient: channel, required fields, limits, account, and submission mode.
+The configuration for one recipient's submission channel: its channel, required fields, limits, account, eligibility, and composition trigger.
 _Avoid_: Adapter, integration, connector.
 
 **Notice** (`Notice`):
@@ -109,7 +109,7 @@ An immutable document addressed to one recipient, claiming one or more violation
 _Avoid_: Takedown, DMCA request, complaint, claim.
 
 **Submission** (`Submission`):
-One delivery attempt of an approved notice through a recipient's channel, recording the acting operator, the mode, the timestamp, and the recipient's response.
+One delivery attempt of an approved notice through a recipient's channel, performed by an operator and recording that operator, the time, and the recipient's response.
 _Avoid_: Delivery, send, filing.
 
 ## Lifecycle
@@ -139,6 +139,8 @@ The journey from discovery to closure crosses four lifecycle records rather than
 - A notice cites one or more violations of exactly one rights holder and is addressed to exactly one recipient.
 - A notice records exactly one signatory at approval.
 - A submission cites exactly one approved notice. An approved notice is never edited; a change supersedes it with a new notice.
+- A submission is performed by an operator; no scheduled process delivers a notice to a recipient.
+- A notice is handed off only under a recipient profile that is eligible for the rights holder's territory.
 - A scan targets exactly one title group and exactly one engine; a notice targets exactly one recipient.
 - A search result is never edited; a candidate deduplicates results across queries and engines.
 - Evidence is immutable. A later capture is a new evidence record and never replaces an earlier one.
