@@ -7,6 +7,7 @@
   "scripts": {
     "compile": "tsp compile tsp/main.tsp",
     "check": "tsp compile tsp/main.tsp && node scripts/check-schemas.mjs",
+    "verify": "npm --prefix verify run check",
     "clean": "rm -rf generated"
   },
   "devDependencies": {

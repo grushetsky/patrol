@@ -1,0 +1,33 @@
+{
+  "name": "@patrol/contract-verify",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Compiles the generated OpenAPI client against TanStack Start and proves the emitted JSON Schema validates both request and response payloads.",
+  "scripts": {
+    "types": "openapi-typescript ../generated/openapi/Patrol.openapi.yaml -o src/generated/openapi.d.ts",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "check:server": "node scripts/e2e.ts",
+    "check": "npm run types && npm run build && npm run typecheck && npm run check:server"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "5.105.3",
+    "@tanstack/react-router": "1.170.46",
+    "@tanstack/react-start": "1.169.4",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "openapi-fetch": "0.17.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.2.1",
+    "openapi-typescript": "7.13.0",
+    "typescript": "5.9.3",
+    "vite": "8.3.5"
+  }
+}

@@ -30,6 +30,7 @@ The TypeSpec domain model encodes what a type can enforce; relational invariants
 | A notice cites only captures that existed before approval, and later captures never change it | `ApprovedNotice.content` holds `EvidenceCitation.capturedAt`; no capture reference is mutable. |
 | An allowlisted URL is never captured | The allowlist check runs before `Evidence` is requested; the model records the hit on the candidate and the review row carries no evidence. |
 | Purging removes bytes, leaves the record, and a legal hold suspends it | `Evidence.purgedAt` and `purgeReason` mark the bytes; `LegalHold` carries its scope, reason, and release. |
+| A host objection suspends every capture of that host until an operator clears it | `HostObjection` carries the host, reason, recording time, and the optional clearance with its operator and reason; no delete path exists. |
 
 ## Lifecycle transitions
 
@@ -56,6 +57,7 @@ The four record lifecycles are separate state machines, per "_docs/adr/0003-spli
 - `Evidence.failureReason IS NOT NULL` whenever `Evidence.outcome <> 'captured'`.
 - `AllowlistEntry.territory IS NOT NULL` when `kind = licensed_destination`; `title_group_id` is set exactly when the scope is a title group, and `tracked_title_id` exactly when it is a tracked title.
 - `TrackedTitle.originalVariantId` belongs to the same title; a merge is allowed only while the duplicate has no candidate and no violation.
+- At most one active `HostObjection` exists per host: `UNIQUE (host) WHERE cleared_at IS NULL`. A cleared objection is never deleted, and a new one may be recorded afterwards.
 
 ## Deliberate omissions
 

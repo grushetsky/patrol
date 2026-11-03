@@ -2,7 +2,7 @@ import { readFile } from "node:fs/promises";
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
 
-const bundlePath = new URL("../generated/json-schema/patrol-domain", import.meta.url);
+const bundlePath = new URL("../generated/json-schema/patrol", import.meta.url);
 const bundle = JSON.parse(await readFile(bundlePath, "utf8"));
 
 const ajv = new Ajv2020({ strict: false, allErrors: true });
@@ -92,6 +92,57 @@ const titleVariant = {
   addedAt: at,
 };
 
+const newTitle = {
+  titleGroupId: id(8),
+  originalVariant: { text: "Пример", language: "ru", script: "Cyrl" },
+  releaseYear: 2024,
+  titleType: "film",
+  additionalVariants: [],
+  externalIdentifiers: [],
+  source: "operator_knowledge",
+};
+
+const reviewDecision = {
+  action: "violation",
+  evidenceIds: [id(9)],
+};
+
+const createNotice = {
+  recipient: "google",
+  recipientProfileId: id(10),
+  violationIds: [id(11)],
+};
+
+const approvalAttestation = {
+  reviewedViolations: true,
+  currentStatements: true,
+  authorizedSignatory: true,
+};
+
+const googleAcknowledgement = {
+  recipient: "google",
+  referenceNumber: "REF-123456",
+  dashboardUrl: "https://removals.example.test/1",
+};
+
+const yandexAcknowledgement = {
+  recipient: "yandex",
+  messageId: "<reply@yandex.example>",
+  replyDate: "2026-11-03",
+};
+
+const chartTiles = { countToday: 3, groupsAffectedToday: 1, peakInWindow: 5 };
+const titlesWithViolationsChart = {
+  metric: "titles_with_violations",
+  windowDays: 14,
+  requestedGrouping: "none",
+  appliedGrouping: "none",
+  groupingFallback: false,
+  days: ["2026-10-21", "2026-10-22"],
+  series: [{ key: "total", label: "Total", values: [2, 3] }],
+  tiles: chartTiles,
+};
+
 const cases = [
   ["approved notice with snapshots", "ApprovedNotice", approvedNotice, true],
   ["approved notice without the approver or snapshots", "ApprovedNotice", { state: "approved" }, false],
@@ -124,6 +175,53 @@ const cases = [
   ["draft alone", "DraftNotice", { state: "draft" }, true],
   ["title variant", "TitleVariant", titleVariant, true],
   ["negative monthly cap", "EngineBudgetCap", { engine: "google", currency: "usd", monthlyCapMinor: -1, monthlyAllowanceUnits: 0 }, false],
+  ["create tracked title", "CreateTrackedTitleRequest", newTitle, true],
+  ["create tracked title before 1878", "CreateTrackedTitleRequest", { ...newTitle, releaseYear: 1800 }, false],
+  ["create tracked title without an original variant", "CreateTrackedTitleRequest", { ...newTitle, originalVariant: undefined }, false],
+  ["create tracked title with an unknown type", "CreateTrackedTitleRequest", { ...newTitle, titleType: "movie" }, false],
+  ["review decision", "ReviewDecisionRequest", reviewDecision, true],
+  ["review decision with an unknown action", "ReviewDecisionRequest", { ...reviewDecision, action: "remove" }, false],
+  ["review decision without evidence", "ReviewDecisionRequest", { action: "violation" }, false],
+  ["create notice", "CreateNoticeRequest", createNotice, true],
+  ["create notice to an unknown recipient", "CreateNoticeRequest", { ...createNotice, recipient: "duckduckgo" }, false],
+  ["approval attestation", "ApprovalAttestation", approvalAttestation, true],
+  ["approval attestation with a refusal", "ApprovalAttestation", { ...approvalAttestation, currentStatements: false }, false],
+  ["submission attestation", "SubmissionAttestation", { filedAsPresented: true, statementVersion: "1" }, true],
+  ["submission attestation without filing", "SubmissionAttestation", { filedAsPresented: false, statementVersion: "1" }, false],
+  ["google acknowledgement", "GoogleAcknowledgement", googleAcknowledgement, true],
+  ["google acknowledgement without its dashboard link", "GoogleAcknowledgement", { recipient: "google", referenceNumber: "REF-1" }, false],
+  ["yandex acknowledgement", "YandexAcknowledgement", yandexAcknowledgement, true],
+  ["titles with violations chart", "TitlesWithViolationsChart", titlesWithViolationsChart, true],
+  ["titles with violations chart under the wrong metric", "TitlesWithViolationsChart", { ...titlesWithViolationsChart, metric: "resolved_violations" }, false],
+  [
+    "host objection",
+    "HostObjection",
+    {
+      id: id(30),
+      host: "example.test",
+      registrableDomain: "example.test",
+      reason: "The host sent a cease-and-desist naming Patrol.",
+      source: "host_contact",
+      recordedAt: at,
+      affectedCandidateCount: 2,
+    },
+    true,
+  ],
+  [
+    "host objection without a reason",
+    "HostObjection",
+    {
+      id: id(30),
+      host: "example.test",
+      registrableDomain: "example.test",
+      source: "host_contact",
+      recordedAt: at,
+      affectedCandidateCount: 2,
+    },
+    false,
+  ],
+  ["error body", "ErrorBody", { code: "state_conflict", message: "The notice is already approved." }, true],
+  ["error body with an unknown code", "ErrorBody", { code: "exploded", message: "No." }, false],
 ];
 
 const failures = [];

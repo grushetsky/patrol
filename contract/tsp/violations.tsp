@@ -213,6 +213,49 @@ enum EvidenceArtifactKind {
   ExtractionSidecar: "extraction_sidecar",
 }
 
+@doc("How a host objection reached Patrol.")
+enum HostObjectionSource {
+  HostContact: "host_contact",
+  Operator: "operator",
+}
+
+@doc("A recorded objection from a host — a cease-and-desist, a block notice, or an abuse complaint naming Patrol — that suspends every capture of that host until an operator clears it. An objection is never deleted.")
+model HostObjection {
+  @doc("Patrol's own identifier.")
+  id: HostObjectionId;
+
+  @doc("The host whose captures are suspended.")
+  host: Host;
+
+  @doc("The host's registrable domain.")
+  registrableDomain: RegistrableDomain;
+
+  @doc("What the host said, or what Patrol observed, that stopped capture.")
+  reason: string;
+
+  @doc("How the objection reached Patrol.")
+  source: HostObjectionSource;
+
+  @doc("When the objection was recorded.")
+  recordedAt: utcDateTime;
+
+  @doc("The operator who recorded the objection, absent when the worker recorded it from a host response.")
+  recordedBy?: OperatorId;
+
+  @doc("How many candidates on the host were surfaced at the time of the objection.")
+  @minValue(0)
+  affectedCandidateCount: int32;
+
+  @doc("When an operator cleared the objection and reopened the host to capture.")
+  clearedAt?: utcDateTime;
+
+  @doc("The operator who cleared the objection.")
+  clearedBy?: OperatorId;
+
+  @doc("Why the objection was cleared.")
+  clearanceReason?: string;
+}
+
 @doc("A recorded restriction that suspends deletion of the evidence it covers until an operator releases it.")
 model LegalHold {
   @doc("Patrol's own identifier.")

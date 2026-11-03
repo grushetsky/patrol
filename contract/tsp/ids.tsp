@@ -65,6 +65,10 @@ scalar ReviewDecisionId extends string;
 @format("uuid")
 scalar ViolationId extends string;
 
+@doc("Identifier of a host objection that suspends captures of one host.")
+@format("uuid")
+scalar HostObjectionId extends string;
+
 @doc("Identifier of an evidence record, one per capture.")
 @format("uuid")
 scalar EvidenceId extends string;
