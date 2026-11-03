@@ -29,4 +29,4 @@ GitHub Pages serves the "_gh-pages_" branch at https://grushetsky.github.io/patr
 
 ## Demo Data
 
-The rights holder is Northlight Pictures. Titles, URLs, and evidence are fictional; hosts use the reserved `.example` domain.
+The rights holder is a fictional studio. Titles, URLs, and evidence are fictional; hosts use the reserved `.example` domain.

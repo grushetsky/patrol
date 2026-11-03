@@ -6,8 +6,8 @@
 
   const RECIPIENTS = {
     google: { name: "Google", glyph: "G" },
-    bing: { name: "Bing", glyph: "b" },
-    yandex: { name: "Yandex", glyph: "Y" },
+    bing: { name: "Bing", glyph: "B" },
+    yandex: { name: "Yandex", glyph: "Я" },
   };
 
   const DECISIONS = {
@@ -364,7 +364,6 @@
     const pending = state.candidates.length;
     const open = openViolations().length;
     const served = state.notices.filter((notice) => notice.submission && notice.submission.state === "acknowledged").length;
-    const pages = state.titles.length;
 
     const blips = [
       { cls: "blip--red", top: "24%", left: "63%", delay: "0s" },
@@ -378,16 +377,14 @@
       .map(
         ([id, meta]) => `
         <div class="engine-row">
-          <span class="engine-badge" data-engine="${id}">${meta.glyph}</span>
+          <span class="engine-badge" data-engine="${id}"><span class="engine-glyph">${meta.glyph}</span></span>
           <span class="name">${meta.name}</span>
-          <span class="status" aria-hidden="true"></span>
-          <span class="when">${esc(formatTime(state.engines[id].last))}</span>
         </div>`,
       )
       .join("");
 
     const activity = state.activity
-      .slice(0, 6)
+      .slice(0, 5)
       .map(
         (item) => `
         <div class="act" data-tone="${item.tone}">
@@ -396,22 +393,6 @@
           <span class="act-time">${esc(formatTime(item.time))}</span>
         </div>`,
       )
-      .join("");
-
-    const latest = state.candidates
-      .slice(0, 3)
-      .map((candidate) => {
-        const title = titleOf(candidate.titleId);
-        return `
-        <a class="mini-item" href="#/review">
-          <span class="mini-thumb">${icon("i-film", "icon--sm")}</span>
-          <span class="mini-main">
-            <span class="mini-title">${esc(title ? title.name : t("app.unknownTitle"))}</span>
-            <span class="mini-url">${esc(candidate.url)}</span>
-          </span>
-          <span class="mini-score">${candidate.score}%</span>
-        </a>`;
-      })
       .join("");
 
     const health = pending === 0 ? t("app.dashboard.queueClear") : t("app.common.pending", { n: pending });
@@ -424,10 +405,9 @@
       <section class="page">
         <header class="page-head">
           <div>
-            <p class="eyebrow"><span class="dot"></span>${timeNow()} · ${t("app.dashboard.allEngines")} · <span class="nowrap">${health}</span></p>
+            <p class="eyebrow"><span class="dot"></span>${timeNow()} · ${t("app.dashboard.allEngines")}<span class="nowrap"> · ${health}</span></p>
             <h1 class="page-title">${headline}</h1>
           </div>
-          <p class="head-note">${t("app.dashboard.note")}</p>
         </header>
 
         <div class="stats">
@@ -454,55 +434,31 @@
         </div>
 
         <div class="dash-grid">
-          <div class="dash-col">
-            <div class="panel">
-              <div class="panel-head"><span>${t("app.dashboard.activity")}</span><a href="#/notices">${t("app.dashboard.noticesLink")} ${icon("i-arrow", "icon--sm")}</a></div>
-              <div class="panel-body activity">${activity}</div>
+          <div class="radar-card">
+            <div class="panel-head"><span>${t("app.dashboard.liveSweep")}</span><span class="chip chip--live"><span class="dot"></span>${t("app.dashboard.watching")}</span></div>
+            <div class="radar-wrap">
+              <div class="radar">
+                <div class="radar-sweep"></div>
+                ${blips
+                  .map(
+                    (blip) =>
+                      `<span class="blip ${blip.cls}" style="top:${blip.top};left:${blip.left};animation-delay:${blip.delay}"></span>`,
+                  )
+                  .join("")}
+                <span class="radar-center">${icon("i-shield")}</span>
+              </div>
             </div>
-
-            <div class="panel">
-              <div class="panel-head"><span>${t("app.dashboard.latest")}</span><a href="#/review">${t("app.dashboard.reviewLink")} ${icon("i-arrow", "icon--sm")}</a></div>
-              <div class="panel-body">${
-                latest ||
-                `<p class="muted" style="padding:10px;font-size:12px">${t("app.dashboard.noCandidates")}</p>`
-              }</div>
+            <div class="radar-legend">
+              <span style="color:var(--red)"><i></i>${t("app.dashboard.violation")}</span>
+              <span style="color:var(--amber)"><i></i>${t("app.dashboard.candidate")}</span>
+              <span style="color:var(--blue)"><i></i>${t("app.dashboard.clean")}</span>
             </div>
+            <div class="engines">${engines}</div>
           </div>
 
-          <div class="dash-col">
-            <div class="radar-card">
-              <div class="panel-head"><span>${t("app.dashboard.liveSweep")}</span><span class="chip chip--live"><span class="dot"></span>${t("app.dashboard.watching")}</span></div>
-              <div class="radar-wrap">
-                <div class="radar">
-                  <div class="radar-sweep"></div>
-                  ${blips
-                    .map(
-                      (blip) =>
-                        `<span class="blip ${blip.cls}" style="top:${blip.top};left:${blip.left};animation-delay:${blip.delay}"></span>`,
-                    )
-                    .join("")}
-                  <span class="radar-center">${icon("i-shield")}</span>
-                </div>
-              </div>
-              <div class="radar-legend">
-                <span style="color:var(--red)"><i></i>${t("app.dashboard.violation")}</span>
-                <span style="color:var(--amber)"><i></i>${t("app.dashboard.candidate")}</span>
-                <span style="color:var(--blue)"><i></i>${t("app.dashboard.clean")}</span>
-              </div>
-              <div class="engines">${engines}</div>
-            </div>
-
-            <div class="panel">
-              <div class="panel-head"><span>${t("app.dashboard.guardrails")}</span><span class="chip chip--muted">${tn("app.common.titles", pages)}</span></div>
-              <div class="panel-body" style="padding:14px 16px">
-                <p class="muted" style="margin:0 0 10px;font-size:12px">${t("app.dashboard.guardrailsNote")}</p>
-                <div class="candidate-meta">
-                  <span class="chip chip--blue">${icon("i-lock", "icon--sm")}${t("app.dashboard.allowlistEnforced")}</span>
-                  <span class="chip">${t("app.dashboard.immutableEvidence")}</span>
-                  <span class="chip">${t("app.dashboard.oneQueue")}</span>
-                </div>
-              </div>
-            </div>
+          <div class="panel activity-panel">
+            <div class="panel-head"><span>${t("app.dashboard.activity")}</span><a href="#/notices">${t("app.dashboard.noticesLink")} ${icon("i-arrow", "icon--sm")}</a></div>
+            <div class="panel-body activity">${activity}</div>
           </div>
         </div>
       </section>`;
@@ -525,7 +481,6 @@
             <p class="eyebrow"><span class="dot"></span>${t("app.review.eyebrow")} · ${t("app.common.pending", { n: state.candidates.length })}</p>
             <h1 class="page-title">${t("app.review.title")}</h1>
           </div>
-          <p class="head-note">${t("app.review.note")}</p>
         </header>
         <div class="queue" id="queue">${cards || empty}</div>
       </section>`;
@@ -536,13 +491,13 @@
     const engine = engineOf(candidate.engine);
     const level = scoreLevel(candidate.score);
     const locked = candidate.allowlisted;
-    const actions = Object.entries(DECISIONS)
-      .map(
-        ([decision, meta]) => `
-        <button class="btn btn-ghost btn-sm" type="button" data-action="review" data-id="${candidate.id}" data-decision="${decision}">
+    const menuActions = ["wrong", "authorized", "dead"]
+      .map((decision) => {
+        const meta = DECISIONS[decision];
+        return `<button class="btn btn-ghost btn-sm" type="button" data-action="review" data-id="${candidate.id}" data-decision="${decision}">
           ${t(meta.labelKey)}
-        </button>`,
-      )
+        </button>`;
+      })
       .join("");
 
     return `
@@ -558,14 +513,17 @@
           <div class="candidate-meta">
             <span class="chip chip--blue">${icon("i-globe", "icon--sm")}${engine.name}</span>
             <span class="chip">${t("app.review.rank", { n: candidate.rank })}</span>
-            <span class="chip">${esc(hostOf(candidate.url))}</span>
             ${locked ? `<span class="chip chip--locked">${icon("i-lock", "icon--sm")}${t("app.review.allowlisted")}</span>` : ""}
           </div>
           <div class="candidate-actions">
-            <button class="btn btn-danger btn-sm btn-confirm" type="button" data-action="review" data-id="${candidate.id}" data-decision="confirm" ${
+            <button class="btn btn-danger btn-confirm" type="button" data-action="review" data-id="${candidate.id}" data-decision="confirm" ${
               locked ? `disabled title="${t("app.review.allowlistedTitle")}"` : ""
             }>${icon("i-siren", "icon--sm")}${t("app.review.confirm")}</button>
-            ${actions}
+            <button class="btn btn-ghost" type="button" data-action="review" data-id="${candidate.id}" data-decision="dismiss">${t("app.review.dismiss")}</button>
+            <details class="decision-menu">
+              <summary class="btn btn-ghost">${t("app.review.more")}</summary>
+              <div class="decision-menu-panel">${menuActions}</div>
+            </details>
           </div>
         </div>
         <div class="candidate-score">
@@ -590,11 +548,9 @@
           } ${canPick ? "" : "disabled"} />
           <div style="min-width:0">
             <div class="v-title">${esc(title ? title.name : t("app.unknownTitle"))} <span class="v-host-name muted">· ${esc(violation.host)}</span></div>
-            <div class="v-host">${icon("i-link", "icon--sm")}${esc(violation.url)}</div>
           </div>
           <div class="v-evidence">
             <button class="btn-evidence" type="button" data-action="evidence" data-id="${violation.id}">${icon("i-lock", "icon--sm")}${esc(violation.evidence.id)}</button>
-            <span>${esc(formatEvidenceAt(violation.evidence))}</span>
           </div>
           <div class="v-status">
             ${
@@ -631,7 +587,6 @@
             <p class="eyebrow"><span class="dot"></span>${t("app.violations.eyebrow")} · ${t("app.violations.openCount", { n: openViolations().length })}</p>
             <h1 class="page-title">${t("app.violations.title")}</h1>
           </div>
-          <p class="head-note">${t("app.violations.note")}</p>
         </header>
         ${
           rows
@@ -701,11 +656,7 @@
               <div class="notice-id">${notice.id} · ${meta.name}</div>
               <div class="notice-sub">${tn("app.notices.violations", count)} · ${esc(notice.signatory)} · ${t("app.notices.drafted", {
                 when: formatWhen(notice.createdAt),
-              })}${
-                notice.submission && notice.submission.at
-                  ? ` · ${t("app.notices.sent", { when: formatWhen(notice.submission.at) })}`
-                  : ""
-              }</div>
+              })}</div>
             </div>
             <span class="chip ${status.cls}">${t(status.key)}</span>
             <div class="notice-actions">
@@ -721,13 +672,7 @@
               <button class="btn btn-ghost btn-sm" type="button" data-action="view-notice" data-id="${notice.id}">${icon("i-eye", "icon--sm")}${t("app.notices.view")}</button>
             </div>
           </div>
-          <div class="notice-body">
-            ${stepper(notice)}
-            <div class="notice-doc-cta">
-              ${icon("i-globe", "icon--sm")}${t(count > 1 ? "app.notices.recipientMany" : "app.notices.recipientOne", { recipient: meta.name })}
-              <button type="button" data-action="view-notice" data-id="${notice.id}">${t("app.notices.openDocument")}</button>
-            </div>
-          </div>
+          <div class="notice-body">${stepper(notice)}</div>
         </article>`;
       })
       .join("");
@@ -739,7 +684,6 @@
             <p class="eyebrow"><span class="dot"></span>${t("app.notices.eyebrow")} · ${t("app.notices.awaiting", { n: draftNotices().length })}</p>
             <h1 class="page-title">${t("app.notices.title")}</h1>
           </div>
-          <p class="head-note">${t("app.notices.note")}</p>
         </header>
         ${cards || `<div class="empty"><span class="empty-icon">${icon("i-file", "icon--lg")}</span><h2>${t("app.notices.emptyTitle")}</h2><p>${t("app.notices.emptyBody")}</p><a class="btn btn-primary" href="#/violations">${icon("i-shield", "icon--sm")}${t("app.notices.openViolations")}</a></div>`}
       </section>`;
@@ -756,7 +700,7 @@
             <div class="title-sub">${title.year} · ${esc(t(title.groupKey))}</div>
             <div class="title-meta">
               <span class="chip">${tn("app.titles.variants", title.variants)}</span>
-              <span class="chip">${title.allowlist.length ? t("app.titles.allowlistedCount", { n: title.allowlist.length }) : t("app.titles.noAllowlist")}</span>
+              ${title.allowlist.length ? `<span class="chip">${t("app.titles.allowlistedCount", { n: title.allowlist.length })}</span>` : ""}
               ${
                 title.paused
                   ? `<span class="chip chip--muted"><span class="dot"></span>${t("app.titles.paused")}</span>`
@@ -768,7 +712,6 @@
             <button class="switch" type="button" role="switch" aria-checked="${!title.paused}" aria-label="${t("app.titles.toggle", {
               name: title.name,
             })}" data-action="toggle-title" data-id="${title.id}"><span class="switch-thumb"></span></button>
-            ${title.allowlist.length ? `<span class="chip chip--muted">${tn("app.titles.rules", title.allowlist.length)}</span>` : ""}
           </div>
         </article>`,
       )
@@ -781,7 +724,6 @@
             <p class="eyebrow"><span class="dot"></span>${t("app.titles.eyebrow")} · ${tn("app.common.titles", state.titles.length)}</p>
             <h1 class="page-title">${t("app.titles.title")}</h1>
           </div>
-          <p class="head-note">${t("app.titles.note")}</p>
         </header>
         <div class="title-grid">${cards}</div>
       </section>`;

@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="assets/theme.css" />
     <link rel="stylesheet" href="assets/pitch.css" />
     <link rel="stylesheet" href="assets/light.css" />
+    <link rel="stylesheet" href="assets/glass.css" />
   </head>
   <body class="pitch">
     <div class="deck-progress" aria-hidden="true"><span id="progress-fill"></span></div>
@@ -255,7 +256,7 @@
           <div class="engine-cards">
             <article class="engine-card reveal" style="--d: 0.18s">
               <header>
-                <span class="engine-badge" data-engine="google">G</span>
+                <span class="engine-badge" data-engine="google"><span class="engine-glyph">G</span></span>
                 <span class="engine-name">Google</span>
                 <span class="rank-chip">#1</span>
               </header>
@@ -268,7 +269,7 @@
 
             <article class="engine-card reveal" style="--d: 0.26s">
               <header>
-                <span class="engine-badge" data-engine="bing">b</span>
+                <span class="engine-badge" data-engine="bing"><span class="engine-glyph">B</span></span>
                 <span class="engine-name">Bing</span>
                 <span class="rank-chip">#4</span>
               </header>
@@ -281,7 +282,7 @@
 
             <article class="engine-card reveal" style="--d: 0.34s">
               <header>
-                <span class="engine-badge" data-engine="yandex">Y</span>
+                <span class="engine-badge" data-engine="yandex"><span class="engine-glyph">Я</span></span>
                 <span class="engine-name">Yandex</span>
                 <span class="rank-chip">#9</span>
               </header>
@@ -319,9 +320,9 @@
                   <span class="mock-blip mock-blip--red" style="top: 70%; left: 70%"></span>
                   <span class="mock-shield"><svg class="icon"><use href="#i-shield" /></svg></span>
                 </div>
-                <div class="mock-engine"><span class="engine-badge" data-engine="google">G</span>Google<span class="mock-when" data-i18n="pitch.s4.m2">2m</span></div>
-                <div class="mock-engine"><span class="engine-badge" data-engine="bing">b</span>Bing<span class="mock-when" data-i18n="pitch.s4.m9">9m</span></div>
-                <div class="mock-engine"><span class="engine-badge" data-engine="yandex">Y</span>Yandex<span class="mock-when" data-i18n="pitch.s4.m14">14m</span></div>
+                <div class="mock-engine"><span class="engine-badge" data-engine="google"><span class="engine-glyph">G</span></span>Google</div>
+                <div class="mock-engine"><span class="engine-badge" data-engine="bing"><span class="engine-glyph">B</span></span>Bing</div>
+                <div class="mock-engine"><span class="engine-badge" data-engine="yandex"><span class="engine-glyph">Я</span></span>Yandex</div>
               </div>
 
               <div class="shot-main">
@@ -342,20 +343,10 @@
                   <span class="mock-stamp" data-i18n="pitch.s4.busted">BUSTED</span>
                 </div>
 
-                <div class="mock-activity">
-                  <div><span class="mock-dot mock-dot--red"></span><span data-i18n="pitch.s4.activityLogged">Violation logged · The Long Chase</span><span data-i18n="pitch.s4.now">now</span></div>
-                  <div><span class="mock-dot mock-dot--green"></span><span data-i18n="pitch.s4.activityAck">Bing acknowledged N-1042</span><span data-i18n="pitch.s4.m2">2m</span></div>
-                  <div><span class="mock-dot mock-dot--blue"></span><span data-i18n="pitch.s4.activityScans">Scans finished · 3 engines</span><span data-i18n="pitch.s4.m14">14m</span></div>
-                </div>
               </div>
             </div>
           </div>
 
-          <div class="hero-stats shot-stats-line reveal" style="--d: 0.26s">
-            <span><b>1</b> <span data-i18n="pitch.s4.queue">queue for every engine</span></span>
-            <span><b>∞</b> <span data-i18n="pitch.s4.captures">immutable captures</span></span>
-            <span><b>3</b> <span data-i18n="pitch.s4.recipients">recipients, one approval</span></span>
-          </div>
         </div>
       </section>
 
@@ -367,7 +358,6 @@
           <p class="slide-lede reveal" style="--d: 0.12s" data-i18n="pitch.s5.lede">Three moves from leak to notice.</p>
 
           <div class="flow">
-            <span class="flow-line" aria-hidden="true"></span>
             <article class="flow-step reveal" style="--d: 0.18s">
               <span class="flow-no">01</span>
               <span class="flow-icon"><svg class="icon icon--lg"><use href="#i-radar" /></svg></span>
@@ -434,19 +424,19 @@
 
           <div class="recipient-list">
             <div class="recipient reveal" style="--d: 0.18s">
-              <span class="engine-badge" data-engine="google">G</span>
+              <span class="engine-badge" data-engine="google"><span class="engine-glyph">G</span></span>
               <span class="recipient-name">Google<span data-i18n="pitch.s7.googleMeta">Notice N-1043 · 2 violations</span></span>
               <span class="recipient-bar"><i style="--w: 100%; --delay: 0.2s"></i></span>
               <span class="recipient-state"><svg class="icon icon--sm"><use href="#i-check" /></svg><span data-i18n="pitch.s7.acknowledged">Acknowledged</span></span>
             </div>
             <div class="recipient reveal" style="--d: 0.26s">
-              <span class="engine-badge" data-engine="bing">b</span>
+              <span class="engine-badge" data-engine="bing"><span class="engine-glyph">B</span></span>
               <span class="recipient-name">Bing<span data-i18n="pitch.s7.bingMeta">Notice N-1042 · 1 violation</span></span>
               <span class="recipient-bar"><i style="--w: 100%; --delay: 0.35s"></i></span>
               <span class="recipient-state"><svg class="icon icon--sm"><use href="#i-check" /></svg><span data-i18n="pitch.s7.delivered">Delivered</span></span>
             </div>
             <div class="recipient reveal" style="--d: 0.34s">
-              <span class="engine-badge" data-engine="yandex">Y</span>
+              <span class="engine-badge" data-engine="yandex"><span class="engine-glyph">Я</span></span>
               <span class="recipient-name">Yandex<span data-i18n="pitch.s7.yandexMeta">Notice N-1044 · 1 violation</span></span>
               <span class="recipient-bar"><i style="--w: 72%; --delay: 0.5s"></i></span>
               <span class="recipient-state recipient-state--wait" data-i18n="pitch.s7.inFlight">In flight</span>
@@ -514,7 +504,6 @@
                 <li data-i18n="pitch.s9.studioOne">Up to 100 tracked titles</li>
                 <li data-i18n="pitch.s9.studioTwo">Google, Bing, and Yandex</li>
                 <li data-i18n="pitch.s9.studioThree">Team review and evidence archive</li>
-                <li data-i18n="pitch.s9.studioFour">Recipient profiles included</li>
               </ul>
               <a class="btn btn-primary plan-cta" href="mailto:hello@patrol.example?subject=Patrol%20Studio" data-i18n="pitch.s9.request">Request access</a>
             </article>
@@ -542,14 +531,13 @@
             <span class="seal-ring"></span>
             <span class="seal-core"><svg class="icon icon--lg"><use href="#i-shield" /></svg></span>
           </div>
-          <p class="eyebrow reveal" style="--d: 0.05s"><span class="dot"></span><span data-i18n="pitch.close.eyebrow">End of the tour</span></p>
           <h2 class="close-title reveal" style="--d: 0.1s" data-i18n="pitch.close.title">Keep the beat.</h2>
           <p class="slide-lede close-lede reveal" style="--d: 0.18s" data-i18n="pitch.close.lede">Your titles, staying where they belong.</p>
           <div class="hero-actions close-actions reveal" style="--d: 0.26s">
             <a class="btn btn-primary" href="mailto:hello@patrol.example?subject=Patrol"><span data-i18n="pitch.close.request">Request access</span> <svg class="icon icon--sm"><use href="#i-arrow" /></svg></a>
             <a class="btn btn-ghost" href="./index.html" data-i18n="pitch.close.open">Open the prototype</a>
           </div>
-          <p class="footnote reveal" style="--d: 0.34s" data-i18n="pitch.close.footnote">hello@patrol.example · Northlight Pictures demo</p>
+          <p class="footnote reveal" style="--d: 0.34s" data-i18n="pitch.close.footnote">hello@patrol.example</p>
         </div>
         <div class="road" aria-hidden="true"></div>
         <button class="scroll-hint scroll-hint--top" type="button" data-goto="0"><span data-i18n="pitch.close.back">Back to start</span> <span>↑</span></button>
