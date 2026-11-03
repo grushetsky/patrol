@@ -1,0 +1,2753 @@
+openapi: 3.1.0
+info:
+  title: Patrol
+  version: 0.1.0
+tags: []
+paths: {}
+components:
+  schemas:
+    AcknowledgedSubmission:
+      type: object
+      required:
+        - state
+        - operatorId
+        - deliveredAt
+        - attestation
+        - acknowledgement
+      properties:
+        state:
+          type: string
+          enum:
+            - acknowledged
+          description: The literal state discriminator.
+        operatorId:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who filed the notice.
+        deliveredAt:
+          type: string
+          format: date-time
+          description: When the operator filed the notice.
+        attestation:
+          $ref: '#/components/schemas/OperatorAttestation'
+          description: The operator's attestation that the notice was filed as presented.
+        acknowledgement:
+          $ref: '#/components/schemas/Acknowledgement'
+          description: What the recipient returned.
+      description: A submission the recipient acknowledged.
+    Acknowledgement:
+      type: object
+      required:
+        - recipient
+      properties:
+        recipient:
+          $ref: '#/components/schemas/Recipient'
+          description: The recipient that acknowledged.
+        referenceNumber:
+          type: string
+          description: Google's reference number.
+        dashboardUrl:
+          $ref: '#/components/schemas/Url'
+          description: Google's Removals Dashboard URL.
+        ticketId:
+          type: string
+          description: Bing's TicketId.
+        ticketDetailsUrl:
+          $ref: '#/components/schemas/Url'
+          description: Bing's ticket-details URL.
+        messageId:
+          type: string
+          description: Yandex's reply email Message-ID.
+        replyDate:
+          type: string
+          format: date
+          description: The date of Yandex's reply.
+        note:
+          type: string
+          description: The operator's note, where the recipient published no identifier.
+      description: What a recipient returned when it accepted a notice.
+    AcquisitionBudget:
+      type: object
+      required:
+        - engineCaps
+        - recheckSharePercent
+      properties:
+        engineCaps:
+          type: array
+          items:
+            $ref: '#/components/schemas/EngineBudgetCap'
+          description: The cap for each engine. Bing is deferred and carries a zero cap until it is added.
+        recheckSharePercent:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 100
+          description: The percentage of each engine allowance reserved for re-checks, defaulting to 30.
+      description: The monthly acquisition cap and the share reserved for re-checks.
+    AllowlistEntry:
+      type: object
+      required:
+        - id
+        - kind
+        - matchKind
+        - value
+        - scope
+        - origin
+        - confirmedBy
+        - confirmedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/AllowlistEntryId'
+          description: Patrol's own identifier.
+        kind:
+          $ref: '#/components/schemas/AllowlistKind'
+          description: Why the host or URL prefix is allowed.
+        matchKind:
+          $ref: '#/components/schemas/AllowlistMatchKind'
+          description: How the value matches a URL.
+        value:
+          type: string
+          description: The host or URL prefix the entry matches.
+        scope:
+          $ref: '#/components/schemas/AllowlistScope'
+          description: What the entry covers.
+        titleGroupId:
+          $ref: '#/components/schemas/TitleGroupId'
+          description: The title group the entry is scoped to, required when the scope is a title group.
+        trackedTitleId:
+          $ref: '#/components/schemas/TrackedTitleId'
+          description: The tracked title the entry is scoped to, required when the scope is a tracked title.
+        territory:
+          $ref: '#/components/schemas/Territory'
+          description: The territory the entry applies to. Required for a licensed destination, where it is a territory or intended as worldwide; ignored for an official domain or a neutral source.
+        origin:
+          $ref: '#/components/schemas/AllowlistOrigin'
+          description: How the entry came to exist. No entry is created silently.
+        proposedByDecisionId:
+          $ref: '#/components/schemas/ReviewDecisionId'
+          description: The review decision that proposed the entry, present when the origin is a review decision.
+        confirmedBy:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who confirmed the entry.
+        confirmedAt:
+          type: string
+          format: date-time
+          description: When the operator confirmed the entry.
+      description: A scoped rule that marks a host or URL prefix as authorized or non-infringing.
+    AllowlistEntryId:
+      type: string
+      format: uuid
+      description: Identifier of an allowlist entry.
+    AllowlistKind:
+      type: string
+      enum:
+        - official_domain
+        - licensed_destination
+        - neutral_source
+      description: Why a host or URL prefix is allowed.
+    AllowlistMatchKind:
+      type: string
+      enum:
+        - host
+        - url_prefix
+      description: How an allowlist value matches a URL.
+    AllowlistOrigin:
+      type: string
+      enum:
+        - operator
+        - review_decision
+      description: How an allowlist entry came to exist.
+    AllowlistScope:
+      type: string
+      enum:
+        - rights_holder
+        - title_group
+        - tracked_title
+      description: What an allowlist entry covers.
+    ApprovedNotice:
+      type: object
+      required:
+        - state
+        - approvedBy
+        - approvedAt
+        - rightsHolder
+        - signatory
+        - profile
+      properties:
+        state:
+          type: string
+          enum:
+            - approved
+          description: The literal state discriminator.
+        approvedBy:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who approved the notice.
+        approvedAt:
+          type: string
+          format: date-time
+          description: When the notice was approved.
+        rightsHolder:
+          $ref: '#/components/schemas/RightsHolderSnapshot'
+          description: The rights-holder contact profile, frozen at approval.
+        signatory:
+          $ref: '#/components/schemas/SignatorySnapshot'
+          description: The signatory, frozen at approval.
+        profile:
+          $ref: '#/components/schemas/RecipientProfileSnapshot'
+          description: The recipient profile, frozen at approval.
+      description: An approved notice. Content is frozen and the parties are snapshotted.
+    BudgetBucket:
+      type: string
+      enum:
+        - scan
+        - recheck
+      description: Which share of an engine allowance a reservation draws on.
+    BudgetReservation:
+      type: object
+      required:
+        - id
+        - scanId
+        - engine
+        - bucket
+        - units
+        - state
+        - createdAt
+        - expiresAt
+      properties:
+        id:
+          $ref: '#/components/schemas/BudgetReservationId'
+          description: Patrol's own identifier.
+        scanId:
+          $ref: '#/components/schemas/ScanId'
+          description: The scan holding the reservation.
+        engine:
+          $ref: '#/components/schemas/Engine'
+          description: The engine whose allowance is reserved.
+        bucket:
+          $ref: '#/components/schemas/BudgetBucket'
+          description: The bucket the reservation draws on.
+        units:
+          type: integer
+          format: int32
+          minimum: 0
+          description: The number of billable units reserved.
+        state:
+          $ref: '#/components/schemas/ReservationState'
+          description: The reservation's state.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the reservation was made.
+        expiresAt:
+          type: string
+          format: date-time
+          description: When an unstarted reservation expires; one hour after it was made.
+        settledAt:
+          type: string
+          format: date-time
+          description: When the reservation was committed, released, or expired.
+        committedUnits:
+          type: integer
+          format: int32
+          minimum: 0
+          description: The units the scan actually issued at settlement; a partial scan commits these and releases the rest.
+        releasedUnits:
+          type: integer
+          format: int32
+          minimum: 0
+          description: The units released at settlement, including every unit of a failed or expired reservation.
+      description: A scan's hold on a slice of an engine allowance. Held before the scan runs, then committed or released.
+    BudgetReservationId:
+      type: string
+      format: uuid
+      description: Identifier of a budget reservation held by a scan.
+    Candidate:
+      type: object
+      required:
+        - id
+        - trackedTitleId
+        - url
+        - normalizedUrl
+        - host
+        - registrableDomain
+        - matchedVariantId
+        - matchedVariant
+        - score
+        - scoreComponents
+        - reputation
+        - firstObservedAt
+        - lastObservedAt
+        - priorDecisionIds
+        - lifecycle
+      properties:
+        id:
+          $ref: '#/components/schemas/CandidateId'
+          description: Patrol's own identifier.
+        trackedTitleId:
+          $ref: '#/components/schemas/TrackedTitleId'
+          description: The tracked title the URL is paired with.
+        url:
+          $ref: '#/components/schemas/Url'
+          description: The raw URL of the first observation.
+        normalizedUrl:
+          $ref: '#/components/schemas/NormalizedUrl'
+          description: The URL's deduplication key. A candidate deduplicates across queries and engines on this key and the tracked title.
+        host:
+          $ref: '#/components/schemas/Host'
+          description: The landing page's host after redirects.
+        registrableDomain:
+          $ref: '#/components/schemas/RegistrableDomain'
+          description: The landing page's registrable domain.
+        matchedVariantId:
+          $ref: '#/components/schemas/TitleVariantId'
+          description: The variant whose query surfaced the candidate.
+        matchedVariant:
+          $ref: '#/components/schemas/VariantSnapshot'
+          description: The matched variant as it was at observation time.
+        score:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: The candidate's score out of one.
+        scoreComponents:
+          $ref: '#/components/schemas/ScoreComponents'
+          description: Every score component, recorded so a decision can be reproduced.
+        reputation:
+          $ref: '#/components/schemas/ReputationSnapshot'
+          description: The host's reputation at scoring time.
+        allowlistEntryId:
+          $ref: '#/components/schemas/AllowlistEntryId'
+          description: The allowlist entry that hit this URL, when one did. An allowlisted URL is never captured.
+        firstObservedAt:
+          type: string
+          format: date-time
+          description: When the pair was first observed.
+        lastObservedAt:
+          type: string
+          format: date-time
+          description: When the pair was last observed.
+        priorDecisionIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewDecisionId'
+          description: Prior review decisions on this pair, newest first.
+        lifecycle:
+          $ref: '#/components/schemas/CandidateLifecycle'
+          description: The candidate's lifecycle state.
+      description: A URL paired with one tracked title, surfaced by at least one search result and not yet confirmed as a violation.
+    CandidateId:
+      type: string
+      format: uuid
+      description: Identifier of a candidate, the URL and tracked-title pair.
+    CandidateLifecycle:
+      anyOf:
+        - $ref: '#/components/schemas/PendingCandidate'
+        - $ref: '#/components/schemas/ConfirmedCandidate'
+        - $ref: '#/components/schemas/DismissedCandidate'
+      description: The candidate state machine.
+    CandidateState:
+      type: string
+      enum:
+        - pending
+        - confirmed
+        - dismissed
+      description: The candidate lifecycle states.
+    CaptureOutcome:
+      type: string
+      enum:
+        - captured
+        - dead
+        - blocked
+        - error
+      description: What a capture observed.
+    CaptureProfile:
+      type: object
+      required:
+        - userAgent
+        - viewportWidth
+        - viewportHeight
+        - locale
+        - timezone
+        - javascriptEnabled
+        - blockedResourceKinds
+        - navigationPolicy
+        - extractorVersion
+      properties:
+        userAgent:
+          type: string
+          description: The user agent Patrol identified itself with.
+        viewportWidth:
+          type: integer
+          format: int32
+          minimum: 1
+          description: The viewport width in CSS pixels.
+        viewportHeight:
+          type: integer
+          format: int32
+          minimum: 1
+          description: The viewport height in CSS pixels.
+        locale:
+          $ref: '#/components/schemas/Locale'
+          description: The locale the browser was configured with.
+        timezone:
+          $ref: '#/components/schemas/TimeZoneId'
+          description: The browser's time zone.
+        javascriptEnabled:
+          type: boolean
+          description: Whether JavaScript ran before the DOM and screenshot were taken.
+        blockedResourceKinds:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResourceKind'
+          description: Request kinds the capture blocked.
+        navigationPolicy:
+          type: string
+          description: The navigation and readiness policy, such as a load plus settle rather than network idle.
+        extractorVersion:
+          type: string
+          description: The extractor version that produced the extraction sidecar.
+      description: The browser and extraction settings of one capture, without which the capture cannot be explained or repeated.
+    CaptureReason:
+      type: string
+      enum:
+        - detection
+        - review
+        - pre_handoff
+      description: Why a capture was taken.
+    CatalogueSource:
+      type: string
+      enum:
+        - rights_holder_record
+        - operator_knowledge
+        - wikidata
+      description: Where a catalogue value came from.
+    CitedViolation:
+      type: object
+      required:
+        - violationId
+        - evidence
+      properties:
+        violationId:
+          $ref: '#/components/schemas/ViolationId'
+          description: The violation cited.
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceCitation'
+          description: The evidence the notice cites for this violation. A later capture never changes it.
+      description: One violation cited by a notice, with the captures the notice relies on.
+    ClosedViolation:
+      type: object
+      required:
+        - state
+        - closedAt
+        - reason
+        - closedBy
+      properties:
+        state:
+          type: string
+          enum:
+            - closed
+          description: The literal state discriminator.
+        closedAt:
+          type: string
+          format: date-time
+          description: When the operator closed the violation.
+        reason:
+          $ref: '#/components/schemas/ViolationClosureReason'
+          description: Why the violation closed.
+        closedBy:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who closed the violation.
+        note:
+          type: string
+          description: The operator's note.
+      description: A violation an operator closed after a re-check.
+    CompositionTrigger:
+      type: string
+      enum:
+        - scheduled
+        - on_demand
+      description: When a recipient profile composes notice drafts.
+    ConfirmedCandidate:
+      type: object
+      required:
+        - state
+        - reviewDecisionId
+        - violationId
+        - confirmedAt
+      properties:
+        state:
+          type: string
+          enum:
+            - confirmed
+          description: The literal state discriminator.
+        reviewDecisionId:
+          $ref: '#/components/schemas/ReviewDecisionId'
+          description: The decision that created the violation.
+        violationId:
+          $ref: '#/components/schemas/ViolationId'
+          description: The violation the decision created.
+        confirmedAt:
+          type: string
+          format: date-time
+          description: When the violation was confirmed.
+      description: A candidate confirmed as a violation.
+    CountryCode:
+      type: string
+      pattern: ^[A-Z]{2}$
+      description: An ISO 3166-1 alpha-2 country code, uppercase.
+    Currency:
+      type: string
+      enum:
+        - usd
+      description: A currency Patrol's acquisition cap supports.
+    DeliveredSubmission:
+      type: object
+      required:
+        - state
+        - operatorId
+        - deliveredAt
+        - attestation
+      properties:
+        state:
+          type: string
+          enum:
+            - delivered
+          description: The literal state discriminator.
+        operatorId:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who filed the notice.
+        deliveredAt:
+          type: string
+          format: date-time
+          description: When the operator filed the notice.
+        attestation:
+          $ref: '#/components/schemas/OperatorAttestation'
+          description: The operator's attestation that the notice was filed as presented.
+      description: A submission the operator filed and attested.
+    Dismissal:
+      type: object
+      required:
+        - action
+        - operatorId
+        - decidedAt
+        - evidenceIds
+      properties:
+        action:
+          $ref: '#/components/schemas/ReviewDecisionAction'
+          description: The review decision that dismissed the pair.
+        operatorId:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who decided.
+        decidedAt:
+          type: string
+          format: date-time
+          description: When the operator decided.
+        note:
+          type: string
+          description: The operator's note, when one was recorded.
+        evidenceIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceId'
+          description: The evidence the operator relied on.
+        rematchedTrackedTitleId:
+          $ref: '#/components/schemas/TrackedTitleId'
+          description: The correct tracked title, when the decision was wrong work.
+        proposedAllowlistEntryId:
+          $ref: '#/components/schemas/AllowlistEntryId'
+          description: The allowlist entry the decision proposed, when the decision was authorized here.
+      description: A dismissal, which suppresses one URL and tracked-title pair only.
+    DismissedCandidate:
+      type: object
+      required:
+        - state
+        - reviewDecisionId
+        - dismissal
+      properties:
+        state:
+          type: string
+          enum:
+            - dismissed
+          description: The literal state discriminator.
+        reviewDecisionId:
+          $ref: '#/components/schemas/ReviewDecisionId'
+          description: The decision that dismissed the pair.
+        dismissal:
+          $ref: '#/components/schemas/Dismissal'
+          description: The dismissal, including the scope it suppresses.
+      description: A candidate dismissed by a review decision.
+    DraftNotice:
+      type: object
+      required:
+        - state
+      properties:
+        state:
+          type: string
+          enum:
+            - draft
+          description: The literal state discriminator.
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the draft was last edited.
+      description: A notice being composed. Its content may still change.
+    Email:
+      type: string
+      format: email
+      description: An email address.
+    Engine:
+      type: string
+      enum:
+        - google
+        - bing
+        - yandex
+      description: A search source that returns results for a query.
+    EngineBudgetCap:
+      type: object
+      required:
+        - engine
+        - currency
+        - monthlyCapMinor
+      properties:
+        engine:
+          $ref: '#/components/schemas/Engine'
+          description: The engine the cap applies to.
+        currency:
+          $ref: '#/components/schemas/Currency'
+          description: The currency of the cap.
+        monthlyCapMinor:
+          type: integer
+          format: int32
+          minimum: 0
+          description: The monthly cap in the currency's minor unit, such as cents.
+      description: One engine's monthly cap and the billable units it buys.
+    Evidence:
+      type: object
+      required:
+        - id
+        - requestedUrl
+        - normalizedRequestedUrl
+        - redirectChain
+        - reason
+        - outcome
+        - attemptNumber
+        - observedAt
+        - profile
+        - artifacts
+      properties:
+        id:
+          $ref: '#/components/schemas/EvidenceId'
+          description: Patrol's own identifier.
+        requestedUrl:
+          $ref: '#/components/schemas/Url'
+          description: The URL as it was requested, stored verbatim.
+        normalizedRequestedUrl:
+          $ref: '#/components/schemas/NormalizedUrl'
+          description: The requested URL's deduplication key.
+        redirectChain:
+          type: array
+          items:
+            $ref: '#/components/schemas/RedirectHop'
+          description: Every redirect hop, in order, with its status and Location.
+        finalUrl:
+          $ref: '#/components/schemas/Url'
+          description: The landing page's final URL, absent when no response was received.
+        host:
+          $ref: '#/components/schemas/Host'
+          description: The landing page's host, absent when no response was received.
+        hostSource:
+          $ref: '#/components/schemas/HostSource'
+          description: Where the host was derived from, when a host was recorded.
+        reason:
+          $ref: '#/components/schemas/CaptureReason'
+          description: Why the capture was taken.
+        outcome:
+          $ref: '#/components/schemas/CaptureOutcome'
+          description: What the capture observed.
+        httpStatus:
+          type: integer
+          format: int32
+          description: The final response's HTTP status, when one was received.
+        failureReason:
+          type: string
+          description: Why the capture did not succeed, when the outcome is not captured.
+        attemptNumber:
+          type: integer
+          format: int32
+          minimum: 1
+          description: The attempt number within the retry window, starting at one.
+        observedAt:
+          type: string
+          format: date-time
+          description: When the page was observed, in UTC. The capture time is part of the record.
+        profile:
+          $ref: '#/components/schemas/CaptureProfile'
+          description: The browser and extraction settings of the capture.
+        artifacts:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceArtifact'
+          description: The artifacts the capture produced. An absence carries none, which is itself the record.
+        purgedAt:
+          type: string
+          format: date-time
+          description: When the bytes were purged, absent until retention acts.
+        purgeReason:
+          type: string
+          description: Why the bytes were purged, present with the purge marker.
+      description: An immutable, content-addressed record of what a URL served at one capture time. The record of one capture.
+    EvidenceArtifact:
+      type: object
+      required:
+        - kind
+        - sha256
+        - byteSize
+        - contentType
+        - truncated
+      properties:
+        kind:
+          $ref: '#/components/schemas/EvidenceArtifactKind'
+          description: Which artifact this is.
+        sha256:
+          $ref: '#/components/schemas/Sha256'
+          description: The SHA-256 of the bytes, which is also the object key.
+        byteSize:
+          type: integer
+          format: int32
+          minimum: 0
+          description: The artifact's size in bytes.
+        contentType:
+          type: string
+          description: The artifact's content type.
+        width:
+          type: integer
+          format: int32
+          minimum: 0
+          description: The artifact's width in pixels, for image artifacts.
+        height:
+          type: integer
+          format: int32
+          minimum: 0
+          description: The artifact's height in pixels, for image artifacts.
+        truncated:
+          type: boolean
+          description: Whether the artifact was truncated at a ceiling. Truncation is flagged, never silent.
+      description: One artifact produced by a capture, keyed by the SHA-256 of its bytes.
+    EvidenceArtifactKind:
+      type: string
+      enum:
+        - response_body
+        - response_headers
+        - rendered_dom
+        - screenshot
+        - thumbnail
+        - extraction_sidecar
+      description: The kinds of artifact a capture can produce.
+    EvidenceCitation:
+      type: object
+      required:
+        - evidenceId
+        - capturedAt
+        - reason
+      properties:
+        evidenceId:
+          $ref: '#/components/schemas/EvidenceId'
+          description: The capture cited.
+        capturedAt:
+          type: string
+          format: date-time
+          description: When the capture was taken, frozen with the citation.
+        reason:
+          $ref: '#/components/schemas/CaptureReason'
+          description: Why the capture was taken.
+      description: One capture cited by a notice or a decision, with the time it was taken.
+    EvidenceId:
+      type: string
+      format: uuid
+      description: Identifier of an evidence record, one per capture.
+    ExternalIdentifier:
+      type: object
+      required:
+        - id
+        - trackedTitleId
+        - scheme
+        - value
+        - source
+        - retrievedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/ExternalIdentifierId'
+          description: Patrol's own identifier for the row.
+        trackedTitleId:
+          $ref: '#/components/schemas/TrackedTitleId'
+          description: The tracked title the identifier belongs to.
+        scheme:
+          $ref: '#/components/schemas/ExternalIdentifierScheme'
+          description: The scheme the value belongs to.
+        value:
+          type: string
+          description: The identifier value in that scheme.
+        source:
+          $ref: '#/components/schemas/CatalogueSource'
+          description: Where the identifier was read from.
+        retrievedAt:
+          type: string
+          format: date-time
+          description: When the identifier was recorded.
+      description: An external identifier for a tracked title. A fact, not a lookup key.
+    ExternalIdentifierId:
+      type: string
+      format: uuid
+      description: Identifier of an external identifier row.
+    ExternalIdentifierScheme:
+      type: string
+      enum:
+        - wikidata
+        - imdb
+        - kinopoisk
+      description: The external identifier schemes Patrol accepts.
+    FailedScan:
+      type: object
+      required:
+        - state
+        - finishedAt
+        - failureReason
+      properties:
+        state:
+          type: string
+          enum:
+            - failed
+          description: The literal state discriminator.
+        startedAt:
+          type: string
+          format: date-time
+          description: When the scan started, when it started at all.
+        finishedAt:
+          type: string
+          format: date-time
+          description: When the scan failed.
+        failureReason:
+          $ref: '#/components/schemas/ScanFailureReason'
+          description: Why the scan failed.
+        failures:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueryFailure'
+          description: The queries that failed, where there were any.
+      description: A scan where no query answered.
+    FailedSubmission:
+      type: object
+      required:
+        - state
+        - operatorId
+        - failedAt
+        - failure
+      properties:
+        state:
+          type: string
+          enum:
+            - failed
+          description: The literal state discriminator.
+        operatorId:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who attempted the filing.
+        failedAt:
+          type: string
+          format: date-time
+          description: When the failure was recorded.
+        failure:
+          $ref: '#/components/schemas/SubmissionFailure'
+          description: The failure and its cause.
+      description: A submission that failed to deliver.
+    GroupPriority:
+      type: string
+      enum:
+        - high
+        - normal
+        - low
+      description: The scheduling priority of a title group.
+    Host:
+      type: string
+      description: A URL's host, or a violation's destination host after redirects. Lowercased DNS name, never a registrable-domain grouping.
+    HostSource:
+      type: string
+      enum:
+        - landing_page
+        - submitted_url
+      description: Where a violation's host was derived from.
+    IntentPhrase:
+      type: object
+      required:
+        - text
+        - version
+      properties:
+        text:
+          type: string
+          description: The phrase appended to the display title, in the locale's language.
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+          description: The version of the phrase at issue time.
+      description: An intent phrase an operator can edit, carrying the version a search result was issued under.
+    Invitation:
+      type: object
+      required:
+        - id
+        - email
+        - role
+        - invitedBy
+        - createdAt
+        - expiresAt
+      properties:
+        id:
+          $ref: '#/components/schemas/InvitationId'
+          description: Patrol's own identifier.
+        email:
+          $ref: '#/components/schemas/Email'
+          description: The invited email address.
+        role:
+          $ref: '#/components/schemas/OperatorRole'
+          description: The role the account will hold.
+        invitedBy:
+          $ref: '#/components/schemas/OperatorId'
+          description: The administrator who issued the invitation.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the invitation was issued.
+        expiresAt:
+          type: string
+          format: date-time
+          description: When the invitation expires.
+        acceptedAt:
+          type: string
+          format: date-time
+          description: When the invitation was accepted.
+        revokedAt:
+          type: string
+          format: date-time
+          description: When the invitation was revoked before use.
+      description: A single-use invitation for a new operator account, valid twenty-four hours.
+    InvitationId:
+      type: string
+      format: uuid
+      description: Identifier of an operator invitation.
+    LegalHold:
+      type: object
+      required:
+        - id
+        - reason
+        - createdBy
+        - createdAt
+        - evidenceIds
+        - violationIds
+        - noticeIds
+      properties:
+        id:
+          $ref: '#/components/schemas/LegalHoldId'
+          description: Patrol's own identifier.
+        reason:
+          type: string
+          description: Why the hold was placed.
+        createdBy:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who placed the hold.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the hold was placed.
+        evidenceIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceId'
+          description: The captures the hold covers.
+        violationIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/ViolationId'
+          description: The violations the hold covers.
+        noticeIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/NoticeId'
+          description: The notices the hold covers.
+        releasedAt:
+          type: string
+          format: date-time
+          description: When the hold was released.
+        releasedBy:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who released the hold.
+      description: A recorded restriction that suspends deletion of the evidence it covers until an operator releases it.
+    LegalHoldId:
+      type: string
+      format: uuid
+      description: Identifier of a legal hold.
+    Locale:
+      type: string
+      description: A BCP 47 language tag with an optional territory, such as ru-RU.
+    NormalizedUrl:
+      type: string
+      description: 'A URL reduced to the deduplication key: scheme dropped, host lowercased without a leading www, trailing slash trimmed, tracking parameters removed, remaining query parameters sorted, fragment dropped.'
+    Notice:
+      type: object
+      required:
+        - id
+        - content
+        - createdBy
+        - createdAt
+        - lifecycle
+      properties:
+        id:
+          $ref: '#/components/schemas/NoticeId'
+          description: Patrol's own identifier.
+        content:
+          $ref: '#/components/schemas/NoticeContent'
+          description: The notice's contents, frozen by approval.
+        createdBy:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who created the draft.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the draft was created.
+        lifecycle:
+          $ref: '#/components/schemas/NoticeLifecycle'
+          description: The notice's lifecycle state.
+      description: The document one recipient receives. It cites one or more violations of exactly one rights holder and is addressed to exactly one recipient.
+    NoticeContent:
+      type: object
+      required:
+        - recipient
+        - recipientProfileId
+        - channel
+        - citedViolations
+        - workIdentifications
+        - statements
+        - resolvedFields
+        - templateVersion
+      properties:
+        recipient:
+          $ref: '#/components/schemas/Recipient'
+          description: The one recipient the notice addresses.
+        recipientProfileId:
+          $ref: '#/components/schemas/RecipientProfileId'
+          description: The recipient profile the notice was composed for.
+        channel:
+          $ref: '#/components/schemas/RecipientChannel'
+          description: The profile's channel at composition time.
+        citedViolations:
+          type: array
+          items:
+            $ref: '#/components/schemas/CitedViolation'
+          description: The violations cited, each pinned to the captures it relies on.
+        workIdentifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkIdentification'
+          description: One identification per cited tracked title.
+        statements:
+          type: array
+          items:
+            $ref: '#/components/schemas/NoticeStatement'
+          description: The exact text of every required statement.
+        resolvedFields:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResolvedField'
+          description: The form-ordered field map the operator will copy from.
+        templateVersion:
+          type: string
+          description: The version of the statement template used.
+      description: 'What a notice carries: its recipient binding, citations, work identification, statements, and resolved form fields.'
+    NoticeId:
+      type: string
+      format: uuid
+      description: Identifier of a notice.
+    NoticeLifecycle:
+      anyOf:
+        - $ref: '#/components/schemas/DraftNotice'
+        - $ref: '#/components/schemas/ApprovedNotice'
+        - $ref: '#/components/schemas/WithdrawnNotice'
+        - $ref: '#/components/schemas/SupersededNotice'
+      description: The notice state machine. Approval freezes the content and snapshots the parties.
+    NoticeState:
+      type: string
+      enum:
+        - draft
+        - approved
+        - withdrawn
+        - superseded
+      description: The notice lifecycle states.
+    NoticeStatement:
+      type: object
+      required:
+        - key
+        - text
+        - templateVersion
+      properties:
+        key:
+          type: string
+          description: The statement's key in the recipient's form.
+        text:
+          type: string
+          description: The exact statement text.
+        templateVersion:
+          type: string
+          description: The version of the statement template.
+      description: One required statement and the template version it came from.
+    OpenViolation:
+      type: object
+      required:
+        - state
+        - openedAt
+      properties:
+        state:
+          type: string
+          enum:
+            - open
+          description: The literal state discriminator.
+        openedAt:
+          type: string
+          format: date-time
+          description: When the violation entered the open state; equal to the confirmation time.
+      description: A violation believed to be live.
+    Operator:
+      type: object
+      required:
+        - id
+        - email
+        - role
+        - state
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/OperatorId'
+          description: Patrol's own identifier.
+        email:
+          $ref: '#/components/schemas/Email'
+          description: The operator's email address, which is also their sign-in identifier and is unique.
+        role:
+          $ref: '#/components/schemas/OperatorRole'
+          description: The operator's role.
+        state:
+          $ref: '#/components/schemas/OperatorState'
+          description: The account's state.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the account was created, by bootstrap or invitation.
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the account was last edited.
+        lastSignInAt:
+          type: string
+          format: date-time
+          description: When the operator last signed in successfully.
+        totpEnrolledAt:
+          type: string
+          format: date-time
+          description: When the second factor was enrolled.
+        disabledAt:
+          type: string
+          format: date-time
+          description: When the account was disabled.
+        disabledBy:
+          $ref: '#/components/schemas/OperatorId'
+          description: The administrator who disabled the account.
+      description: An authenticated human who reviews candidates, approves notices, and makes submissions.
+    OperatorAttestation:
+      type: object
+      required:
+        - attestedAt
+        - statementVersion
+      properties:
+        attestedAt:
+          type: string
+          format: date-time
+          description: When the operator attested.
+        statementVersion:
+          type: string
+          description: The version of the attestation statement the operator agreed to.
+      description: An operator's attestation that a notice was filed as presented.
+    OperatorId:
+      type: string
+      format: uuid
+      description: Identifier of an operator account.
+    OperatorRole:
+      type: string
+      enum:
+        - administrator
+        - operator
+      description: The role an operator account holds.
+    OperatorSession:
+      type: object
+      required:
+        - id
+        - operatorId
+        - tokenSha256
+        - createdAt
+        - lastSeenAt
+        - absoluteExpiresAt
+        - userAgent
+      properties:
+        id:
+          $ref: '#/components/schemas/SessionId'
+          description: Patrol's own identifier.
+        operatorId:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator the session belongs to.
+        tokenSha256:
+          $ref: '#/components/schemas/Sha256'
+          description: The SHA-256 of the session token.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the session was created.
+        lastSeenAt:
+          type: string
+          format: date-time
+          description: When the session was last seen.
+        absoluteExpiresAt:
+          type: string
+          format: date-time
+          description: The session's absolute expiry, seven days after creation.
+        revokedAt:
+          type: string
+          format: date-time
+          description: When the session was revoked.
+        userAgent:
+          type: string
+          description: The user agent the session was created under.
+        coarseIp:
+          type: string
+          description: The coarse IP address the session was created from.
+      description: A server-side session row. The token itself is never stored, only its hash.
+    OperatorState:
+      type: string
+      enum:
+        - invited
+        - active
+        - disabled
+      description: The state of an operator account.
+    PartialScan:
+      type: object
+      required:
+        - state
+        - startedAt
+        - finishedAt
+        - issuedQueries
+        - failures
+      properties:
+        state:
+          type: string
+          enum:
+            - partial
+          description: The literal state discriminator.
+        startedAt:
+          type: string
+          format: date-time
+          description: When the scan started.
+        finishedAt:
+          type: string
+          format: date-time
+          description: When the scan finished.
+        issuedQueries:
+          type: integer
+          format: int32
+          minimum: 0
+          description: How many queries were actually issued.
+        failures:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueryFailure'
+          description: The queries that failed, with their reasons.
+      description: A scan where some queries answered and some failed.
+    PendingCandidate:
+      type: object
+      required:
+        - state
+      properties:
+        state:
+          type: string
+          enum:
+            - pending
+          description: The literal state discriminator.
+      description: A candidate awaiting review.
+    PendingSubmission:
+      type: object
+      required:
+        - state
+      properties:
+        state:
+          type: string
+          enum:
+            - pending
+          description: The literal state discriminator.
+      description: A submission awaiting the operator's filing.
+    PostalAddress:
+      type: object
+      required:
+        - line1
+        - city
+        - postalCode
+        - country
+      properties:
+        line1:
+          type: string
+          description: The first address line.
+        line2:
+          type: string
+          description: The second address line, when the address needs one.
+        city:
+          type: string
+          description: The city or locality.
+        region:
+          type: string
+          description: The state, province, or region, where the country uses one.
+        postalCode:
+          type: string
+          description: The postal code.
+        country:
+          $ref: '#/components/schemas/CountryCode'
+          description: The country of the address.
+      description: A contact or legal postal address.
+    QueryFailure:
+      type: object
+      required:
+        - queryId
+        - reason
+        - attempts
+      properties:
+        queryId:
+          $ref: '#/components/schemas/SearchQueryId'
+          description: The query that failed.
+        reason:
+          type: string
+          description: The provider's error class or the adapter's reason.
+        attempts:
+          type: integer
+          format: int32
+          minimum: 0
+          description: How many attempts the query consumed.
+      description: One failed query inside a scan.
+    QueryKind:
+      type: string
+      enum:
+        - variant
+        - intent
+      description: How a query was generated from a title.
+    QueryPlan:
+      type: object
+      required:
+        - generatedAt
+        - queries
+      properties:
+        generatedAt:
+          type: string
+          format: date-time
+          description: When the plan was derived.
+        queries:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchQuery'
+          description: The queries in plan order. The plan never outlives its scan.
+      description: The set of search queries one scan issues for one title group on one engine, derived when the scan starts.
+    QueuedScan:
+      type: object
+      required:
+        - state
+        - queuedAt
+      properties:
+        state:
+          type: string
+          enum:
+            - queued
+          description: The literal state discriminator.
+        queuedAt:
+          type: string
+          format: date-time
+          description: When the scan was queued.
+        queuedReason:
+          $ref: '#/components/schemas/ScanFailureReason'
+          description: Why the scan is still queued, when it is waiting rather than next in line.
+      description: A scan waiting to start.
+    QuotaLedger:
+      type: object
+      required:
+        - id
+        - engine
+        - monthStart
+        - allowanceUnits
+        - scanReserved
+        - scanCommitted
+        - recheckReserved
+        - recheckCommitted
+      properties:
+        id:
+          $ref: '#/components/schemas/QuotaLedgerId'
+          description: Patrol's own identifier.
+        engine:
+          $ref: '#/components/schemas/Engine'
+          description: The engine the row belongs to.
+        monthStart:
+          type: string
+          format: date
+          description: The first day of the UTC month the row covers.
+        allowanceUnits:
+          type: integer
+          format: int32
+          minimum: 0
+          description: The month's billable units for the engine.
+        scanReserved:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Units reserved by scans and not yet settled.
+        scanCommitted:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Units committed by scans.
+        recheckReserved:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Units reserved by re-checks and not yet settled.
+        recheckCommitted:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Units committed by re-checks.
+      description: One engine's allowance for one UTC calendar month.
+    QuotaLedgerId:
+      type: string
+      format: uuid
+      description: Identifier of a quota ledger row, one per engine and UTC month.
+    RecheckSchedule:
+      type: object
+      required:
+        - id
+        - titleGroupId
+        - engine
+        - rung
+        - nextDueAt
+        - active
+        - startedByScanId
+        - updatedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/RecheckScheduleId'
+          description: Patrol's own identifier.
+        titleGroupId:
+          $ref: '#/components/schemas/TitleGroupId'
+          description: The title group the ladder belongs to.
+        engine:
+          $ref: '#/components/schemas/Engine'
+          description: The engine the ladder re-checks on.
+        rung:
+          type: integer
+          format: int32
+          minimum: 1
+          description: "The ladder's rung: one for three days, two for seven, three for fourteen, then every fourteen days."
+        nextDueAt:
+          type: string
+          format: date-time
+          description: When the next re-check falls due.
+        active:
+          type: boolean
+          description: Whether the ladder is running. It stops when no violation from the pair is open.
+        startedByScanId:
+          $ref: '#/components/schemas/ScanId'
+          description: The scan that started or last reset the ladder.
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the ladder was last updated.
+      description: The re-check ladder for one title group and engine.
+    RecheckScheduleId:
+      type: string
+      format: uuid
+      description: Identifier of a re-check ladder, one per title group and engine.
+    Recipient:
+      type: string
+      enum:
+        - google
+        - bing
+        - yandex
+      description: An organisation to which Patrol submits notices.
+    RecipientChannel:
+      type: string
+      enum:
+        - web_form
+        - trusted_program
+      description: How a notice is handed to a recipient.
+    RecipientProfile:
+      type: object
+      required:
+        - id
+        - recipient
+        - channel
+        - account
+        - compositionTrigger
+        - eligibleTerritories
+        - paused
+        - recentSubmissions
+        - version
+        - updatedBy
+        - updatedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/RecipientProfileId'
+          description: Patrol's own identifier.
+        recipient:
+          $ref: '#/components/schemas/Recipient'
+          description: The recipient the profile addresses.
+        channel:
+          $ref: '#/components/schemas/RecipientChannel'
+          description: The channel the submission runs through.
+        account:
+          type: string
+          description: The account the submission runs under, such as a Google account email.
+        contactEmail:
+          $ref: '#/components/schemas/Email'
+          description: The contact mailbox the form asks for, where the account is not it.
+        compositionTrigger:
+          $ref: '#/components/schemas/CompositionTrigger'
+          description: When drafts are composed for this profile.
+        windowTime:
+          type: string
+          format: time
+          description: The UTC time the scheduled composition window opens.
+        eligibleTerritories:
+          type: array
+          items:
+            $ref: '#/components/schemas/Territory'
+          description: The territories in which the rights holder is eligible to submit. Empty means every territory.
+        maxUrlsPerNotice:
+          type: integer
+          format: int32
+          minimum: 1
+          description: The recipient's published per-notice URL cap, where one is published.
+        maxUrlsPerFile:
+          type: integer
+          format: int32
+          minimum: 1
+          description: The recipient's published per-file URL cap, where one is published.
+        maxUrlsPerDay:
+          type: integer
+          format: int32
+          minimum: 1
+          description: The recipient's published per-day URL cap, where one is published.
+        lastObservedMaxUrlsPerFile:
+          type: integer
+          format: int32
+          minimum: 1
+          description: The per-file cap last observed from the recipient's error text.
+        lastObservedDailyQuota:
+          type: integer
+          format: int32
+          minimum: 1
+          description: The per-day quota last observed from the recipient.
+        paused:
+          type: boolean
+          description: Whether scheduled drafting is paused by the rejection threshold.
+        pauseReason:
+          type: string
+          description: Why the profile is paused, when it is.
+        recentSubmissions:
+          $ref: '#/components/schemas/SubmissionStats'
+          description: The profile's recent submission outcome, the input to the pause threshold.
+        version:
+          type: integer
+          format: int32
+          minimum: 1
+          description: The profile's version, snapshotted into a notice at approval.
+        updatedBy:
+          $ref: '#/components/schemas/OperatorId'
+          description: The administrator who last edited the profile.
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the profile was last edited.
+      description: "The configuration for one recipient's submission channel: its channel, account, required fields, limits, eligibility, and composition trigger."
+    RecipientProfileId:
+      type: string
+      format: uuid
+      description: Identifier of a recipient profile.
+    RecipientProfileSnapshot:
+      type: object
+      required:
+        - profileId
+        - version
+        - channel
+        - account
+        - capturedAt
+      properties:
+        profileId:
+          $ref: '#/components/schemas/RecipientProfileId'
+          description: The profile's identifier.
+        version:
+          type: integer
+          format: int32
+          description: The profile's version.
+        channel:
+          $ref: '#/components/schemas/RecipientChannel'
+          description: The channel used.
+        account:
+          type: string
+          description: The account used.
+        formUrl:
+          $ref: '#/components/schemas/Url'
+          description: The form URL observed at approval.
+        maxUrlsPerNotice:
+          type: integer
+          format: int32
+          description: The per-notice URL cap observed at approval.
+        maxUrlsPerFile:
+          type: integer
+          format: int32
+          description: The per-file URL cap observed at approval.
+        capturedAt:
+          type: string
+          format: date-time
+          description: When the snapshot was taken.
+      description: The recipient profile a notice was composed under, frozen at approval.
+    RedirectHop:
+      type: object
+      required:
+        - url
+        - statusCode
+      properties:
+        url:
+          $ref: '#/components/schemas/Url'
+          description: The URL of this hop.
+        statusCode:
+          type: integer
+          format: int32
+          description: The status code this hop returned.
+        location:
+          type: string
+          description: The Location header this hop returned, when it redirected.
+      description: One HTTP hop in a redirect chain.
+    RegistrableDomain:
+      type: string
+      description: The eTLD+1 grouping of a host, used for reputation and reporting.
+    RejectedSubmission:
+      type: object
+      required:
+        - state
+        - operatorId
+        - decidedAt
+        - failure
+      properties:
+        state:
+          type: string
+          enum:
+            - rejected
+          description: The literal state discriminator.
+        operatorId:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who filed the notice.
+        decidedAt:
+          type: string
+          format: date-time
+          description: When the refusal was recorded.
+        failure:
+          $ref: '#/components/schemas/SubmissionFailure'
+          description: The refusal and its cause.
+      description: A submission the recipient refused. A rejected submission is not retried unchanged.
+    RemovedViolation:
+      type: object
+      required:
+        - state
+        - closedAt
+        - reason
+      properties:
+        state:
+          type: string
+          enum:
+            - removed
+          description: The literal state discriminator.
+        closedAt:
+          type: string
+          format: date-time
+          description: When removal was recorded.
+        reason:
+          $ref: '#/components/schemas/ViolationClosureReason'
+          description: Why the violation closed.
+        closureEvidenceId:
+          $ref: '#/components/schemas/EvidenceId'
+          description: The capture that showed the URL gone, when one exists.
+        closedBy:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who recorded the removal, when a person did.
+      description: A violation whose URL stopped serving the copy.
+    ReputationSnapshot:
+      type: object
+      required:
+        - registrableDomain
+        - confirmedViolations
+        - bonus
+        - blocklisted
+      properties:
+        registrableDomain:
+          $ref: '#/components/schemas/RegistrableDomain'
+          description: The registrable domain the reputation belongs to.
+        confirmedViolations:
+          type: integer
+          format: int32
+          minimum: 0
+          description: Confirmed violations at the domain in the last twelve months.
+        bonus:
+          type: number
+          format: float
+          description: The bonus the count earned, before the cap.
+        blocklisted:
+          type: boolean
+          description: Whether a blocklist entry added its small contribution.
+      description: A host's reputation, aggregated at the registrable domain.
+    ReservationState:
+      type: string
+      enum:
+        - held
+        - committed
+        - released
+        - expired
+      description: The lifecycle of a budget reservation.
+    ResolvedField:
+      type: object
+      required:
+        - name
+        - value
+        - required
+      properties:
+        name:
+          type: string
+          description: The form field's name.
+        value:
+          type: string
+          description: The value the operator copies.
+        required:
+          type: boolean
+          description: Whether the form marks the field required.
+        maxLength:
+          type: integer
+          format: int32
+          minimum: 1
+          description: The field's length cap, when the form publishes one.
+      description: One resolved field of the recipient's form.
+    ResourceKind:
+      type: string
+      enum:
+        - media
+        - websocket
+        - service_worker
+        - advertising
+        - third_party_analytics
+      description: Kinds of requests a capture blocks.
+    ReviewDecision:
+      type: object
+      required:
+        - id
+        - candidateId
+        - action
+        - operatorId
+        - decidedAt
+        - evidenceIds
+      properties:
+        id:
+          $ref: '#/components/schemas/ReviewDecisionId'
+          description: Patrol's own identifier.
+        candidateId:
+          $ref: '#/components/schemas/CandidateId'
+          description: The candidate decided on.
+        action:
+          $ref: '#/components/schemas/ReviewDecisionAction'
+          description: The disposition.
+        operatorId:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who decided.
+        decidedAt:
+          type: string
+          format: date-time
+          description: When the operator decided.
+        note:
+          type: string
+          description: The operator's note.
+        evidenceIds:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceId'
+          description: The evidence the operator relied on, pinned at decision time.
+        violationId:
+          $ref: '#/components/schemas/ViolationId'
+          description: The violation created, when the action confirms one.
+        rematchedTrackedTitleId:
+          $ref: '#/components/schemas/TrackedTitleId'
+          description: The correct tracked title, when the action is wrong work.
+        proposedAllowlistEntryId:
+          $ref: '#/components/schemas/AllowlistEntryId'
+          description: The allowlist entry proposed, when the action is authorized here.
+      description: An operator's disposition of a candidate.
+    ReviewDecisionAction:
+      type: string
+      enum:
+        - violation
+        - not_a_violation
+        - wrong_work
+        - authorized_here
+        - page_dead
+      description: An operator's disposition of a candidate.
+    ReviewDecisionId:
+      type: string
+      format: uuid
+      description: Identifier of a review decision.
+    RightsHolder:
+      type: object
+      required:
+        - id
+        - legalName
+        - country
+        - address
+        - roleMailbox
+        - signatory
+        - acquisitionBudget
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/RightsHolderId'
+          description: Patrol's own identifier.
+        legalName:
+          type: string
+          description: The rights holder's legal name, as it appears on a notice.
+        country:
+          $ref: '#/components/schemas/CountryCode'
+          description: The country of the rights holder's address.
+        address:
+          $ref: '#/components/schemas/PostalAddress'
+          description: The rights holder's postal address.
+        roleMailbox:
+          $ref: '#/components/schemas/Email'
+          description: The role mailbox a recipient may contact about a notice.
+        phone:
+          type: string
+          description: A phone number, where a recipient's form asks for one.
+        signatory:
+          $ref: '#/components/schemas/Signatory'
+          description: The natural person authorised to sign notices.
+        acquisitionBudget:
+          $ref: '#/components/schemas/AcquisitionBudget'
+          description: The acquisition cap and its per-engine split.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the rights holder row was created.
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the rights holder row was last edited.
+      description: The legal person on whose behalf Patrol identifies violations and signs notices. Exactly one exists per deployment.
+    RightsHolderId:
+      type: string
+      format: uuid
+      description: Identifier of the single rights holder in the deployment.
+    RightsHolderSnapshot:
+      type: object
+      required:
+        - legalName
+        - country
+        - address
+        - roleMailbox
+        - capturedAt
+      properties:
+        legalName:
+          type: string
+          description: The legal name rendered in the notice.
+        country:
+          $ref: '#/components/schemas/CountryCode'
+          description: The country of the rights holder's address.
+        address:
+          $ref: '#/components/schemas/PostalAddress'
+          description: The rights holder's address.
+        roleMailbox:
+          $ref: '#/components/schemas/Email'
+          description: The role mailbox rendered as the contact.
+        phone:
+          type: string
+          description: The phone number, where the form asks for one.
+        capturedAt:
+          type: string
+          format: date-time
+          description: When the snapshot was taken.
+      description: The rights-holder details a notice carries, frozen at approval.
+    RunningScan:
+      type: object
+      required:
+        - state
+        - startedAt
+      properties:
+        state:
+          type: string
+          enum:
+            - running
+          description: The literal state discriminator.
+        startedAt:
+          type: string
+          format: date-time
+          description: When the scan started.
+      description: A scan that is running.
+    Scan:
+      type: object
+      required:
+        - id
+        - titleGroupId
+        - engine
+        - trigger
+        - dueDate
+        - plannedQueries
+        - createdAt
+        - lifecycle
+      properties:
+        id:
+          $ref: '#/components/schemas/ScanId'
+          description: Patrol's own identifier.
+        titleGroupId:
+          $ref: '#/components/schemas/TitleGroupId'
+          description: The title group the scan targets.
+        engine:
+          $ref: '#/components/schemas/Engine'
+          description: The one engine the scan issues queries against.
+        trigger:
+          $ref: '#/components/schemas/ScanTrigger'
+          description: Why the scan ran.
+        dueDate:
+          type: string
+          format: date
+          description: The UTC date the scan is due on. A scan is idempotent on title group, engine, and due date.
+        requestedBy:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who requested a manual scan or re-check.
+        plannedQueries:
+          type: integer
+          format: int32
+          minimum: 0
+          description: The number of queries the plan issues. Priced before the scan starts.
+        queryPlan:
+          $ref: '#/components/schemas/QueryPlan'
+          description: The plan derived when the scan starts. Absent while the scan is queued and before the plan exists.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the scan row was created.
+        lifecycle:
+          $ref: '#/components/schemas/ScanLifecycle'
+          description: The scan's lifecycle state.
+      description: One execution of discovery for one title group on one engine.
+    ScanFailureReason:
+      type: string
+      enum:
+        - budget_exhausted
+        - route_unavailable
+        - provider_error
+        - worker_crash
+      description: Why a scan did not run, or did not finish cleanly.
+    ScanId:
+      type: string
+      format: uuid
+      description: Identifier of a scan.
+    ScanLifecycle:
+      anyOf:
+        - $ref: '#/components/schemas/QueuedScan'
+        - $ref: '#/components/schemas/RunningScan'
+        - $ref: '#/components/schemas/SucceededScan'
+        - $ref: '#/components/schemas/PartialScan'
+        - $ref: '#/components/schemas/FailedScan'
+      description: The scan state machine. Each state carries exactly the fields that state can have.
+    ScanState:
+      type: string
+      enum:
+        - queued
+        - running
+        - succeeded
+        - partial
+        - failed
+      description: The scan lifecycle states.
+    ScanTrigger:
+      type: string
+      enum:
+        - scheduled
+        - manual
+        - recheck
+        - manual_recheck
+      description: Why a scan ran when it did.
+    ScoreComponents:
+      type: object
+      required:
+        - titleMatch
+        - signals
+        - reputation
+      properties:
+        titleMatch:
+          type: number
+          format: float
+          description: 'The title-match contribution: 0.70 for an exact variant, 0.60 for a partial or slug match, 0 otherwise.'
+        signals:
+          type: array
+          items:
+            $ref: '#/components/schemas/SignalContribution'
+          description: The strong signals that contributed.
+        reputation:
+          type: number
+          format: float
+          description: The reputation contribution, at most 0.10 and only alongside a strong signal.
+      description: The score out of one and the components behind it.
+    ScriptCode:
+      type: string
+      pattern: ^[A-Z][a-z]{3}$
+      description: An ISO 15924 script code, such as Latn or Cyrl.
+    SearchQuery:
+      type: object
+      required:
+        - id
+        - trackedTitleId
+        - locale
+        - kind
+        - text
+      properties:
+        id:
+          $ref: '#/components/schemas/SearchQueryId'
+          description: Patrol's own identifier for the query.
+        trackedTitleId:
+          $ref: '#/components/schemas/TrackedTitleId'
+          description: The tracked title the query was generated for.
+        locale:
+          $ref: '#/components/schemas/Locale'
+          description: The locale the query was issued in.
+        kind:
+          $ref: '#/components/schemas/QueryKind'
+          description: Whether the query is a bare variant or a display title plus an intent phrase.
+        text:
+          type: string
+          description: The exact text issued, after any length cap was applied.
+        variantId:
+          $ref: '#/components/schemas/TitleVariantId'
+          description: The variant the query was generated from, present for a variant query.
+        intentPhrase:
+          $ref: '#/components/schemas/IntentPhrase'
+          description: The intent phrase appended, present for an intent query.
+      description: One query issued inside a scan, generated from a title variant for one tracked title and one locale.
+    SearchQueryId:
+      type: string
+      format: uuid
+      description: Identifier of a search query inside a query plan.
+    SearchResult:
+      type: object
+      required:
+        - id
+        - scanId
+        - queryId
+        - engine
+        - url
+        - normalizedUrl
+        - rank
+        - title
+        - snippet
+        - locale
+        - observedAt
+        - rawPayloadRef
+        - host
+        - registrableDomain
+      properties:
+        id:
+          $ref: '#/components/schemas/SearchResultId'
+          description: Patrol's own identifier.
+        scanId:
+          $ref: '#/components/schemas/ScanId'
+          description: The scan that issued the query.
+        queryId:
+          $ref: '#/components/schemas/SearchQueryId'
+          description: The query that produced the row.
+        engine:
+          $ref: '#/components/schemas/Engine'
+          description: The engine that returned the row.
+        url:
+          $ref: '#/components/schemas/Url'
+          description: The raw URL the engine returned, stored verbatim as provenance.
+        normalizedUrl:
+          $ref: '#/components/schemas/NormalizedUrl'
+          description: The URL's deduplication key.
+        rank:
+          type: integer
+          format: int32
+          minimum: 1
+          description: The row's rank in the result set.
+        title:
+          type: string
+          description: The result title as the engine returned it.
+        snippet:
+          type: string
+          description: The result snippet as the engine returned it.
+        locale:
+          $ref: '#/components/schemas/Locale'
+          description: The locale the query was issued in.
+        territory:
+          $ref: '#/components/schemas/Territory'
+          description: The territory the query targeted, when one applied.
+        observedAt:
+          type: string
+          format: date-time
+          description: When the engine observed the row.
+        rawPayloadRef:
+          type: string
+          description: A reference to the stored vendor response, so the observation can be reproduced without re-querying.
+        host:
+          $ref: '#/components/schemas/Host'
+          description: The row's host.
+        registrableDomain:
+          $ref: '#/components/schemas/RegistrableDomain'
+          description: The row's registrable domain.
+        candidateId:
+          $ref: '#/components/schemas/CandidateId'
+          description: The candidate this row was paired into, when the pair had not been dismissed.
+      description: One ranked row returned for a search query. Never edited.
+    SearchResultId:
+      type: string
+      format: uuid
+      description: Identifier of a search result.
+    SessionId:
+      type: string
+      format: uuid
+      description: Identifier of an operator session.
+    Sha256:
+      type: string
+      pattern: ^[a-f0-9]{64}$
+      description: A lowercase hexadecimal SHA-256 digest.
+    SignalContribution:
+      type: object
+      required:
+        - kind
+        - value
+      properties:
+        kind:
+          $ref: '#/components/schemas/SignalKind'
+          description: Which signal fired.
+        value:
+          type: number
+          format: float
+          description: The score the signal added.
+      description: One strong signal and what it added.
+    SignalKind:
+      type: string
+      enum:
+        - player
+        - duration
+        - download
+        - release
+        - episodes
+      description: A page property that counts as a strong matching signal.
+    Signatory:
+      type: object
+      required:
+        - fullLegalName
+        - authorityBasis
+        - contactEmail
+      properties:
+        fullLegalName:
+          type: string
+          description: The signatory's full legal name, rendered in every signature field.
+        authorityBasis:
+          type: string
+          description: The basis on which the signatory is authorised to act for the rights holder.
+        contactEmail:
+          $ref: '#/components/schemas/Email'
+          description: The signatory's contact email, snapshotted into a notice at approval.
+        contactPhone:
+          type: string
+          description: The signatory's contact phone, where a form asks for one.
+      description: The natural person authorised to sign notices. It holds no credentials and cannot sign in.
+    SignatorySnapshot:
+      type: object
+      required:
+        - fullLegalName
+        - authorityBasis
+        - contactEmail
+        - capturedAt
+      properties:
+        fullLegalName:
+          type: string
+          description: The signatory's full legal name, rendered in every signature field.
+        authorityBasis:
+          type: string
+          description: The basis on which the signatory is authorised.
+        contactEmail:
+          $ref: '#/components/schemas/Email'
+          description: The signatory's contact email.
+        contactPhone:
+          type: string
+          description: The signatory's contact phone.
+        capturedAt:
+          type: string
+          format: date-time
+          description: When the snapshot was taken.
+      description: The signatory details a notice carries, frozen at approval.
+    Submission:
+      type: object
+      required:
+        - id
+        - noticeId
+        - channel
+        - recipientProfileId
+        - attemptCount
+        - createdAt
+        - lifecycle
+      properties:
+        id:
+          $ref: '#/components/schemas/SubmissionId'
+          description: Patrol's own identifier.
+        noticeId:
+          $ref: '#/components/schemas/NoticeId'
+          description: 'The notice being delivered. Unique: a retry never creates a second delivery.'
+        channel:
+          $ref: '#/components/schemas/RecipientChannel'
+          description: The channel used.
+        recipientProfileId:
+          $ref: '#/components/schemas/RecipientProfileId'
+          description: The recipient profile used.
+        attemptCount:
+          type: integer
+          format: int32
+          minimum: 0
+          description: How many delivery attempts the operator has made.
+        packRef:
+          type: string
+          description: The content-addressed reference to the frozen handoff pack, once the pack is generated.
+        packSha256:
+          $ref: '#/components/schemas/Sha256'
+          description: The pack's SHA-256, once the pack is generated.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the submission row was created.
+        cancelledAt:
+          type: string
+          format: date-time
+          description: When the pending submission was cancelled because its notice was withdrawn or superseded.
+        lifecycle:
+          $ref: '#/components/schemas/SubmissionLifecycle'
+          description: The submission's lifecycle state.
+      description: One delivery attempt of an approved notice through a recipient's channel, performed by an operator. One exists per notice.
+    SubmissionFailure:
+      type: object
+      required:
+        - reason
+        - note
+        - recordedAt
+      properties:
+        reason:
+          $ref: '#/components/schemas/SubmissionFailureReason'
+          description: Why the submission failed or was refused.
+        note:
+          type: string
+          description: The operator's account of the cause. A rejection requires a review note naming it.
+        recordedAt:
+          type: string
+          format: date-time
+          description: When the failure was recorded.
+      description: A failed or refused submission and its cause.
+    SubmissionFailureReason:
+      type: string
+      enum:
+        - recipient_error
+        - recipient_rejection
+        - operator_report
+      description: Why a submission failed or was refused.
+    SubmissionId:
+      type: string
+      format: uuid
+      description: Identifier of a submission, one per notice delivery.
+    SubmissionLifecycle:
+      anyOf:
+        - $ref: '#/components/schemas/PendingSubmission'
+        - $ref: '#/components/schemas/DeliveredSubmission'
+        - $ref: '#/components/schemas/AcknowledgedSubmission'
+        - $ref: '#/components/schemas/RejectedSubmission'
+        - $ref: '#/components/schemas/FailedSubmission'
+      description: The submission state machine.
+    SubmissionState:
+      type: string
+      enum:
+        - pending
+        - delivered
+        - acknowledged
+        - rejected
+        - failed
+      description: The submission lifecycle states.
+    SubmissionStats:
+      type: object
+      required:
+        - windowSize
+        - rejected
+        - failed
+        - thresholdExceeded
+      properties:
+        windowSize:
+          type: integer
+          format: int32
+          minimum: 0
+          description: How many submissions the window covers, at most twenty.
+        rejected:
+          type: integer
+          format: int32
+          minimum: 0
+          description: How many were rejected by the recipient.
+        failed:
+          type: integer
+          format: int32
+          minimum: 0
+          description: How many failed to deliver.
+        thresholdExceeded:
+          type: boolean
+          description: Whether the rejected plus failed share crossed the threshold that pauses scheduled drafting.
+      description: The last twenty submissions' outcomes for one recipient profile.
+    SucceededScan:
+      type: object
+      required:
+        - state
+        - startedAt
+        - finishedAt
+        - issuedQueries
+      properties:
+        state:
+          type: string
+          enum:
+            - succeeded
+          description: The literal state discriminator.
+        startedAt:
+          type: string
+          format: date-time
+          description: When the scan started.
+        finishedAt:
+          type: string
+          format: date-time
+          description: When the scan finished.
+        issuedQueries:
+          type: integer
+          format: int32
+          minimum: 0
+          description: How many queries were actually issued.
+      description: A scan whose every query answered.
+    SupersededNotice:
+      type: object
+      required:
+        - state
+        - supersededBy
+        - supersededAt
+        - supersededByNoticeId
+      properties:
+        state:
+          type: string
+          enum:
+            - superseded
+          description: The literal state discriminator.
+        supersededBy:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who superseded the notice.
+        supersededAt:
+          type: string
+          format: date-time
+          description: When the notice was superseded.
+        supersededByNoticeId:
+          $ref: '#/components/schemas/NoticeId'
+          description: The corrected notice that replaces it.
+      description: A notice replaced by a corrected one.
+    Territory:
+      type: string
+      pattern: ^[A-Z]{2}$
+      description: An ISO 3166-1 alpha-2 territory code, uppercase, used where a rule applies to a country rather than a language.
+    TimeZoneId:
+      type: string
+      description: An IANA time zone identifier, such as Europe/Berlin.
+    TitleGroup:
+      type: object
+      required:
+        - id
+        - name
+        - locales
+        - scanTime
+        - priority
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/TitleGroupId'
+          description: Patrol's own identifier.
+        name:
+          type: string
+          description: The group's display name.
+        locales:
+          type: array
+          items:
+            $ref: '#/components/schemas/Locale'
+          description: The locales the group's scans generate queries for. At least one locale is required.
+        scanTime:
+          type: string
+          format: time
+          description: The local time inside the scheduling window at which the group becomes due. The window is 02:00 to 05:59 UTC by default.
+        priority:
+          $ref: '#/components/schemas/GroupPriority'
+          description: The group's scheduling priority.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the group was created.
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the group was last edited.
+      description: An operator-defined set of tracked titles that share scan settings and allowlist scope.
+    TitleGroupId:
+      type: string
+      format: uuid
+      description: Identifier of an operator-defined title group.
+    TitleProvenance:
+      type: object
+      required:
+        - source
+        - enteredBy
+        - enteredAt
+        - updatedBy
+      properties:
+        source:
+          $ref: '#/components/schemas/CatalogueSource'
+          description: Where the original title, year, and type came from.
+        enteredBy:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who entered the title.
+        enteredAt:
+          type: string
+          format: date-time
+          description: When the operator entered the title.
+        updatedBy:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who last edited the title.
+      description: Provenance of a tracked title's core facts.
+    TitleType:
+      type: string
+      enum:
+        - film
+        - series
+        - miniseries
+        - other
+      description: The kind of work a tracked title is.
+    TitleVariant:
+      type: object
+      required:
+        - id
+        - trackedTitleId
+        - text
+        - normalizedText
+        - kind
+        - language
+        - script
+        - source
+        - addedBy
+        - addedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/TitleVariantId'
+          description: Patrol's own identifier.
+        trackedTitleId:
+          $ref: '#/components/schemas/TrackedTitleId'
+          description: The tracked title the variant belongs to.
+        text:
+          type: string
+          description: The variant text as the operator entered it. The native string is never overwritten.
+        normalizedText:
+          type: string
+          description: The matching key derived from the text by the normalization rules. Never typed, never displayed.
+        kind:
+          $ref: '#/components/schemas/TitleVariantKind'
+          description: How the variant relates to the work.
+        language:
+          $ref: '#/components/schemas/Locale'
+          description: The language tag of the text.
+        script:
+          $ref: '#/components/schemas/ScriptCode'
+          description: The script the text is written in.
+        territory:
+          $ref: '#/components/schemas/Territory'
+          description: The territory the variant applies to, when it is territory-specific.
+        source:
+          $ref: '#/components/schemas/CatalogueSource'
+          description: Where the variant text came from.
+        addedBy:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who added the variant.
+        addedAt:
+          type: string
+          format: date-time
+          description: When the variant was added.
+      description: A recorded string by which a tracked title is known, typed by kind, language, script, and territory.
+    TitleVariantId:
+      type: string
+      format: uuid
+      description: Identifier of a title variant.
+    TitleVariantKind:
+      type: string
+      enum:
+        - original
+        - localized
+        - transliterated
+        - alternate
+      description: How a title variant relates to the work.
+    TrackedTitle:
+      type: object
+      required:
+        - id
+        - titleGroupId
+        - releaseYear
+        - titleType
+        - originalVariantId
+        - paused
+        - provenance
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          $ref: '#/components/schemas/TrackedTitleId'
+          description: Patrol's own identifier. Never an external identifier.
+        titleGroupId:
+          $ref: '#/components/schemas/TitleGroupId'
+          description: The one title group the title belongs to.
+        releaseYear:
+          type: integer
+          format: int32
+          minimum: 1878
+          description: The four-digit year of first release; for a series, the year of the first season's first episode.
+        titleType:
+          $ref: '#/components/schemas/TitleType'
+          description: The kind of work.
+        runtimeMinutes:
+          type: integer
+          format: int32
+          minimum: 1
+          description: The runtime in minutes; for a series, the typical episode runtime. Absent when unknown.
+        originalVariantId:
+          $ref: '#/components/schemas/TitleVariantId'
+          description: The variant whose text is the canonical label and display title. Exactly one variant of the title is original.
+        paused:
+          type: boolean
+          description: Whether scanning is paused for this title. A paused title is excluded from the chart's tracked count.
+        mergedIntoTitleId:
+          $ref: '#/components/schemas/TrackedTitleId'
+          description: When the title was merged into another, the surviving title. A merged title is archived, never deleted.
+        provenance:
+          $ref: '#/components/schemas/TitleProvenance'
+          description: Where the original title, year, and type came from, and who entered them.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the title was created.
+        updatedAt:
+          type: string
+          format: date-time
+          description: When the title was last edited.
+      description: A work the rights holder monitors, carrying its original title, release year, title type, runtime, external identifiers, and title variants.
+    TrackedTitleId:
+      type: string
+      format: uuid
+      description: Identifier of a tracked title.
+    Url:
+      type: string
+      format: uri
+      description: An absolute HTTP or HTTPS URL, stored verbatim unless a field says otherwise.
+    VariantSnapshot:
+      type: object
+      required:
+        - id
+        - text
+        - kind
+        - language
+        - script
+      properties:
+        id:
+          $ref: '#/components/schemas/TitleVariantId'
+          description: The variant's identifier at observation time.
+        text:
+          type: string
+          description: The variant text.
+        kind:
+          $ref: '#/components/schemas/TitleVariantKind'
+          description: How the variant relates to the work.
+        language:
+          $ref: '#/components/schemas/Locale'
+          description: The variant's language.
+        script:
+          $ref: '#/components/schemas/ScriptCode'
+          description: The variant's script.
+        territory:
+          $ref: '#/components/schemas/Territory'
+          description: The variant's territory, when it is territory-specific.
+      description: The variant fields a candidate needs to explain its match without joining the catalogue.
+    Violation:
+      type: object
+      required:
+        - id
+        - trackedTitleId
+        - candidateId
+        - reviewDecisionId
+        - url
+        - normalizedUrl
+        - host
+        - hostSource
+        - registrableDomain
+        - detectedAt
+        - confirmedAt
+        - confirmedBy
+        - lifecycle
+      properties:
+        id:
+          $ref: '#/components/schemas/ViolationId'
+          description: Patrol's own identifier.
+        trackedTitleId:
+          $ref: '#/components/schemas/TrackedTitleId'
+          description: The one tracked title the copy is of.
+        candidateId:
+          $ref: '#/components/schemas/CandidateId'
+          description: The candidate the violation was created from.
+        reviewDecisionId:
+          $ref: '#/components/schemas/ReviewDecisionId'
+          description: The review decision that confirmed the violation.
+        url:
+          $ref: '#/components/schemas/Url'
+          description: The URL as it was submitted or surfaced, stored verbatim. A notice names this URL.
+        normalizedUrl:
+          $ref: '#/components/schemas/NormalizedUrl'
+          description: The URL's deduplication key.
+        host:
+          $ref: '#/components/schemas/Host'
+          description: The violation's host, taken from the destination.
+        hostSource:
+          $ref: '#/components/schemas/HostSource'
+          description: Where the host came from, since an unreachable landing page falls back to the submitted host.
+        registrableDomain:
+          $ref: '#/components/schemas/RegistrableDomain'
+          description: The host's registrable domain, the unit of reputation and reporting.
+        detectedAt:
+          type: string
+          format: date-time
+          description: When the pair was first observed.
+        confirmedAt:
+          type: string
+          format: date-time
+          description: When an operator confirmed the violation.
+        confirmedBy:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who confirmed the violation.
+        predecessorViolationId:
+          $ref: '#/components/schemas/ViolationId'
+          description: The earlier violation this one succeeds, when a URL reappeared after removal or closure.
+        lifecycle:
+          $ref: '#/components/schemas/ViolationLifecycle'
+          description: How the violation currently stands.
+      description: A confirmed unauthorized copy of one tracked title, located by the search-result URL that surfaced it and hosted at the landing page it resolves to.
+    ViolationClosureReason:
+      type: string
+      enum:
+        - url_removed
+        - operator_closed
+      description: Why a violation left the open state.
+    ViolationEvidence:
+      type: object
+      required:
+        - violationId
+        - evidenceId
+        - role
+        - citedAt
+      properties:
+        violationId:
+          $ref: '#/components/schemas/ViolationId'
+          description: The violation citing the capture.
+        evidenceId:
+          $ref: '#/components/schemas/EvidenceId'
+          description: The capture cited.
+        role:
+          $ref: '#/components/schemas/CaptureReason'
+          description: Why the capture was taken.
+        citedAt:
+          type: string
+          format: date-time
+          description: When the citation was recorded.
+      description: The capture a violation cites and the role it plays.
+    ViolationId:
+      type: string
+      format: uuid
+      description: Identifier of a violation.
+    ViolationLifecycle:
+      anyOf:
+        - $ref: '#/components/schemas/OpenViolation'
+        - $ref: '#/components/schemas/RemovedViolation'
+        - $ref: '#/components/schemas/ClosedViolation'
+      description: The violation state machine. A closed violation is never reopened; a reappearing URL starts a new violation.
+    ViolationState:
+      type: string
+      enum:
+        - open
+        - removed
+        - closed
+      description: The violation lifecycle states.
+    WithdrawnNotice:
+      type: object
+      required:
+        - state
+        - withdrawnBy
+        - withdrawnAt
+      properties:
+        state:
+          type: string
+          enum:
+            - withdrawn
+          description: The literal state discriminator.
+        withdrawnBy:
+          $ref: '#/components/schemas/OperatorId'
+          description: The operator who withdrew the notice.
+        withdrawnAt:
+          type: string
+          format: date-time
+          description: When the notice was withdrawn.
+        reason:
+          type: string
+          description: Why the notice was withdrawn.
+      description: A notice withdrawn before delivery or while its submission was pending.
+    WorkIdentification:
+      type: object
+      required:
+        - trackedTitleId
+        - displayTitle
+        - releaseYear
+        - titleType
+      properties:
+        trackedTitleId:
+          $ref: '#/components/schemas/TrackedTitleId'
+          description: The tracked title cited.
+        displayTitle:
+          type: string
+          description: The display title, which is the original-title variant.
+        releaseYear:
+          type: integer
+          format: int32
+          description: The release year.
+        titleType:
+          $ref: '#/components/schemas/TitleType'
+          description: The kind of work.
+        authorizedExampleUrl:
+          $ref: '#/components/schemas/Url'
+          description: An authorized example URL, where the form asks for one.
+      description: How a cited tracked title is identified to the recipient.

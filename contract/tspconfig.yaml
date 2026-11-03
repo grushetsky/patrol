@@ -1,0 +1,17 @@
+emit:
+  - "@typespec/openapi3"
+  - "@typespec/json-schema"
+options:
+  "@typespec/openapi3":
+    emitter-output-dir: "{project-root}/generated/openapi"
+    file-type: yaml
+    output-file: "patrol-domain.openapi.yaml"
+    openapi-versions:
+      - 3.1.0
+  "@typespec/json-schema":
+    emitter-output-dir: "{project-root}/generated/json-schema"
+    file-type: json
+    bundleId: patrol-domain
+    emitAllModels: true
+    seal-object-schemas: true
+    polymorphic-models-strategy: oneOf
