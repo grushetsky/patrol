@@ -593,6 +593,57 @@
   const DEEPSEEK_STORAGE_KEY = "patrol.deepseek.key";
   const DEEPSEEK_ENDPOINT = "https://api.deepseek.com/chat/completions";
 
+  /* Chart configuration and demo history. */
+  const CHART_METRICS = [
+    { id: "tracked", labelKey: "app.chart.metricTracked" },
+    { id: "withViolations", labelKey: "app.chart.metricWithViolations" },
+    { id: "resolved", labelKey: "app.chart.metricResolved" },
+  ];
+  const CHART_GROUPINGS = [
+    { id: "none", labelKey: "app.chart.groupNone" },
+    { id: "group", labelKey: "app.chart.groupGroup" },
+    { id: "engine", labelKey: "app.chart.groupEngine" },
+    { id: "recipient", labelKey: "app.chart.groupRecipient" },
+  ];
+  const CHART_COLORS = ["var(--red)", "var(--blue)", "var(--amber)", "var(--green)"];
+  const CHART_DAYS = 30;
+  const DEMO_STATES = ["normal", "loading", "quota", "empty"];
+
+  function buildHistory() {
+    const titles = [
+      { id: "t1", groupKey: "app.group.feature" },
+      { id: "t2", groupKey: "app.group.feature" },
+      { id: "t3", groupKey: "app.group.winter" },
+      { id: "t4", groupKey: "app.group.archive" },
+    ];
+    const engines = ["google", "bing", "yandex"];
+    const recipients = ["google", "bing", "yandex"];
+    let seed = 17;
+    const random = () => {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 4294967296;
+    };
+    const records = [];
+    for (let index = 0; index < 24; index += 1) {
+      const title = titles[Math.floor(random() * titles.length)];
+      const detectedDay = Math.floor(random() * 28);
+      const resolved = detectedDay >= 25 ? random() < 0.5 : true;
+      records.push({
+        id: `h${index}`,
+        titleId: title.id,
+        groupKey: title.groupKey,
+        engine: engines[Math.floor(random() * engines.length)],
+        recipient: recipients[Math.floor(random() * recipients.length)],
+        detectedDay,
+        resolvedDay: resolved ? Math.min(CHART_DAYS - 1, detectedDay + 1 + Math.floor(random() * 3)) : null,
+        resolution: random() < 0.5 ? "removed" : "closed",
+      });
+    }
+    return records;
+  }
+
+  const HISTORY = buildHistory();
+
   const state = seedState();
   const selected = new Set();
 
@@ -612,14 +663,14 @@
       scanning: false,
       cartRecipient: "google",
       nextNotice: 1044,
-      trend: {
-        detected: [2, 3, 1, 4, 3, 5, 4, 6, 3, 4, 5, 3, 4, 3],
-        resolved: [1, 2, 1, 2, 3, 2, 4, 3, 2, 3, 4, 2, 3, 2],
-        notices: [0, 1, 0, 1, 2, 1, 2, 2, 1, 2, 1, 1, 2, 1],
-      },
-      trendRange: 14,
-      trendHidden: [],
-      trendSelected: null,
+      demoState: "normal",
+      reviewDensity: "rows",
+      violationTitleFilter: "all",
+      chartMetric: "withViolations",
+      chartGrouping: "group",
+      chartRange: 14,
+      chartSelected: null,
+      resolvedBasis: "removed_closed",
       deepseekBrief: null,
       deepseekBriefMode: null,
       deepseekLoading: false,
@@ -679,38 +730,131 @@
         {
           id: "c1",
           url: "https://stream-hub.example/watch/midnight-precinct-2024",
+          finalUrl: "https://cdn.stream-hub.example/embed/2291",
+          host: "cdn.stream-hub.example",
+          domain: "stream-hub.example",
           engine: "google",
           titleId: "t1",
           rank: 1,
           score: 97,
           allowlisted: false,
+          variant: { value: "Midnight Precinct", kind: "canonical", language: "en", script: "Latn", territory: "US" },
+          query: "midnight precinct full movie",
+          locale: "en-US",
+          territory: "US",
+          evidence: { id: "EV-2382", hash: "7c1e9a4b0f22", at: "03:01 UTC", thumb: "player" },
+          allowlist: { status: "none" },
+          reputation: { domain: "stream-hub.example", count: 2, bonus: 0.02 },
+          priorDecisions: [],
+          components: { title: 0.7, signals: [{ key: "player", value: 0.25 }], reputation: 0.02 },
         },
         {
           id: "c2",
           url: "https://magnetbay.example/torrent/8841",
+          finalUrl: "https://magnetbay.example/torrent/8841",
+          host: "magnetbay.example",
+          domain: "magnetbay.example",
           engine: "yandex",
           titleId: "t3",
           rank: 3,
-          score: 88,
+          score: 95,
           allowlisted: false,
+          variant: { value: "Neon Pursuit", kind: "localized", language: "ru", script: "Cyrl", territory: "RU" },
+          query: "неоновый погоня смотреть",
+          locale: "ru-RU",
+          territory: "RU",
+          evidence: { id: "EV-2381", hash: "b81e4cc902af", at: "02:44 UTC", thumb: "download" },
+          allowlist: { status: "none" },
+          reputation: { domain: "magnetbay.example", count: 6, bonus: 0.05 },
+          priorDecisions: [{ decision: "page_dead", when: "4d ago" }],
+          components: {
+            title: 0.6,
+            signals: [
+              { key: "duration", value: 0.25 },
+              { key: "release", value: 0.05 },
+            ],
+            reputation: 0.05,
+          },
         },
         {
           id: "c3",
           url: "https://official.example/premiere/midnight-precinct",
+          finalUrl: "https://official.example/premiere/midnight-precinct",
+          host: "official.example",
+          domain: "official.example",
           engine: "bing",
           titleId: "t1",
           rank: 1,
-          score: 100,
+          score: 97,
           allowlisted: true,
+          variant: { value: "Midnight Precinct", kind: "canonical", language: "en", script: "Latn", territory: "US" },
+          query: "midnight precinct premiere",
+          locale: "en-US",
+          territory: "US",
+          evidence: { id: "EV-2380", hash: "2ad7c1f90b64", at: "02:40 UTC", thumb: "player" },
+          allowlist: { status: "hit", entry: "official.example", kind: "official_domain", scope: "rights_holder" },
+          reputation: { domain: "official.example", count: 2, bonus: 0.02 },
+          priorDecisions: [],
+          components: { title: 0.7, signals: [{ key: "player", value: 0.25 }], reputation: 0.02 },
         },
         {
           id: "c4",
           url: "https://vk-video.example/video-2291",
+          finalUrl: "https://vk-video.example/video-2291",
+          host: "vk-video.example",
+          domain: "vk-video.example",
           engine: "google",
           titleId: "t2",
           rank: 6,
-          score: 74,
+          score: 70,
           allowlisted: false,
+          variant: { value: "The Long Chase", kind: "canonical", language: "en", script: "Latn", territory: "US" },
+          query: "the long chase 2023",
+          locale: "en-US",
+          territory: "US",
+          evidence: { id: "EV-2379", hash: "4a7d90fe12c8", at: "02:31 UTC", thumb: "page" },
+          allowlist: { status: "none" },
+          reputation: { domain: "vk-video.example", count: 0, bonus: 0 },
+          priorDecisions: [{ decision: "not_a_violation", when: "12d ago" }],
+          components: { title: 0.7, signals: [], reputation: 0 },
+        },
+      ],
+      allowlistEntries: [
+        {
+          id: "a1",
+          kind: "official_domain",
+          value: "official.example",
+          scope: "rights_holder",
+          target: null,
+          territory: null,
+          source: "operator",
+        },
+        {
+          id: "a2",
+          kind: "official_domain",
+          value: "festival.example",
+          scope: "title",
+          target: "t3",
+          territory: null,
+          source: "operator",
+        },
+        {
+          id: "a3",
+          kind: "licensed_destination",
+          value: "partner.example",
+          scope: "group",
+          target: "app.group.feature",
+          territory: "US",
+          source: "review",
+        },
+        {
+          id: "a4",
+          kind: "neutral_source",
+          value: "wikipedia.example",
+          scope: "rights_holder",
+          target: null,
+          territory: null,
+          source: "learned",
         },
       ],
       violations: [
@@ -934,8 +1078,8 @@
   const titleOf = (id) => state.titles.find((title) => title.id === id);
   const engineOf = (id) => RECIPIENTS[id] || RECIPIENTS.google;
   const scoreLevel = (score) => (score >= 90 ? "high" : score >= 78 ? "mid" : "low");
-  const openViolations = () => state.violations.filter((violation) => violation.state === "open");
-  const draftNotices = () => state.notices.filter((notice) => notice.state === "draft");
+  const openViolations = () => visibleViolations().filter((violation) => violation.state === "open");
+  const draftNotices = () => visibleNotices().filter((notice) => notice.state === "draft");
 
   function currentRoute() {
     const route = location.hash.replace(/^#\/?/, "");
@@ -959,7 +1103,7 @@
   function updateChrome() {
     const route = currentRoute();
     const counts = {
-      review: state.candidates.length,
+      review: displayCandidates().length,
       violations: openViolations().length,
       notices: draftNotices().length,
     };
@@ -976,6 +1120,10 @@
       const tabsRect = tabs.getBoundingClientRect();
       tabs.scrollLeft += tabRect.left - tabsRect.left - (tabsRect.width - tabRect.width) / 2;
     }
+
+    document.querySelectorAll(".proto-bar [data-state]").forEach((button) => {
+      button.setAttribute("aria-pressed", String(button.dataset.state === state.demoState));
+    });
 
     scanBtn.classList.toggle("is-scanning", state.scanning);
     if (state.scanning) {
@@ -1006,10 +1154,20 @@
   }
 
   /* Screens. */
+  function quotaBanner() {
+    if (state.demoState !== "quota") return "";
+    return `<div class="banner banner--amber" role="status">
+      ${icon("i-gauge", "icon--sm")}
+      <span><b>${t("app.quota.title")}</b> ${t("app.quota.body")}</span>
+      <button class="btn btn-ghost btn-sm" type="button" data-action="demo-state" data-state="normal">${t("app.quota.resume")}</button>
+    </div>`;
+  }
+
   function renderDashboard() {
-    const pending = state.candidates.length;
-    const open = openViolations().length;
-    const served = state.notices.filter((notice) => notice.submission && notice.submission.state === "acknowledged").length;
+    const empty = state.demoState === "empty";
+    const pending = displayCandidates().length;
+    const open = empty ? 0 : openViolations().length;
+    const served = empty ? 0 : state.notices.filter((notice) => notice.submission && notice.submission.state === "acknowledged").length;
 
     const blips = [
       { cls: "blip--red", top: "24%", left: "63%", delay: "0s" },
@@ -1025,6 +1183,11 @@
         <div class="engine-row">
           <span class="engine-badge" data-engine="${id}"><span class="engine-glyph">${meta.glyph}</span></span>
           <span class="name">${meta.name}</span>
+          ${
+            state.demoState === "quota" && id === "google"
+              ? `<span class="chip chip--amber engine-quota">${t("app.quota.engine")}</span>`
+              : ""
+          }
         </div>`,
       )
       .join("");
@@ -1051,10 +1214,13 @@
       <section class="page">
         <header class="page-head">
           <div>
-            <p class="eyebrow"><span class="dot"></span>${timeNow()} · ${t("app.dashboard.allEngines")}<span class="nowrap"> · ${health}</span></p>
+            <p class="eyebrow"><span class="dot"></span>${timeNow()} · ${
+              state.demoState === "quota" ? t("app.dashboard.enginesUp", { n: 2 }) : t("app.dashboard.allEngines")
+            }<span class="nowrap"> · ${health}</span></p>
             <h1 class="page-title">${headline}</h1>
           </div>
         </header>
+        ${quotaBanner()}
 
         <div class="stats">
           <div class="stat" data-tone="red">
@@ -1069,7 +1235,7 @@
           </div>
           <div class="stat" data-tone="blue">
             <span class="stat-icon">${icon("i-file")}</span>
-            <div class="stat-num">${state.notices.length}</div>
+            <div class="stat-num">${empty ? 0 : state.notices.length}</div>
             <div class="stat-label">${t("app.dashboard.noticesOnFile")}</div>
           </div>
           <div class="stat" data-tone="green">
@@ -1112,61 +1278,119 @@
   }
 
 
-  /* Analytics and DeepSeek. */
+  /* Chart. */
   function trendDayLabel(index, count) {
     return index === count - 1 ? t("app.chart.today") : t("app.chart.daysAgo", { n: count - 1 - index });
   }
 
-  function trendInspector(values) {
-    return `<span class="trend-inspector-date">${esc(values.label)}</span><span class="trend-inspector-values">${t("app.chart.dayValues", {
-      detected: values.detected,
-      resolved: values.resolved,
-      notices: values.notices,
-    })}</span>`;
+  function chartGroups(grouping) {
+    if (grouping === "group") {
+      return [
+        { key: "app.group.feature", label: t("app.group.feature") },
+        { key: "app.group.winter", label: t("app.group.winter") },
+        { key: "app.group.archive", label: t("app.group.archive") },
+      ];
+    }
+    if (grouping === "engine" || grouping === "recipient") {
+      return Object.entries(RECIPIENTS).map(([key, meta]) => ({ key, label: meta.name }));
+    }
+    return [{ key: "total", label: t("app.chart.total") }];
   }
 
-  function resetTrendInspector() {
-    const inspector = document.getElementById("trend-inspector");
-    if (!inspector) return;
-    const selected = document.querySelector('.trend-hit[data-selected="true"]');
-    inspector.innerHTML = selected
-      ? trendInspector(selected.dataset)
-      : `<span class="trend-inspector-hint">${esc(t("app.chart.inspect"))}</span>`;
+  function chartData() {
+    const metric = CHART_METRICS.some((item) => item.id === state.chartMetric) ? state.chartMetric : "withViolations";
+    const grouping = CHART_GROUPINGS.some((item) => item.id === state.chartGrouping) ? state.chartGrouping : "none";
+    const range = [7, 14, 30].includes(state.chartRange) ? state.chartRange : 14;
+    const applicable =
+      (metric === "tracked" && (grouping === "none" || grouping === "group")) ||
+      (metric === "withViolations" && grouping !== "recipient") ||
+      metric === "resolved";
+    const effectiveGrouping = applicable ? grouping : "none";
+    const groups = chartGroups(effectiveGrouping);
+    const start = CHART_DAYS - range;
+    const days = Array.from({ length: range }, (_, index) => start + index);
+    const paused = new Set(state.titles.filter((title) => title.paused).map((title) => title.id));
+    const active = (record, day) =>
+      record.detectedDay <= day && (record.resolvedDay === null || record.resolvedDay > day);
+    const resolvedOn = (record, day) => {
+      if (record.resolvedDay !== day) return false;
+      if (state.resolvedBasis === "closed") return record.resolution === "closed";
+      return true;
+    };
+    const valuesFor = (key, day) => {
+      if (metric === "tracked") {
+        return state.titles.filter((title) => !paused.has(title.id) && (key === "total" || title.groupKey === key)).length;
+      }
+      if (metric === "withViolations") {
+        const titles = new Set();
+        HISTORY.forEach((record) => {
+          if (!active(record, day)) return;
+          if (key !== "total") {
+            if (effectiveGrouping === "group" && record.groupKey !== key) return;
+            if (effectiveGrouping === "engine" && record.engine !== key) return;
+          }
+          if (!paused.has(record.titleId)) titles.add(record.titleId);
+        });
+        return titles.size;
+      }
+      return HISTORY.filter((record) => {
+        if (!resolvedOn(record, day)) return false;
+        if (key === "total") return true;
+        if (effectiveGrouping === "group") return record.groupKey === key;
+        if (effectiveGrouping === "engine") return record.engine === key;
+        if (effectiveGrouping === "recipient") return record.recipient === key;
+        return true;
+      }).length;
+    };
+    return {
+      metric,
+      grouping: effectiveGrouping,
+      requestedGrouping: grouping,
+      applicable,
+      range,
+      start,
+      days,
+      series: groups.map((group, index) => ({
+        ...group,
+        color: CHART_COLORS[index % CHART_COLORS.length],
+        values: days.map((day) => valuesFor(group.key, day)),
+      })),
+    };
   }
 
-  function renderInsights() {
-    const all = state.trend;
-    const range = state.trendRange === 7 ? 7 : 14;
-    const start = all.detected.length - range;
-    const detected = all.detected.slice(start);
-    const resolved = all.resolved.slice(start);
-    const notices = all.notices.slice(start);
-    const count = detected.length;
-    const hidden = new Set(
-      (Array.isArray(state.trendHidden) ? state.trendHidden : []).filter((series) =>
-        ["detected", "resolved", "notices"].includes(series),
-      ),
-    );
-    const selected =
-      Number.isInteger(state.trendSelected) && state.trendSelected >= 0 && state.trendSelected < count
-        ? state.trendSelected
-        : null;
+  let lastChart = null;
+
+  function niceStep(value) {
+    const power = 10 ** Math.floor(Math.log10(Math.max(1, value)));
+    const norm = value / power;
+    const step = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
+    return step * power;
+  }
+
+  function chartInspectorHtml(data, index) {
+    if (index === null || index === undefined || !data) {
+      return `<span class="trend-inspector-hint">${esc(t("app.chart.inspect"))}</span>`;
+    }
+    const label = trendDayLabel(index, data.days.length);
+    const values = data.series.map((series) => `${series.label}: ${series.values[index]}`).join(" · ");
+    return `<span class="trend-inspector-date">${esc(label)}</span><span class="trend-inspector-values">${esc(values)}</span>`;
+  }
+
+  function renderChartSvg(data) {
     const width = 720;
-    const height = 220;
+    const height = 240;
     const pad = { left: 38, right: 18, top: 18, bottom: 32 };
     const plotWidth = width - pad.left - pad.right;
     const plotHeight = height - pad.top - pad.bottom;
-    const maxValue = Math.max(...detected, ...resolved, ...notices, 1);
-    const step = Math.max(1, Math.ceil(maxValue / 4));
+    const count = data.days.length;
+    const maxValue = Math.max(...data.series.flatMap((series) => series.values), 1);
+    const step = niceStep(maxValue / 4);
     const topValue = step * 4;
     const x = (index) => pad.left + (count === 1 ? plotWidth / 2 : (index / (count - 1)) * plotWidth);
     const y = (value) => pad.top + plotHeight - (value / topValue) * plotHeight;
     const path = (values) =>
       values.map((value, index) => `${index === 0 ? "M" : "L"}${x(index).toFixed(1)} ${y(value).toFixed(1)}`).join(" ");
     const bottom = pad.top + plotHeight;
-    const area = `M${x(0).toFixed(1)} ${bottom.toFixed(1)} ${detected
-      .map((value, index) => `L${x(index).toFixed(1)} ${y(value).toFixed(1)}`)
-      .join(" ")} L${x(count - 1).toFixed(1)} ${bottom.toFixed(1)} Z`;
     const ticks = [0, 1, 2, 3, 4].map((index) => index * step);
     const grid = ticks
       .map(
@@ -1183,91 +1407,179 @@
         return `<text class="trend-axis" x="${x(index).toFixed(1)}" y="${height - 8}" text-anchor="${anchor}">${esc(label)}</text>`;
       })
       .join("");
-    const totalDetected = detected.reduce((sum, value) => sum + value, 0);
-    const totalResolved = resolved.reduce((sum, value) => sum + value, 0);
-    const resolutionRate = totalDetected ? Math.round((totalResolved / totalDetected) * 100) : 0;
-    const number = new Intl.NumberFormat(PatrolI18n.lang === "ru" ? "ru-RU" : "en-US", { maximumFractionDigits: 1 });
-    const avgDetected = number.format(totalDetected / count);
-    const avgResolved = number.format(totalResolved / count);
-    const dots = [
-      ["detected", detected],
-      ["resolved", resolved],
-    ]
-      .filter(([series]) => !hidden.has(series))
-      .map(([series, values]) => {
-        const value = values[values.length - 1];
-        return `<circle class="trend-dot trend-dot--${series}" cx="${x(count - 1).toFixed(1)}" cy="${y(value).toFixed(1)}" r="3.5" />`;
-      })
-      .join("");
+    const selected =
+      Number.isInteger(state.chartSelected) && state.chartSelected >= 0 && state.chartSelected < count
+        ? state.chartSelected
+        : null;
     const hitWidth = plotWidth / count;
-    const hits = detected
-      .map((value, index) => {
-        const label = trendDayLabel(index, count);
-        return `<rect class="trend-hit" data-action="trend-select" data-index="${index}" data-label="${esc(
-          label,
-        )}" data-detected="${detected[index]}" data-resolved="${resolved[index]}" data-notices="${notices[index]}" x="${(
-          pad.left +
-          index * hitWidth
-        ).toFixed(1)}" y="${pad.top}" width="${hitWidth.toFixed(1)}" height="${plotHeight}" fill="transparent" ${
-          selected === index ? 'data-selected="true"' : ""
-        } />`;
-      })
+    const hits = data.days
+      .map(
+        (day, index) =>
+          `<rect class="trend-hit" data-action="chart-select" data-index="${index}" x="${(pad.left + index * hitWidth).toFixed(
+            1,
+          )}" y="${pad.top}" width="${hitWidth.toFixed(1)}" height="${plotHeight}" fill="transparent" ${
+            selected === index ? 'data-selected="true"' : ""
+          } />`,
+      )
       .join("");
     const guide =
       selected === null
         ? ""
         : `<line class="trend-guide" x1="${x(selected).toFixed(1)}" x2="${x(selected).toFixed(1)}" y1="${pad.top}" y2="${bottom}" />`;
-    const chart = `<svg class="trend-chart" data-count="${count}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(
-      t("app.chart.aria", { detected: totalDetected, resolved: totalResolved }),
+    const area =
+      data.series.length === 1
+        ? `M${x(0).toFixed(1)} ${bottom.toFixed(1)} ${data.series[0].values
+            .map((value, index) => `L${x(index).toFixed(1)} ${y(value).toFixed(1)}`)
+            .join(" ")} L${x(count - 1).toFixed(1)} ${bottom.toFixed(1)} Z`
+        : "";
+    const lines = data.series
+      .map(
+        (series) =>
+          `<path class="trend-line" style="stroke:${series.color}" d="${path(series.values)}" />` +
+          `<circle class="trend-dot" style="fill:${series.color}" cx="${x(count - 1).toFixed(1)}" cy="${y(
+            series.values[series.values.length - 1],
+          ).toFixed(1)}" r="3.5" />`,
+      )
+      .join("");
+    return `<svg class="trend-chart" data-count="${count}" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(
+      t("app.chart.aria"),
     )}">
         ${grid}
+        ${area ? `<path class="trend-area" d="${area}" />` : ""}
+        ${lines}
         ${guide}
-        ${hidden.has("detected") ? "" : `<path class="trend-area" d="${area}" />`}
-        ${hidden.has("detected") ? "" : `<path class="trend-line trend-line--detected" d="${path(detected)}" />`}
-        ${hidden.has("resolved") ? "" : `<path class="trend-line trend-line--resolved" d="${path(resolved)}" />`}
-        ${hidden.has("notices") ? "" : `<path class="trend-line trend-line--notices" d="${path(notices)}" />`}
-        ${dots}
         ${hits}
         ${xLabels}
       </svg>`;
+  }
+
+  function renderInsights() {
+    if (state.demoState === "loading") {
+      return `<div class="insight-grid">
+        <section class="panel trend-panel">
+          <div class="panel-head"><span>${t("app.chart.title")}</span></div>
+          <div class="trend-body"><div class="skeleton skeleton--chart" aria-busy="true"></div></div>
+        </section>
+        ${renderDeepSeekCard()}
+      </div>`;
+    }
+    const data = chartData();
+    lastChart = data;
+    const totals = data.series.map((series) => series.values.reduce((sum, value) => sum + value, 0));
+    const today = CHART_DAYS - 1;
+    const pausedIds = new Set(state.titles.filter((title) => title.paused).map((title) => title.id));
+    const activeToday = HISTORY.filter(
+      (record) =>
+        record.detectedDay <= today &&
+        (record.resolvedDay === null || record.resolvedDay > today) &&
+        !pausedIds.has(record.titleId),
+    );
+    const activeTitles = new Set(activeToday.map((record) => record.titleId)).size;
+    const affectedGroups = new Set(activeToday.map((record) => record.groupKey)).size;
+    const latest =
+      data.metric === "withViolations"
+        ? activeTitles
+        : data.series.reduce((sum, series) => sum + series.values[series.values.length - 1], 0);
+    const dailyTotals = data.days.map((_, index) =>
+      data.series.reduce((sum, series) => sum + series.values[index], 0),
+    );
+    const peak = Math.max(...dailyTotals, 0);
+    const pausedCount = state.titles.filter((title) => title.paused).length;
+    const removedCount = HISTORY.filter(
+      (record) => record.resolvedDay >= data.start && record.resolution === "removed",
+    ).length;
+    const closedCount = HISTORY.filter(
+      (record) => record.resolvedDay >= data.start && record.resolution === "closed",
+    ).length;
+    const kpis =
+      data.metric === "tracked"
+        ? [
+            [latest, t("app.chart.kpiTracked")],
+            [pausedCount, t("app.chart.kpiPaused")],
+            [new Set(state.titles.map((title) => title.groupKey)).size, t("app.chart.kpiGroups")],
+          ]
+        : data.metric === "withViolations"
+          ? [
+              [latest, t("app.chart.kpiWithViolations")],
+              [affectedGroups, t("app.chart.kpiAffected")],
+              [peak, t("app.chart.kpiPeak")],
+            ]
+          : [
+              [totals.reduce((sum, value) => sum + value, 0), t("app.chart.kpiResolved")],
+              [removedCount, t("app.chart.kpiRemoved")],
+              [closedCount, t("app.chart.kpiClosed")],
+            ];
+    const metricTabs = CHART_METRICS.map(
+      (metric) =>
+        `<button class="chart-tab" type="button" data-action="chart-metric" data-metric="${metric.id}" aria-pressed="${
+          data.metric === metric.id
+        }">${t(metric.labelKey)}</button>`,
+    ).join("");
+    const grouping = `<select class="select select--sm" id="chart-grouping" aria-label="${esc(t("app.chart.grouping"))}">
+      ${CHART_GROUPINGS.map(
+        (item) =>
+          `<option value="${item.id}" ${data.requestedGrouping === item.id ? "selected" : ""}>${t(item.labelKey)}</option>`,
+      ).join("")}
+    </select>`;
     const rangeSwitch = `<div class="trend-range-switch" role="group" aria-label="${esc(t("app.chart.range"))}">
-      <button class="trend-range-btn" type="button" data-action="trend-range" data-range="7" aria-pressed="${range === 7}">${t("app.chart.range7")}</button>
-      <button class="trend-range-btn" type="button" data-action="trend-range" data-range="14" aria-pressed="${range === 14}">${t("app.chart.range14")}</button>
+      ${[7, 14, 30]
+        .map(
+          (range) =>
+            `<button class="trend-range-btn" type="button" data-action="chart-range" data-range="${range}" aria-pressed="${
+              data.range === range
+            }">${t("app.chart.rangeN", { n: range })}</button>`,
+        )
+        .join("")}
     </div>`;
-    const legend = [
-      ["detected", "app.chart.detected", "legend-dot--detected"],
-      ["resolved", "app.chart.resolved", "legend-dot--resolved"],
-      ["notices", "app.chart.notices", "legend-dot--notices"],
-    ]
+    const basisSwitch =
+      data.metric === "resolved"
+        ? `<div class="chart-basis" role="group" aria-label="${esc(t("app.chart.resolvedBasis"))}">
+            <button class="chart-tab" type="button" data-action="resolved-basis" data-basis="removed_closed" aria-pressed="${
+              state.resolvedBasis !== "closed"
+            }">${t("app.chart.basisRemovedClosed")}</button>
+            <button class="chart-tab" type="button" data-action="resolved-basis" data-basis="closed" aria-pressed="${
+              state.resolvedBasis === "closed"
+            }">${t("app.chart.basisClosed")}</button>
+          </div>`
+        : "";
+    const legend = data.series
       .map(
-        ([series, key, dot]) =>
-          `<button class="trend-legend-item" type="button" data-action="trend-series" data-series="${series}" aria-pressed="${
-            hidden.has(series) ? "false" : "true"
-          }"><i class="legend-dot ${dot}"></i>${t(key)}</button>`,
+        (series) =>
+          `<span class="trend-legend-item"><i class="legend-dot" style="background:${series.color}"></i>${esc(series.label)}</span>`,
       )
       .join("");
-    const inspector =
-      selected === null
-        ? `<span class="trend-inspector-hint">${esc(t("app.chart.inspect"))}</span>`
-        : trendInspector({
-            label: trendDayLabel(selected, count),
-            detected: detected[selected],
-            resolved: resolved[selected],
-            notices: notices[selected],
-          });
+    const noteKey =
+      data.metric === "tracked"
+        ? "app.chart.noteTracked"
+        : data.metric === "withViolations"
+          ? "app.chart.noteWithViolations"
+          : "app.chart.noteResolved";
+    const notApplicable =
+      data.applicable || data.requestedGrouping === "none"
+        ? ""
+        : `<span class="chart-hint">${
+            data.metric === "tracked" ? t("app.chart.groupNotApplicableTracked") : t("app.chart.groupNotApplicable")
+          }</span>`;
+    const inspector = chartInspectorHtml(data, state.chartSelected);
 
     return `<div class="insight-grid">
       <section class="panel trend-panel">
-        <div class="panel-head"><span>${t("app.chart.title")}</span>${rangeSwitch}</div>
+        <div class="panel-head"><span>${t("app.chart.title")}</span><div class="chart-controls">${rangeSwitch}${grouping}</div></div>
         <div class="trend-body">
+          <div class="chart-toolbar">${metricTabs}${basisSwitch}</div>
+          ${notApplicable}
           <div class="trend-kpis">
-            <div class="trend-kpi"><span class="trend-kpi-num">${avgDetected}</span><span class="trend-kpi-label">${t("app.chart.detectedRate")}</span></div>
-            <div class="trend-kpi"><span class="trend-kpi-num">${avgResolved}</span><span class="trend-kpi-label">${t("app.chart.resolvedRate")}</span></div>
-            <div class="trend-kpi"><span class="trend-kpi-num">${resolutionRate}%</span><span class="trend-kpi-label">${t("app.chart.resolutionRate")}</span></div>
+            ${kpis
+              .map(
+                ([value, label]) =>
+                  `<div class="trend-kpi"><span class="trend-kpi-num">${value}</span><span class="trend-kpi-label">${esc(label)}</span></div>`,
+              )
+              .join("")}
           </div>
-          ${chart}
+          ${renderChartSvg(data)}
           <div class="trend-legend">${legend}</div>
           <div class="trend-inspector" id="trend-inspector" aria-live="polite">${inspector}</div>
+          <p class="chart-note">${t(noteKey)}</p>
         </div>
       </section>
       ${renderDeepSeekCard()}
@@ -1318,6 +1630,88 @@
     </section>`;
   }
 
+  function allowlistKindLabel(kind) {
+    const keys = {
+      official_domain: "app.allowlist.kindOfficial",
+      licensed_destination: "app.allowlist.kindLicensed",
+      neutral_source: "app.allowlist.kindNeutral",
+    };
+    return t(keys[kind] || "app.allowlist.kindOfficial");
+  }
+
+  function allowlistScopeLabel(entry) {
+    if (entry.scope === "rights_holder") return t("app.allowlist.scopeRightsHolder");
+    if (entry.scope === "group") return t(entry.target);
+    const title = titleOf(entry.target);
+    return title ? title.name : t("app.unknownTitle");
+  }
+
+  function renderAllowlistPanel() {
+    const entries = state.allowlistEntries
+      .map(
+        (entry) => `<div class="allowlist-row">
+          <span class="chip">${esc(allowlistKindLabel(entry.kind))}</span>
+          <span class="allowlist-value">${esc(entry.value)}</span>
+          <span class="rv-sub">${esc(allowlistScopeLabel(entry))}</span>
+          <span class="rv-sub">${esc(entry.territory || "*")}</span>
+          <span class="chip chip--muted">${esc(entry.source)}</span>
+          <button class="btn btn-ghost btn-sm" type="button" data-action="allowlist-remove" data-id="${entry.id}">${t("app.allowlist.remove")}</button>
+        </div>`,
+      )
+      .join("");
+    const targets = [
+      ...new Set(state.titles.map((title) => title.groupKey)),
+    ]
+      .map((groupKey) => `<option value="${esc(groupKey)}">${t("app.allowlist.groupOption", { name: t(groupKey) })}</option>`)
+      .concat(
+        state.titles.map(
+          (title) => `<option value="${esc(title.id)}">${t("app.allowlist.titleOption", { name: title.name })}</option>`,
+        ),
+      )
+      .join("");
+    return `<section class="panel settings-panel settings-panel--wide">
+      <div class="panel-head">
+        <span>${t("app.allowlist.title")}</span>
+        <span class="chip chip--muted">${t("app.allowlist.count", { n: state.allowlistEntries.length })}</span>
+      </div>
+      <div class="settings-body">
+        <p class="settings-lede">${t("app.allowlist.lede")}</p>
+        <div class="allowlist-table">
+          <div class="allowlist-row allowlist-row--head" aria-hidden="true">
+            <span>${t("app.allowlist.colKind")}</span>
+            <span>${t("app.allowlist.colValue")}</span>
+            <span>${t("app.allowlist.colScope")}</span>
+            <span>${t("app.allowlist.colTerritory")}</span>
+            <span>${t("app.allowlist.colSource")}</span>
+            <span></span>
+          </div>
+          ${entries}
+        </div>
+        <form id="allowlist-form" class="allowlist-form">
+          <select class="select" name="kind" aria-label="${esc(t("app.allowlist.colKind"))}">
+            <option value="official_domain">${t("app.allowlist.kindOfficial")}</option>
+            <option value="licensed_destination">${t("app.allowlist.kindLicensed")}</option>
+            <option value="neutral_source">${t("app.allowlist.kindNeutral")}</option>
+          </select>
+          <input class="settings-input" name="value" type="text" placeholder="${esc(t("app.allowlist.valuePlaceholder"))}" aria-label="${esc(
+            t("app.allowlist.colValue"),
+          )}" required />
+          <select class="select" name="scope" aria-label="${esc(t("app.allowlist.colScope"))}">
+            <option value="rights_holder">${t("app.allowlist.scopeRightsHolder")}</option>
+            <option value="group">${t("app.allowlist.scopeGroup")}</option>
+            <option value="title">${t("app.allowlist.scopeTitle")}</option>
+          </select>
+          <select class="select" name="target" aria-label="${esc(t("app.allowlist.colTarget"))}">${targets}</select>
+          <input class="settings-input settings-input--short" name="territory" type="text" placeholder="*" aria-label="${esc(
+            t("app.allowlist.colTerritory"),
+          )}" />
+          <button class="btn btn-primary" type="submit">${icon("i-plus", "icon--sm")}${t("app.allowlist.add")}</button>
+        </form>
+        <p class="settings-hint">${t("app.allowlist.hint")}</p>
+      </div>
+    </section>`;
+  }
+
   function renderSettings() {
     const key = getDeepSeekKey();
     const configured = Boolean(key);
@@ -1329,6 +1723,7 @@
           <h1 class="page-title">${t("app.settings.title")}</h1>
         </div>
       </header>
+      ${renderAllowlistPanel()}
       <div class="settings-grid">
         <section class="panel settings-panel">
           <div class="panel-head">
@@ -1438,32 +1833,35 @@
     }
   }
 
-  function renderReview() {
-    const cards = state.candidates.map((candidate) => candidateCard(candidate)).join("");
-    const empty = `
-      <div class="empty">
-        <span class="empty-icon">${icon("i-shield", "icon--lg")}</span>
-        <h2>${t("app.review.emptyTitle")}</h2>
-        <p>${t("app.review.emptyBody")}</p>
-        <button class="btn btn-primary" type="button" data-action="scan">${icon("i-radar", "icon--sm")}${t("app.scan.run")}</button>
-      </div>`;
-
-    return `
-      <section class="page">
-        <header class="page-head">
-          <div>
-            <p class="eyebrow"><span class="dot"></span>${t("app.review.eyebrow")} · ${t("app.common.pending", { n: state.candidates.length })}</p>
-            <h1 class="page-title">${t("app.review.title")}</h1>
-          </div>
-        </header>
-        <div class="queue" id="queue">${cards || empty}</div>
-      </section>`;
+  function displayCandidates() {
+    return state.demoState === "empty" ? [] : state.candidates;
   }
 
-  function candidateCard(candidate) {
-    const title = titleOf(candidate.titleId);
-    const engine = engineOf(candidate.engine);
-    const level = scoreLevel(candidate.score);
+  function visibleViolations() {
+    return state.demoState === "empty" ? [] : state.violations;
+  }
+
+  function visibleNotices() {
+    return state.demoState === "empty" ? [] : state.notices;
+  }
+
+  function scoreFormula(candidate) {
+    const components = candidate.components || { title: 0, signals: [], reputation: 0 };
+    const parts = [components.title, ...(components.signals || []).map((signal) => signal.value), components.reputation]
+      .filter((value) => value > 0)
+      .map((value) => value.toFixed(2));
+    return parts.join(" + ");
+  }
+
+  function scoreComponentsLabel(candidate) {
+    const components = candidate.components || { title: 0, signals: [], reputation: 0 };
+    const parts = [t("app.review.titleComponent")];
+    (components.signals || []).forEach((signal) => parts.push(t(`app.signal.${signal.key}`)));
+    if (components.reputation > 0) parts.push(t("app.review.reputation"));
+    return parts.join(" · ");
+  }
+
+  function candidateActions(candidate, compact = false) {
     const locked = candidate.allowlisted;
     const menuActions = ["wrong", "authorized", "dead"]
       .map((decision) => {
@@ -1473,6 +1871,149 @@
         </button>`;
       })
       .join("");
+    return `<div class="candidate-actions ${compact ? "candidate-actions--compact" : ""}">
+      <button class="btn btn-danger btn-confirm ${compact ? "btn-sm" : ""}" type="button" data-action="review" data-id="${candidate.id}" data-decision="confirm" ${
+        locked ? `disabled title="${t("app.review.allowlistedTitle")}"` : ""
+      }>${icon("i-siren", "icon--sm")}${t("app.review.confirm")}</button>
+      <button class="btn btn-ghost ${compact ? "btn-sm" : ""}" type="button" data-action="review" data-id="${candidate.id}" data-decision="dismiss">${t(
+        "app.review.dismiss",
+      )}</button>
+      <details class="decision-menu">
+        <summary class="btn btn-ghost ${compact ? "btn-sm" : ""}">${t("app.review.more")}</summary>
+        <div class="decision-menu-panel">${menuActions}</div>
+      </details>
+    </div>`;
+  }
+
+  function renderReview() {
+    const candidates = displayCandidates();
+    const density = state.reviewDensity === "cards" ? "cards" : "rows";
+    const densitySwitch = `<div class="density-switch" role="group" aria-label="${esc(t("app.review.density"))}">
+      <button class="chart-tab" type="button" data-action="review-density" data-density="rows" aria-pressed="${density === "rows"}">${t(
+        "app.review.densityRows",
+      )}</button>
+      <button class="chart-tab" type="button" data-action="review-density" data-density="cards" aria-pressed="${density === "cards"}">${t(
+        "app.review.densityCards",
+      )}</button>
+    </div>`;
+    const skeleton = `<div class="review-table review-table--loading" aria-busy="true">
+      ${Array.from({ length: 3 })
+        .map(
+          () => `<div class="review-row review-row--skeleton">
+            <span class="skeleton skeleton--score"></span>
+            <span class="skeleton skeleton--wide"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton"></span>
+            <span class="skeleton skeleton--short"></span>
+          </div>`,
+        )
+        .join("")}
+    </div>`;
+    const empty = `
+      <div class="empty">
+        <span class="empty-icon">${icon("i-shield", "icon--lg")}</span>
+        <h2>${t("app.review.emptyTitle")}</h2>
+        <p>${t("app.review.emptyBody")}</p>
+        <button class="btn btn-primary" type="button" data-action="scan">${icon("i-radar", "icon--sm")}${t("app.scan.run")}</button>
+      </div>`;
+    const body =
+      state.demoState === "loading"
+        ? skeleton
+        : density === "cards"
+          ? `<div class="queue" id="queue">${candidates.map((candidate) => candidateCard(candidate)).join("") || empty}</div>`
+          : candidates.length
+            ? `<div class="review-table" id="queue">
+                <div class="review-head" aria-hidden="true">
+                  <span>${t("app.review.colScore")}</span>
+                  <span>${t("app.review.colWork")}</span>
+                  <span>${t("app.review.colUrl")}</span>
+                  <span>${t("app.review.colSource")}</span>
+                  <span>${t("app.review.colEvidence")}</span>
+                  <span>${t("app.review.colFlags")}</span>
+                  <span></span>
+                </div>
+                ${candidates.map((candidate) => candidateRow(candidate)).join("")}
+              </div>`
+            : empty;
+
+    return `
+      <section class="page">
+        <header class="page-head">
+          <div>
+            <p class="eyebrow"><span class="dot"></span>${t("app.review.eyebrow")} · ${t("app.common.pending", { n: candidates.length })}</p>
+            <h1 class="page-title">${t("app.review.title")}</h1>
+          </div>
+          ${densitySwitch}
+        </header>
+        ${quotaBanner()}
+        ${body}
+        <p class="page-note">${t("app.review.note")}</p>
+      </section>`;
+  }
+
+  function candidateRow(candidate) {
+    const title = titleOf(candidate.titleId);
+    const engine = engineOf(candidate.engine);
+    const level = scoreLevel(candidate.score);
+    const variant = candidate.variant || {};
+    const evidence = candidate.evidence || {};
+    const reputation = candidate.reputation || {};
+    const prior = candidate.priorDecisions || [];
+    const allowlist = candidate.allowlist || { status: "none" };
+    return `
+      <article class="review-row" data-id="${candidate.id}">
+        <div class="rv-score">
+          <span class="score-num" data-level="${level}">${candidate.score}</span>
+          <span class="rv-formula">${scoreFormula(candidate)}</span>
+          <span class="score-track"><span class="score-fill" style="width:${candidate.score}%"></span></span>
+        </div>
+        <div class="rv-work">
+          <div class="rv-title">${esc(title ? title.name : t("app.unknownTitle"))} <span class="muted">· ${title ? title.year : "—"}</span></div>
+          <span class="chip chip--blue">${esc(variant.value || "—")}</span>
+          <div class="rv-sub">${esc(variant.kind || "")} · ${esc(variant.language || "")} · ${esc(variant.script || "")} · ${esc(
+            variant.territory || "",
+          )}</div>
+        </div>
+        <div class="rv-url">
+          <span class="rv-url-main">${esc(candidate.url)}</span>
+          ${candidate.finalUrl && candidate.finalUrl !== candidate.url ? `<span class="rv-sub">→ ${esc(candidate.finalUrl)}</span>` : ""}
+          <span class="rv-sub">${esc(candidate.host || hostOf(candidate.url))} · ${esc(candidate.domain || "")}</span>
+        </div>
+        <div class="rv-source">
+          <span class="rv-engine">${esc(engine.name)} · ${t("app.review.rank", { n: candidate.rank })}</span>
+          <span class="rv-sub">${esc(candidate.query || "")}</span>
+          <span class="rv-sub">${esc(candidate.locale || "")} · ${esc(candidate.territory || "")}</span>
+        </div>
+        <div class="rv-evidence">
+          <button class="btn-evidence" type="button" data-action="candidate-evidence" data-id="${candidate.id}">${icon("i-lock", "icon--sm")}${esc(
+            evidence.id || "—",
+          )}</button>
+          <span class="rv-sub">${esc(evidence.hash || "")}</span>
+          <span class="rv-sub">${esc(evidence.at || "")}</span>
+        </div>
+        <div class="rv-flags">
+          ${
+            allowlist.status === "hit"
+              ? `<span class="chip chip--locked">${icon("i-lock", "icon--sm")}${esc(allowlist.entry || "")} · ${esc(allowlist.kind || "")}</span>`
+              : `<span class="chip chip--muted">${t("app.review.noAllowlist")}</span>`
+          }
+          <span class="rv-sub">${t("app.review.reputationValue", {
+            count: reputation.count || 0,
+            bonus: (reputation.bonus || 0).toFixed(2),
+          })}</span>
+          <span class="rv-sub">${prior.length ? t("app.review.priorValue", { decision: prior[0].decision, when: prior[0].when }) : t("app.review.priorNone")}</span>
+        </div>
+        ${candidateActions(candidate, true)}
+      </article>`;
+  }
+
+  function candidateCard(candidate) {
+    const title = titleOf(candidate.titleId);
+    const engine = engineOf(candidate.engine);
+    const level = scoreLevel(candidate.score);
+    const locked = candidate.allowlisted;
+    const variant = candidate.variant || {};
+    const evidence = candidate.evidence || {};
 
     return `
       <article class="candidate" data-id="${candidate.id}">
@@ -1487,41 +2028,58 @@
           <div class="candidate-meta">
             <span class="chip chip--blue">${icon("i-globe", "icon--sm")}${engine.name}</span>
             <span class="chip">${t("app.review.rank", { n: candidate.rank })}</span>
+            <span class="chip">${esc(variant.value || "")}</span>
             ${locked ? `<span class="chip chip--locked">${icon("i-lock", "icon--sm")}${t("app.review.allowlisted")}</span>` : ""}
           </div>
-          <div class="candidate-actions">
-            <button class="btn btn-danger btn-confirm" type="button" data-action="review" data-id="${candidate.id}" data-decision="confirm" ${
-              locked ? `disabled title="${t("app.review.allowlistedTitle")}"` : ""
-            }>${icon("i-siren", "icon--sm")}${t("app.review.confirm")}</button>
-            <button class="btn btn-ghost" type="button" data-action="review" data-id="${candidate.id}" data-decision="dismiss">${t("app.review.dismiss")}</button>
-            <details class="decision-menu">
-              <summary class="btn btn-ghost">${t("app.review.more")}</summary>
-              <div class="decision-menu-panel">${menuActions}</div>
-            </details>
-          </div>
+          <div class="rv-sub">${scoreComponentsLabel(candidate)} · ${esc(evidence.id || "")} · ${esc(evidence.at || "")}</div>
+          ${candidateActions(candidate)}
         </div>
         <div class="candidate-score">
           <span class="score-num" data-level="${level}">${candidate.score}%</span>
           <span class="score-track"><span class="score-fill" style="width:${candidate.score}%"></span></span>
           <span class="score-label">${t("app.review.match")}</span>
+          <span class="rv-formula">${scoreFormula(candidate)}</span>
         </div>
       </article>`;
   }
 
   function renderViolations() {
-    const rows = state.violations
-      .map((violation) => {
-        const title = titleOf(violation.titleId);
-        const picked = selected.has(violation.id);
-        const inNotice = Boolean(violation.noticeId);
-        const canPick = violation.state === "open" && !inNotice;
-        return `
+    const filter = state.violationTitleFilter || "all";
+    const all = visibleViolations();
+    const filtered = filter === "all" ? all : all.filter((violation) => violation.titleId === filter);
+    const groups = [];
+    filtered.forEach((violation) => {
+      let group = groups.find((entry) => entry.titleId === violation.titleId);
+      if (!group) {
+        group = { titleId: violation.titleId, violations: [] };
+        groups.push(group);
+      }
+      group.violations.push(violation);
+    });
+    const rows = groups
+      .map((group) => {
+        const title = titleOf(group.titleId);
+        const openCount = group.violations.filter((violation) => violation.state === "open").length;
+        return `<div class="v-group">
+          <div class="v-group-head">
+            <span class="v-group-title">${esc(title ? title.name : t("app.unknownTitle"))}</span>
+            <span class="v-group-meta">${t("app.violations.groupMeta", {
+              open: openCount,
+              total: group.violations.length,
+            })}</span>
+          </div>
+          ${group.violations
+            .map((violation) => {
+              const picked = selected.has(violation.id);
+              const inNotice = Boolean(violation.noticeId);
+              const canPick = violation.state === "open" && !inNotice;
+              return `
         <div class="violation ${violation.state === "removed" ? "is-removed" : ""} ${picked ? "is-picked" : ""}">
           <input class="check" type="checkbox" aria-label="${t("app.violations.select", { host: violation.host })}" data-select="${violation.id}" ${
             picked ? "checked" : ""
           } ${canPick ? "" : "disabled"} />
           <div style="min-width:0">
-            <div class="v-title">${esc(title ? title.name : t("app.unknownTitle"))} <span class="v-host-name muted">· ${esc(violation.host)}</span></div>
+            <div class="v-title">${esc(violation.host)} <span class="v-host-name muted">· ${esc(violation.url)}</span></div>
           </div>
           <div class="v-evidence">
             <button class="btn-evidence" type="button" data-action="evidence" data-id="${violation.id}">${icon("i-lock", "icon--sm")}${esc(violation.evidence.id)}</button>
@@ -1535,6 +2093,9 @@
                   : `<span class="chip chip--danger"><span class="dot"></span>${t("app.violations.open")}</span>`
             }
           </div>
+        </div>`;
+            })
+            .join("")}
         </div>`;
       })
       .join("");
@@ -1561,6 +2122,15 @@
             <p class="eyebrow"><span class="dot"></span>${t("app.violations.eyebrow")} · ${t("app.violations.openCount", { n: openViolations().length })}</p>
             <h1 class="page-title">${t("app.violations.title")}</h1>
           </div>
+          <select class="select select--sm" id="violation-title-filter" aria-label="${esc(t("app.violations.filter"))}">
+            <option value="all" ${filter === "all" ? "selected" : ""}>${t("app.violations.filterAll")}</option>
+            ${state.titles
+              .map(
+                (title) =>
+                  `<option value="${esc(title.id)}" ${filter === title.id ? "selected" : ""}>${esc(title.name)}</option>`,
+              )
+              .join("")}
+          </select>
         </header>
         ${
           rows
@@ -1614,7 +2184,7 @@
   }
 
   function renderNotices() {
-    const cards = state.notices
+    const cards = visibleNotices()
       .map((notice) => {
         const meta = engineOf(notice.recipient);
         const status = noticeState(notice);
@@ -1730,6 +2300,47 @@
       </dl>
       <div class="chain">${evidence.chain.map((hop) => `<span>${esc(hop)}</span>`).join("<i>→</i>")}</div>
       <p class="muted" style="margin:16px 0 0;font-size:11.5px">${t("app.evidence.note")}</p>`,
+    );
+  }
+
+  function candidateEvidenceModal(candidate) {
+    const title = titleOf(candidate.titleId);
+    const variant = candidate.variant || {};
+    const evidence = candidate.evidence || {};
+    const allowlist = candidate.allowlist || { status: "none" };
+    const reputation = candidate.reputation || {};
+    const prior = candidate.priorDecisions || [];
+    openModal(
+      t("app.evidence.candidateTitle", { id: evidence.id || "—" }),
+      `<dl class="evidence-grid">
+        <div class="ev-row"><dt>${t("app.evidence.titleField")}</dt><dd>${esc(title ? title.name : t("app.evidence.unknown"))}</dd></div>
+        <div class="ev-row"><dt>${t("app.evidence.variant")}</dt><dd>${esc(variant.value || "—")} · ${esc(variant.kind || "")} · ${esc(
+          variant.language || "",
+        )} · ${esc(variant.script || "")} · ${esc(variant.territory || "")}</dd></div>
+        <div class="ev-row"><dt>${t("app.evidence.requestedUrl")}</dt><dd>${esc(candidate.url)}</dd></div>
+        <div class="ev-row"><dt>${t("app.evidence.finalUrl")}</dt><dd>${esc(candidate.finalUrl || candidate.url)}</dd></div>
+        <div class="ev-row"><dt>${t("app.evidence.host")}</dt><dd>${esc(candidate.host || hostOf(candidate.url))} · ${esc(candidate.domain || "")}</dd></div>
+        <div class="ev-row"><dt>${t("app.evidence.captured")}</dt><dd>${esc(evidence.at || "")}</dd></div>
+        <div class="ev-row"><dt>SHA-256</dt><dd>${esc(evidence.hash || "")}</dd></div>
+        <div class="ev-row"><dt>${t("app.evidence.score")}</dt><dd>${candidate.score}% · ${esc(scoreFormula(candidate))} · ${esc(
+          scoreComponentsLabel(candidate),
+        )}</dd></div>
+        <div class="ev-row"><dt>${t("app.evidence.allowlist")}</dt><dd>${
+          allowlist.status === "hit"
+            ? `${esc(allowlist.entry || "")} · ${esc(allowlist.kind || "")} · ${esc(allowlist.scope || "")}`
+            : t("app.review.noAllowlist")
+        }</dd></div>
+        <div class="ev-row"><dt>${t("app.evidence.reputation")}</dt><dd>${t("app.review.reputationValue", {
+          count: reputation.count || 0,
+          bonus: (reputation.bonus || 0).toFixed(2),
+        })}</dd></div>
+        <div class="ev-row"><dt>${t("app.evidence.prior")}</dt><dd>${
+          prior.length
+            ? prior.map((item) => `${esc(item.decision)} · ${esc(item.when)}`).join("<br />")
+            : t("app.review.priorNone")
+        }</dd></div>
+      </dl>
+      <p class="muted" style="margin:16px 0 0;font-size:11.5px">${t("app.evidence.candidateNote")}</p>`,
     );
   }
 
@@ -1869,7 +2480,7 @@
   function handleReview(id, decision, button) {
     const candidate = state.candidates.find((item) => item.id === id);
     if (!candidate) return;
-    const card = button.closest(".candidate");
+    const card = button.closest(".candidate, .review-row");
     if (card && card.dataset.busy === "true") return;
 
     if (decision === "confirm") {
@@ -1937,7 +2548,16 @@
       state: "open",
       noticeId: null,
     });
-    state.trend.detected[state.trend.detected.length - 1] += 1;
+    HISTORY.push({
+      id: uid("h"),
+      titleId: candidate.titleId,
+      groupKey: title ? title.groupKey : "app.group.feature",
+      engine: candidate.engine,
+      recipient: state.cartRecipient,
+      detectedDay: CHART_DAYS - 1,
+      resolvedDay: null,
+      resolution: "closed",
+    });
     state.activity.unshift({
       icon: "siren",
       tone: "red",
@@ -2041,6 +2661,8 @@
 
   function runScan() {
     if (state.scanning) return;
+    if (state.demoState === "empty") state.demoState = "normal";
+    const quota = state.demoState === "quota";
     const runId = (state.scanId || 0) + 1;
     state.scanId = runId;
     state.scanning = true;
@@ -2054,10 +2676,13 @@
       state.scanning = false;
       scanLine.classList.remove("is-active");
       Object.keys(state.engines).forEach((engine) => {
+        if (quota && engine === "google") return;
         state.engines[engine].last = { minutes: 0 };
       });
       const existing = new Set(state.candidates.map((candidate) => candidate.url));
-      const fresh = SCAN_POOL.filter((candidate) => !existing.has(candidate.url)).slice(0, 2);
+      const fresh = SCAN_POOL.filter(
+        (candidate) => !existing.has(candidate.url) && !(quota && candidate.engine === "google"),
+      ).slice(0, 2);
       fresh.forEach((candidate) => {
         const title = titleOf(candidate.titleId);
         const host = hostOf(candidate.url);
@@ -2071,7 +2696,7 @@
         icon: "radar",
         tone: "blue",
         textKey: "app.activity.scansFinished",
-        params: { engines: 3 },
+        params: { engines: quota ? 2 : 3 },
         countType: "newCandidates",
         count: fresh.length,
         time: { minutes: 0 },
@@ -2079,11 +2704,13 @@
       updateChrome();
       render();
       toast(
-        fresh.length
-          ? t("app.scan.finished", { candidates: tn("app.scan.newCandidates", fresh.length) })
-          : t("app.scan.none"),
-        "blue",
-        "i-radar",
+        quota
+          ? t("app.quota.toast")
+          : fresh.length
+            ? t("app.scan.finished", { candidates: tn("app.scan.newCandidates", fresh.length) })
+            : t("app.scan.none"),
+        quota ? "amber" : "blue",
+        quota ? "i-gauge" : "i-radar",
       );
     }, 2000);
   }
@@ -2113,27 +2740,63 @@
     if (!trigger) return;
     const action = trigger.dataset.action;
 
-    if (action === "trend-range") {
+    if (action === "chart-range") {
       const range = Number(trigger.dataset.range);
-      if (range === 7 || range === 14) {
-        state.trendRange = range;
-        state.trendSelected = null;
+      if ([7, 14, 30].includes(range)) {
+        state.chartRange = range;
+        state.chartSelected = null;
         render();
       }
       return;
     }
-    if (action === "trend-series") {
-      const series = trigger.dataset.series;
-      if (!["detected", "resolved", "notices"].includes(series)) return;
-      const hidden = new Set(state.trendHidden);
-      if (hidden.has(series)) hidden.delete(series);
-      else if (hidden.size >= 2) {
-        toast(t("app.chart.keepSeries"), "amber", "i-gauge");
-        return;
-      } else hidden.add(series);
-      state.trendHidden = [...hidden];
-      state.trendSelected = null;
+    if (action === "chart-metric") {
+      const metric = trigger.dataset.metric;
+      if (CHART_METRICS.some((item) => item.id === metric)) {
+        state.chartMetric = metric;
+        state.chartSelected = null;
+        render();
+      }
+      return;
+    }
+    if (action === "resolved-basis") {
+      const basis = trigger.dataset.basis;
+      if (basis === "closed" || basis === "removed_closed") {
+        state.resolvedBasis = basis;
+        state.chartSelected = null;
+        render();
+      }
+      return;
+    }
+    if (action === "review-density") {
+      const density = trigger.dataset.density;
+      if (density === "rows" || density === "cards") {
+        state.reviewDensity = density;
+        render();
+      }
+      return;
+    }
+    if (action === "demo-state") {
+      const demo = trigger.dataset.state;
+      if (DEMO_STATES.includes(demo)) {
+        state.demoState = demo;
+        state.chartSelected = null;
+        updateChrome();
+        render();
+      }
+      return;
+    }
+    if (action === "allowlist-remove") {
+      state.allowlistEntries = state.allowlistEntries.filter((entry) => entry.id !== trigger.dataset.id);
       render();
+      toast(t("app.allowlist.removed"), "blue", "i-lock");
+      return;
+    }
+    if (action === "candidate-evidence") {
+      const candidate = state.candidates.find((item) => item.id === trigger.dataset.id);
+      if (candidate) {
+        modalSpec = { type: "candidate", id: candidate.id };
+        candidateEvidenceModal(candidate);
+      }
       return;
     }
     if (action === "kinopoisk-open") {
@@ -2144,10 +2807,10 @@
       importKinoPoiskTitle(trigger.dataset.kpId);
       return;
     }
-    if (action === "trend-select") {
+    if (action === "chart-select") {
       const index = Number(trigger.dataset.index);
       if (Number.isInteger(index)) {
-        state.trendSelected = state.trendSelected === index ? null : index;
+        state.chartSelected = state.chartSelected === index ? null : index;
         render();
       }
       return;
@@ -2199,9 +2862,9 @@
   document.addEventListener("pointerover", (event) => {
     if (!(event.target instanceof Element)) return;
     const hit = event.target.closest(".trend-hit");
-    if (!hit) return;
+    if (!hit || !lastChart) return;
     const inspector = document.getElementById("trend-inspector");
-    if (inspector) inspector.innerHTML = trendInspector(hit.dataset);
+    if (inspector) inspector.innerHTML = chartInspectorHtml(lastChart, Number(hit.dataset.index));
   });
 
   document.addEventListener("pointerout", (event) => {
@@ -2209,10 +2872,36 @@
     const chart = event.target.closest(".trend-chart");
     if (!chart) return;
     if (event.relatedTarget instanceof Node && chart.contains(event.relatedTarget)) return;
-    resetTrendInspector();
+    const inspector = document.getElementById("trend-inspector");
+    if (inspector) inspector.innerHTML = chartInspectorHtml(lastChart, state.chartSelected);
   });
 
   document.addEventListener("submit", (event) => {
+    if (event.target.id === "allowlist-form") {
+      event.preventDefault();
+      const form = event.target;
+      const kind = form.elements.kind.value;
+      const value = form.elements.value.value.trim();
+      const scope = form.elements.scope.value;
+      const target = form.elements.target.value;
+      const territory = form.elements.territory.value.trim();
+      if (!value) {
+        toast(t("app.allowlist.valueRequired"), "amber", "i-lock");
+        return;
+      }
+      state.allowlistEntries.push({
+        id: uid("a"),
+        kind,
+        value,
+        scope,
+        target: scope === "rights_holder" ? null : target,
+        territory: kind === "licensed_destination" ? territory || "*" : null,
+        source: "operator",
+      });
+      render();
+      toast(t("app.allowlist.added", { value }), "green", "i-lock");
+      return;
+    }
     if (event.target.id !== "deepseek-form") return;
     event.preventDefault();
     const input = document.getElementById("deepseek-key");
@@ -2247,6 +2936,18 @@
     }
     if (event.target.id === "recipient") {
       state.cartRecipient = event.target.value;
+    }
+    if (event.target.id === "chart-grouping") {
+      const grouping = event.target.value;
+      if (CHART_GROUPINGS.some((item) => item.id === grouping)) {
+        state.chartGrouping = grouping;
+        state.chartSelected = null;
+        render();
+      }
+    }
+    if (event.target.id === "violation-title-filter") {
+      state.violationTitleFilter = event.target.value;
+      render();
     }
   });
 

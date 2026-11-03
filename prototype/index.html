@@ -160,6 +160,14 @@
       </span>
     </footer>
 
+    <div class="proto-bar" role="group" aria-label="Prototype state">
+      <span class="proto-label" data-i18n="app.demo.label">Prototype state</span>
+      <button type="button" data-action="demo-state" data-state="normal" aria-pressed="true"><span data-i18n="app.demo.normal">Normal</span></button>
+      <button type="button" data-action="demo-state" data-state="loading" aria-pressed="false"><span data-i18n="app.demo.loading">Loading</span></button>
+      <button type="button" data-action="demo-state" data-state="quota" aria-pressed="false"><span data-i18n="app.demo.quota">Quota exhausted</span></button>
+      <button type="button" data-action="demo-state" data-state="empty" aria-pressed="false"><span data-i18n="app.demo.empty">Empty</span></button>
+    </div>
+
     <div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
 
     <dialog id="modal" aria-labelledby="modal-title">
