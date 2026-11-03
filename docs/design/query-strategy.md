@@ -54,7 +54,7 @@ Each search result keeps its raw URL, query, locale, engine, rank, and observati
 
 ## Budget
 
-The operator sets a monthly allowance per engine in billable units, derived from the dollar cap in "Budget envelope and supported title count". One Google depth-20 query costs two units at $0.60 per 1,000 SERPs; one Yandex request costs one unit at $0.25 per 1,000 deferred requests.
+The operator sets a monthly allowance per engine in billable units, derived from the dollar cap in "_docs/design/budget-envelope.md_". One Google depth-20 query costs two units at $0.60 per 1,000 SERPs; one Yandex request costs one unit at $0.25 per 1,000 deferred requests.
 
 - **Split.** 70% of the monthly allowance funds scheduled new scans and 30% is reserved for re-checks. The reservation is not borrowable by scans.
 - **Share.** A group's daily share is the remaining scan allowance divided by the days remaining in the month and by the number of groups. A group that leaves its share unused lets another group borrow it the same day, and unspent allowance stays in the pool for the days that remain.
@@ -62,7 +62,7 @@ The operator sets a monthly allowance per engine in billable units, derived from
 - **Exhaustion.** A bucket that is spent stops its own work: re-checks wait once the re-check share is spent, and scheduled scans queue once the scan share is spent, so re-checks starve first and never eat the scan share. A scan that did not run must never be indistinguishable from a scan that found nothing, which is the failure mode "_docs/adr/0011-serp-acquisition-routes.md_" already rules out for a failed route.
 - **Manual scans.** An operator-triggered scan targets one title group or one tracked title, issues that target's queries from the same per-engine pool, and runs ahead of every scheduled scan. It queues on exhaustion rather than skipping.
 
-Alerting, decrementing the pool, and the re-check ladder belong to "Scan cadence, quota budget, and re-check policy"; the dollars and the supported title count belong to "Budget envelope and supported title count".
+Alerting, decrementing the pool, and the re-check ladder are settled in "_docs/design/scan-scheduling.md_"; the dollars and the supported title count are settled in "_docs/design/budget-envelope.md_".
 
 ## Re-checks
 
