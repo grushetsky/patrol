@@ -11,8 +11,14 @@
     <link rel="stylesheet" href="assets/theme.css" />
     <link rel="stylesheet" href="assets/app.css" />
     <link rel="stylesheet" href="assets/light.css" />
+    <link rel="stylesheet" href="assets/glass.css" />
   </head>
   <body>
+    <div class="top-veil" aria-hidden="true"></div>
+    <div class="siren-light" aria-hidden="true">
+      <span class="siren-light-red"></span>
+      <span class="siren-light-blue"></span>
+    </div>
     <!-- Prototype state lives in memory only. Reset from the footer. -->
     <svg xmlns="http://www.w3.org/2000/svg" style="display: none" aria-hidden="true">
       <symbol id="i-shield" viewBox="0 0 24 24">
@@ -110,14 +116,8 @@
         <span class="brand-mark"><svg class="icon"><use href="#i-shield" /></svg></span>
         <span class="brand-text">
           <span class="brand-name">Patrol</span>
-          <span class="brand-sub" data-i18n="app.brand.sub">Rights watch</span>
         </span>
       </a>
-
-      <span class="lightbar" aria-hidden="true">
-        <span class="light light--blue"></span>
-        <span class="light light--red"></span>
-      </span>
 
       <nav class="tabs" id="tabs" aria-label="Sections"></nav>
 
@@ -143,8 +143,11 @@
     <main id="view" aria-live="polite"></main>
 
     <footer class="foot">
-      <span><span data-i18n="app.footer.rights">Northlight Pictures</span> · <span data-i18n="app.footer.prototype">prototype</span> · <span data-i18n="app.footer.resetNote">state resets on reload</span> · <a href="./pitch.html" data-i18n="app.footer.pitch">pitch deck</a></span>
-      <button type="button" data-action="reset" data-i18n="app.footer.reset">Reset demo</button>
+      <a href="https://github.com/grushetsky/patrol" target="_blank" rel="noreferrer">Source Code</a>
+      <span class="foot-links">
+        <a href="./pitch.html" data-i18n="app.footer.pitch">pitch deck</a>
+        <button type="button" data-action="reset" data-i18n="app.footer.reset">Reset demo</button>
+      </span>
     </footer>
 
     <div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>

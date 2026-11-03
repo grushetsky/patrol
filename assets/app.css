@@ -512,14 +512,6 @@ main {
   font: 500 10px/1 var(--mono);
 }
 
-.engine-row .status {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 8px var(--green);
-}
-
 /* Panels. */
 .panel {
   overflow: hidden;

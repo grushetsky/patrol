@@ -1347,7 +1347,7 @@ button.scroll-hint:hover {
 
 .recipient {
   display: grid;
-  grid-template-columns: auto minmax(180px, 1.2fr) minmax(120px, 1fr) auto;
+  grid-template-columns: auto minmax(180px, 1.2fr) minmax(120px, 1fr) 160px;
   align-items: center;
   gap: 16px;
   padding: 14px 16px;
@@ -1391,6 +1391,7 @@ button.scroll-hint:hover {
 .recipient-state {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 5px;
   color: var(--green);
   font: 600 9.5px/1 var(--sans);

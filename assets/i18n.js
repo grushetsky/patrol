@@ -34,8 +34,6 @@
     "app.group.archive": "Archive",
     "app.modal.detail": "Detail",
     "app.modal.close": "Close",
-    "app.footer.rights": "Northlight Pictures",
-    "app.footer.prototype": "prototype",
     "app.footer.resetNote": "state resets on reload",
     "app.footer.pitch": "pitch deck",
     "app.footer.reset": "Reset demo",
@@ -87,6 +85,7 @@
     "app.review.allowlistedTitle": "Allowlisted hosts cannot be confirmed",
     "app.review.confirm": "Confirm violation",
     "app.review.match": "Match",
+    "app.review.more": "More decisions",
     "app.review.dismiss": "Not a copy",
     "app.review.wrong": "Wrong title",
     "app.review.authorized": "Authorized here",
@@ -154,13 +153,13 @@
     "app.notices.docTitle": "Notice of copyright infringement",
     "app.notices.docTo": "To: {recipient} · {id} · {when}",
     "app.notices.claimant": "Claimant",
-    "app.notices.claimantName": "Northlight Pictures, the rights holder.",
+    "app.notices.claimantName": "The rights holder.",
     "app.notices.signatory": "Signatory",
     "app.notices.signatoryName": "{name}, Rights Director.",
     "app.notices.works": "Works identified",
     "app.notices.statements": "Statements",
     "app.notices.statement": "The claimant owns the exclusive rights in each work above. The material identified is not authorised by the claimant, its agents, or the law.",
-    "app.notices.signedAt": "Signed at approval · Northlight Pictures",
+    "app.notices.signedAt": "Signed at approval.",
     "app.notices.evidence": "evidence",
     "app.notices.stamp.draft": "DRAFT",
     "app.notices.stamp.approved": "APPROVED",
@@ -314,12 +313,11 @@
     "pitch.s9.talk": "Talk to us",
     "pitch.s9.footnote": "Prototype · plans are illustrative, no live billing.",
 
-    "pitch.close.eyebrow": "End of the tour",
     "pitch.close.title": "Keep the beat.",
     "pitch.close.lede": "Your titles, staying where they belong.",
     "pitch.close.request": "Request access",
     "pitch.close.open": "Open the prototype",
-    "pitch.close.footnote": "hello@patrol.example · Northlight Pictures demo",
+    "pitch.close.footnote": "hello@patrol.example",
     "pitch.close.back": "Back to start",
     "pitch.dots": "Go to slide {n}",
   };
@@ -359,8 +357,6 @@
     "app.group.archive": "Архив",
     "app.modal.detail": "Детали",
     "app.modal.close": "Закрыть",
-    "app.footer.rights": "Northlight Pictures",
-    "app.footer.prototype": "прототип",
     "app.footer.resetNote": "состояние сбрасывается при перезагрузке",
     "app.footer.pitch": "презентация",
     "app.footer.reset": "Сбросить демо",
@@ -422,6 +418,7 @@
     "app.review.allowlistedTitle": "Хосты из белого списка нельзя подтвердить",
     "app.review.confirm": "Подтвердить нарушение",
     "app.review.match": "Совпадение",
+    "app.review.more": "Ещё решения",
     "app.review.dismiss": "Это не копия",
     "app.review.wrong": "Другой фильм",
     "app.review.authorized": "Разрешено здесь",
@@ -489,13 +486,13 @@
     "app.notices.docTitle": "Уведомление о нарушении авторских прав",
     "app.notices.docTo": "Кому: {recipient} · {id} · {when}",
     "app.notices.claimant": "Правообладатель",
-    "app.notices.claimantName": "Northlight Pictures, правообладатель.",
+    "app.notices.claimantName": "Правообладатель.",
     "app.notices.signatory": "Подписант",
     "app.notices.signatoryName": "{name}, директор по правам.",
     "app.notices.works": "Тайтлы",
     "app.notices.statements": "Заявления",
     "app.notices.statement": "Правообладатель владеет исключительными правами на каждый из перечисленных материалов. Указанный материал не разрешён правообладателем, его агентами или законом.",
-    "app.notices.signedAt": "Подписано при утверждении · Northlight Pictures",
+    "app.notices.signedAt": "Подписано при утверждении.",
     "app.notices.evidence": "доказательство",
     "app.notices.stamp.draft": "ЧЕРНОВИК",
     "app.notices.stamp.approved": "УТВЕРЖДЕНО",
@@ -649,12 +646,11 @@
     "pitch.s9.talk": "Связаться",
     "pitch.s9.footnote": "Прототип · тарифы иллюстративны, оплата не подключена.",
 
-    "pitch.close.eyebrow": "Конец тура",
     "pitch.close.title": "Держим темп.",
     "pitch.close.lede": "Ваши тайтлы — там, где должны быть.",
     "pitch.close.request": "Запросить доступ",
     "pitch.close.open": "Открыть прототип",
-    "pitch.close.footnote": "hello@patrol.example · демо Northlight Pictures",
+    "pitch.close.footnote": "hello@patrol.example",
     "pitch.close.back": "В начало",
     "pitch.dots": "Перейти к слайду {n}",
   };
@@ -664,8 +660,6 @@
   let lang = detect();
 
   function detect() {
-    const query = new URLSearchParams(location.search).get("lang");
-    if (DICTS[query]) return query;
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (DICTS[stored]) return stored;
@@ -729,15 +723,6 @@
     } catch {
       /* Ignore unavailable storage. */
     }
-    try {
-      const url = new URL(location.href);
-      if (url.searchParams.has("lang")) {
-        url.searchParams.set("lang", lang);
-        history.replaceState(null, "", url);
-      }
-    } catch {
-      /* Ignore URLs that cannot be rewritten, such as about:blank. */
-    }
     document.documentElement.lang = lang;
     translateDom();
     refreshSwitches();
@@ -747,10 +732,6 @@
   document.addEventListener("click", (event) => {
     const button = event.target.closest("[data-lang]");
     if (button) setLang(button.dataset.lang);
-  });
-
-  window.addEventListener("storage", (event) => {
-    if (event.key === STORAGE_KEY && DICTS[event.newValue]) setLang(event.newValue);
   });
 
   document.documentElement.lang = lang;
