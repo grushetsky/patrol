@@ -1,6 +1,6 @@
 # Submission model
 
-Patrol composes a notice, resolves every value a recipient's form asks for, and hands the result to an operator, who submits it through the recipient's own channel and records the acknowledgement. The scheduler prepares and queues; it never delivers. This document fixes the submission model, the per-recipient channels and eligibility rules, and the split between machine acts and the operator's act. Notice composition and grouping are settled separately by the ticket "Notice template and submission adapter contract"; the terms are those of "_GLOSSARY.md_".
+Patrol composes a notice, resolves every value a recipient's form asks for, and hands the result to an operator, who submits it through the recipient's own channel and records the acknowledgement. The scheduler prepares and queues; it never delivers. This document fixes the submission model, the per-recipient channels and eligibility rules, and the split between machine acts and the operator's act. Notice composition and grouping are settled in "_docs/design/notice-composition.md_"; the terms are those of "_GLOSSARY.md_".
 
 ## Why an operator submits
 

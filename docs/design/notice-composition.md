@@ -65,7 +65,7 @@ A notice is **superseded** when its cited set must change after approval — a p
 
 ## The handoff pack
 
-A submission gives the operator an immutable pack, stored content-addressed in the evidence bucket and linked from the submission:
+A submission gives the operator an immutable pack, stored content-addressed in the evidence bucket and linked from the submission. The decision is "_docs/adr/0020-handoff-is-a-frozen-pack.md_"; the pack holds:
 
 | Artifact | Contents |
 | --- | --- |
