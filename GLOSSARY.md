@@ -21,12 +21,16 @@ _Avoid_: Signer, representative, account.
 ### Catalogue and scope
 
 **Tracked title** (`TrackedTitle`):
-A work the rights holder monitors, carrying its canonical and original titles, year, runtime, external identifiers, and title variants.
+A work the rights holder monitors, carrying its original title, release year, title type, runtime, external identifiers, and title variants.
 _Avoid_: Work, title, content, asset, movie.
 
 **Title variant** (`TitleVariant`):
-A recorded string by which a tracked title is known, typed by kind, language, script, and territory. Exactly one variant of a tracked title is its original title and serves as the display title.
+A recorded string by which a tracked title is known, typed by kind, language, script, and territory. Its kind is original, localized, transliterated, or alternate, and exactly one variant of a tracked title is its original title and serves as the display title.
 _Avoid_: Alias, alternative title, aka.
+
+**Title type** (`TitleType`):
+The kind of work a tracked title is: film, series, miniseries, or other.
+_Avoid_: Work type, media type, format.
 
 **Title group** (`TitleGroup`):
 An operator-defined set of tracked titles that share scan settings and allowlist scope. Every tracked title belongs to exactly one group.
@@ -130,6 +134,8 @@ The journey from discovery to closure crosses four lifecycle records rather than
 - Every tracked title belongs to exactly one title group.
 - Every title group declares at least one locale.
 - Every tracked title has exactly one original-title variant, and that variant is its display title.
+- A title variant's text is unique within its tracked title after normalization.
+- An external identifier value is unique within its scheme across tracked titles.
 - A violation belongs to exactly one tracked title and exactly one host.
 - A violation's host comes from its destination URL; the submitted URL and the full redirect chain are retained.
 - A page that hosts several tracked titles yields one violation per title; those violations share one evidence record per capture.
