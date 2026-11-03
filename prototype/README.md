@@ -26,6 +26,7 @@ GitHub Pages serves the "_gh-pages_" branch at https://grushetsky.github.io/patr
 - Switch the interface language with EN/RU; the choice carries between the prototype and the pitch.
 - Switch between dark mode and the Gruvbox light theme with the sun/moon button.
 - Track detection and resolution rates in the dashboard chart; confirming a violation adds today's detection.
+- Open Titles → Import from KinoPoisk and try a fuzzy query such as `мастр` or `dune`; imports use the demo KinoPoisk catalogue.
 - Open Settings from the footer or the DeepSeek card, save a DeepSeek API key, then generate a dashboard brief.
 - In the pitch, move with the arrow keys, space, or the dots.
 

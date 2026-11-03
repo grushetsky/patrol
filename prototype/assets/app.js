@@ -26,6 +26,549 @@
     { url: "https://vidnest.example/midnight-precinct-2024", engine: "yandex", titleId: "t1", rank: 2, score: 96 },
   ];
 
+
+  const KINOPOISK_CATALOG = [
+    {
+      id: "1044716",
+      name: "Мастер и Маргарита",
+      original: "The Master and Margarita",
+      year: 2024,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 3,
+      glow: "rgba(139, 123, 255, 0.5)",
+      aliases: ["master and margarita", "bulgakov", "булгаков"],
+    },
+    {
+      id: "4951188",
+      name: "Слово пацана. Кровь на асфальте",
+      original: "The Boy's Word: Blood on the Asphalt",
+      year: 2023,
+      type: "series",
+      groupKey: "app.group.feature",
+      variants: 4,
+      glow: "rgba(255, 61, 94, 0.42)",
+      aliases: ["slovo patsana", "patsana", "asphalt"],
+    },
+    {
+      id: "4540123",
+      name: "Дюна: Часть вторая",
+      original: "Dune: Part Two",
+      year: 2024,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 2,
+      glow: "rgba(255, 176, 32, 0.4)",
+      aliases: ["dune part two", "дюна"],
+    },
+    {
+      id: "5450139",
+      name: "Анора",
+      original: "Anora",
+      year: 2024,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 2,
+      glow: "rgba(255, 61, 94, 0.36)",
+      aliases: ["anora"],
+    },
+    {
+      id: "5123456",
+      name: "Лёд 3",
+      original: "Ice 3",
+      year: 2024,
+      type: "film",
+      groupKey: "app.group.winter",
+      variants: 2,
+      glow: "rgba(61, 139, 255, 0.45)",
+      aliases: ["led 3", "ice three", "лёд"],
+    },
+    {
+      id: "5041234",
+      name: "Холоп 2",
+      original: "The Serf 2",
+      year: 2024,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 2,
+      glow: "rgba(139, 123, 255, 0.4)",
+      aliases: ["holop 2", "the serf"],
+    },
+    {
+      id: "5221234",
+      name: "Сто лет тому вперёд",
+      original: "Guest from the Future",
+      year: 2024,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 2,
+      glow: "rgba(47, 214, 165, 0.35)",
+      aliases: ["sto let tomu vpered", "guest from the future"],
+    },
+    {
+      id: "5321234",
+      name: "Фишер",
+      original: "Fisher",
+      year: 2023,
+      type: "series",
+      groupKey: "app.group.archive",
+      variants: 3,
+      glow: "rgba(255, 176, 32, 0.35)",
+      aliases: ["fisher"],
+    },
+    {
+      id: "4649634",
+      name: "Кибердеревня",
+      original: "Cybervillage",
+      year: 2023,
+      type: "series",
+      groupKey: "app.group.winter",
+      variants: 3,
+      glow: "rgba(61, 139, 255, 0.42)",
+      aliases: ["cybervillage", "кибер"],
+    },
+    {
+      id: "251733",
+      name: "Великая",
+      original: "The Great",
+      year: 2015,
+      type: "series",
+      groupKey: "app.group.archive",
+      variants: 4,
+      glow: "rgba(139, 123, 255, 0.4)",
+      aliases: ["the great", "великая"],
+    },
+    {
+      id: "1327803",
+      name: "Майор Гром: Чумной Доктор",
+      original: "Major Grom: Plague Doctor",
+      year: 2021,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 3,
+      glow: "rgba(255, 61, 94, 0.42)",
+      aliases: ["major grom", "plague doctor", "майор гром", "чумной доктор"],
+    },
+    {
+      id: "5020232",
+      name: "Майор Гром: Игра",
+      original: "Major Grom: The Game",
+      year: 2024,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 2,
+      glow: "rgba(255, 176, 32, 0.4)",
+      aliases: ["major grom game", "майор гром игра"],
+    },
+    {
+      id: "4364241",
+      name: "Чебурашка",
+      original: "Cheburashka",
+      year: 2022,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 2,
+      glow: "rgba(255, 176, 32, 0.38)",
+      aliases: ["cheburashka", "чебурашка"],
+    },
+    {
+      id: "4644361",
+      name: "Вызов",
+      original: "The Challenge",
+      year: 2023,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 2,
+      glow: "rgba(61, 139, 255, 0.44)",
+      aliases: ["the challenge", "vychov", "вызов"],
+    },
+    {
+      id: "915039",
+      name: "Движение вверх",
+      original: "Three Seconds",
+      year: 2017,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 3,
+      glow: "rgba(47, 214, 165, 0.36)",
+      aliases: ["three seconds", "dvizhenie vverh", "движение вверх"],
+    },
+    {
+      id: "895722",
+      name: "Салют-7",
+      original: "Salyut-7",
+      year: 2017,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 2,
+      glow: "rgba(139, 123, 255, 0.42)",
+      aliases: ["salyut 7", "salyut-7", "салют"],
+    },
+    {
+      id: "930992",
+      name: "Притяжение",
+      original: "Attraction",
+      year: 2017,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 2,
+      glow: "rgba(61, 139, 255, 0.4)",
+      aliases: ["attraction", "prityazhenie", "притяжение"],
+    },
+    {
+      id: "46225",
+      name: "Солярис",
+      original: "Solaris",
+      year: 1972,
+      type: "film",
+      groupKey: "app.group.archive",
+      variants: 3,
+      glow: "rgba(255, 176, 32, 0.34)",
+      aliases: ["solaris", "solyaris", "тарковский", "солярис"],
+    },
+    {
+      id: "44721",
+      name: "Сталкер",
+      original: "Stalker",
+      year: 1979,
+      type: "film",
+      groupKey: "app.group.archive",
+      variants: 3,
+      glow: "rgba(47, 214, 165, 0.32)",
+      aliases: ["stalker", "сталкер", "тарковский"],
+    },
+    {
+      id: "44806",
+      name: "Москва слезам не верит",
+      original: "Moscow Does Not Believe in Tears",
+      year: 1980,
+      type: "film",
+      groupKey: "app.group.archive",
+      variants: 2,
+      glow: "rgba(255, 61, 94, 0.32)",
+      aliases: ["moscow does not believe in tears", "moskva slezam ne verit", "москва слезам"],
+    },
+    {
+      id: "43870",
+      name: "Ирония судьбы, или С лёгким паром!",
+      original: "The Irony of Fate, or Enjoy Your Bath!",
+      year: 1975,
+      type: "film",
+      groupKey: "app.group.archive",
+      variants: 3,
+      glow: "rgba(139, 123, 255, 0.38)",
+      aliases: ["irony of fate", "ironiya sudby", "ирония судьбы", "с легким паром"],
+    },
+    {
+      id: "44127",
+      name: "Служебный роман",
+      original: "Office Romance",
+      year: 1977,
+      type: "film",
+      groupKey: "app.group.archive",
+      variants: 2,
+      glow: "rgba(61, 139, 255, 0.34)",
+      aliases: ["office romance", "sluzhebny roman", "служебный роман"],
+    },
+    {
+      id: "464317",
+      name: "Кухня",
+      original: "Kitchen",
+      year: 2012,
+      type: "series",
+      groupKey: "app.group.archive",
+      variants: 5,
+      glow: "rgba(255, 176, 32, 0.38)",
+      aliases: ["kitchen", "kuhnya", "кухня"],
+    },
+    {
+      id: "464411",
+      name: "Интерны",
+      original: "Interns",
+      year: 2010,
+      type: "series",
+      groupKey: "app.group.archive",
+      variants: 4,
+      glow: "rgba(47, 214, 165, 0.34)",
+      aliases: ["interns", "interny", "интерны"],
+    },
+    {
+      id: "807339",
+      name: "Метод",
+      original: "The Method",
+      year: 2015,
+      type: "series",
+      groupKey: "app.group.archive",
+      variants: 3,
+      glow: "rgba(255, 61, 94, 0.34)",
+      aliases: ["the method", "metod", "метод"],
+    },
+    {
+      id: "43963",
+      name: "Иван Васильевич меняет профессию",
+      original: "Ivan Vasilievich Changes Profession",
+      year: 1973,
+      type: "film",
+      groupKey: "app.group.archive",
+      variants: 3,
+      glow: "rgba(255, 176, 32, 0.36)",
+      aliases: ["ivan vasilievich", "иван васильевич", "булгаков"],
+    },
+    {
+      id: "43938",
+      name: "Кавказская пленница, или Новые приключения Шурика",
+      original: "Kidnapping, Caucasian Style",
+      year: 1966,
+      type: "film",
+      groupKey: "app.group.archive",
+      variants: 2,
+      glow: "rgba(47, 214, 165, 0.32)",
+      aliases: ["caucasian style", "кавказская пленница", "шурик"],
+    },
+    {
+      id: "43943",
+      name: "Бриллиантовая рука",
+      original: "The Diamond Arm",
+      year: 1968,
+      type: "film",
+      groupKey: "app.group.archive",
+      variants: 3,
+      glow: "rgba(61, 139, 255, 0.36)",
+      aliases: ["diamond arm", "brilliantovaya ruka", "бриллиантовая рука"],
+    },
+    {
+      id: "43944",
+      name: "Джентльмены удачи",
+      original: "Gentlemen of Fortune",
+      year: 1971,
+      type: "film",
+      groupKey: "app.group.archive",
+      variants: 2,
+      glow: "rgba(255, 61, 94, 0.32)",
+      aliases: ["gentlemen of fortune", "dzhentlmeny udachi", "джентльмены удачи"],
+    },
+    {
+      id: "43957",
+      name: "Место встречи изменить нельзя",
+      original: "The Meeting Place Cannot Be Changed",
+      year: 1979,
+      type: "series",
+      groupKey: "app.group.archive",
+      variants: 3,
+      glow: "rgba(139, 123, 255, 0.36)",
+      aliases: ["meeting place", "место встречи", "жеглов"],
+    },
+    {
+      id: "43966",
+      name: "Семнадцать мгновений весны",
+      original: "Seventeen Moments of Spring",
+      year: 1973,
+      type: "series",
+      groupKey: "app.group.archive",
+      variants: 3,
+      glow: "rgba(255, 176, 32, 0.34)",
+      aliases: ["seventeen moments of spring", "семнадцать мгновений", "штирлиц"],
+    },
+    {
+      id: "43971",
+      name: "Война и мир",
+      original: "War and Peace",
+      year: 1965,
+      type: "film",
+      groupKey: "app.group.archive",
+      variants: 4,
+      glow: "rgba(255, 176, 32, 0.32)",
+      aliases: ["war and peace", "война и мир", "толстой"],
+    },
+    {
+      id: "44005",
+      name: "Андрей Рублёв",
+      original: "Andrei Rublev",
+      year: 1966,
+      type: "film",
+      groupKey: "app.group.archive",
+      variants: 2,
+      glow: "rgba(139, 123, 255, 0.32)",
+      aliases: ["andrei rublev", "андрей рублев", "тарковский"],
+    },
+    {
+      id: "44159",
+      name: "Иди и смотри",
+      original: "Come and See",
+      year: 1985,
+      type: "film",
+      groupKey: "app.group.archive",
+      variants: 2,
+      glow: "rgba(255, 61, 94, 0.34)",
+      aliases: ["come and see", "иди и смотри"],
+    },
+    {
+      id: "43977",
+      name: "Летят журавли",
+      original: "The Cranes Are Flying",
+      year: 1957,
+      type: "film",
+      groupKey: "app.group.archive",
+      variants: 2,
+      glow: "rgba(61, 139, 255, 0.32)",
+      aliases: ["cranes are flying", "летят журавли"],
+    },
+    {
+      id: "43981",
+      name: "Белое солнце пустыни",
+      original: "White Sun of the Desert",
+      year: 1970,
+      type: "film",
+      groupKey: "app.group.archive",
+      variants: 3,
+      glow: "rgba(255, 176, 32, 0.34)",
+      aliases: ["white sun of the desert", "белое солнце пустыни", "сухов"],
+    },
+    {
+      id: "43982",
+      name: "Д'Артаньян и три мушкетёра",
+      original: "D'Artagnan and Three Musketeers",
+      year: 1978,
+      type: "series",
+      groupKey: "app.group.archive",
+      variants: 3,
+      glow: "rgba(139, 123, 255, 0.34)",
+      aliases: ["dartagnan", "три мушкетера", "д'артаньян"],
+    },
+    {
+      id: "44115",
+      name: "Гардемарины, вперёд!",
+      original: "Midshipmen, Forward!",
+      year: 1987,
+      type: "series",
+      groupKey: "app.group.archive",
+      variants: 3,
+      glow: "rgba(61, 139, 255, 0.34)",
+      aliases: ["midshipmen forward", "гардемарины", "вперед"],
+    },
+    {
+      id: "44116",
+      name: "Кин-дза-дза!",
+      original: "Kin-dza-dza!",
+      year: 1986,
+      type: "film",
+      groupKey: "app.group.archive",
+      variants: 2,
+      glow: "rgba(255, 176, 32, 0.32)",
+      aliases: ["kin dza dza", "кин дза дза", "пацак"],
+    },
+    {
+      id: "44117",
+      name: "Чародеи",
+      original: "The Magicians",
+      year: 1982,
+      type: "film",
+      groupKey: "app.group.archive",
+      variants: 2,
+      glow: "rgba(47, 214, 165, 0.32)",
+      aliases: ["magicians", "чародеи"],
+    },
+    {
+      id: "464438",
+      name: "О чём говорят мужчины",
+      original: "What Men Talk About",
+      year: 2010,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 2,
+      glow: "rgba(255, 176, 32, 0.34)",
+      aliases: ["what men talk about", "о чем говорят мужчины", "мужчины"],
+    },
+    {
+      id: "679947",
+      name: "Горько!",
+      original: "Gorko!",
+      year: 2013,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 2,
+      glow: "rgba(255, 61, 94, 0.32)",
+      aliases: ["gorko", "горько", "свадьба"],
+    },
+    {
+      id: "517989",
+      name: "Ёлки",
+      original: "Six Degrees of Celebration",
+      year: 2010,
+      type: "film",
+      groupKey: "app.group.winter",
+      variants: 3,
+      glow: "rgba(47, 214, 165, 0.34)",
+      aliases: ["yolki", "елки", "six degrees of celebration"],
+    },
+    {
+      id: "535724",
+      name: "Левиафан",
+      original: "Leviathan",
+      year: 2014,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 2,
+      glow: "rgba(61, 139, 255, 0.34)",
+      aliases: ["leviathan", "левиафан", "зывягинцев"],
+    },
+    {
+      id: "500031",
+      name: "Дылда",
+      original: "Beanpole",
+      year: 2019,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 2,
+      glow: "rgba(139, 123, 255, 0.32)",
+      aliases: ["beanpole", "дылда", "балагов"],
+    },
+    {
+      id: "1355056",
+      name: "Купе номер шесть",
+      original: "Compartment No. 6",
+      year: 2021,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 2,
+      glow: "rgba(255, 176, 32, 0.32)",
+      aliases: ["compartment no 6", "купе номер шесть", "купе"],
+    },
+    {
+      id: "1179163",
+      name: "Финист. Первый богатырь",
+      original: "Finist: The First Bogatyr",
+      year: 2025,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 2,
+      glow: "rgba(255, 61, 94, 0.34)",
+      aliases: ["finist", "финист", "богатырь"],
+    },
+    {
+      id: "523532",
+      name: "Волшебник Изумрудного города. Дорога из жёлтого кирпича",
+      original: "The Wizard of the Emerald City",
+      year: 2025,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 3,
+      glow: "rgba(47, 214, 165, 0.34)",
+      aliases: ["wizard of the emerald city", "волшебник изумрудного города", "изумрудный город"],
+    },
+    {
+      id: "508161",
+      name: "Сердце пармы",
+      original: "The Heart of Parma",
+      year: 2022,
+      type: "film",
+      groupKey: "app.group.feature",
+      variants: 2,
+      glow: "rgba(61, 139, 255, 0.34)",
+      aliases: ["heart of parma", "сердце пармы", "парма"],
+    },
+  ];
+
   const ACTIVITY_ICONS = {
     siren: "i-siren",
     radar: "i-radar",
@@ -33,6 +576,7 @@
     file: "i-file",
     lock: "i-lock",
     send: "i-send",
+    film: "i-film",
     bolt: "i-bolt",
     x: "i-x",
   };
@@ -307,6 +851,59 @@
       pending: tn("app.common.candidates", state.candidates.length),
       open: openViolations().length,
     });
+  }
+
+
+  const normalizeSearch = (value) =>
+    String(value)
+      .toLowerCase()
+      .replace(/ё/g, "е")
+      .replace(/[^\p{L}\p{N}]+/gu, " ")
+      .trim();
+
+  function levenshtein(a, b) {
+    if (!a.length) return b.length;
+    if (!b.length) return a.length;
+    const row = Array.from({ length: b.length + 1 }, (_, index) => index);
+    for (let i = 1; i <= a.length; i += 1) {
+      let previous = row[0];
+      row[0] = i;
+      for (let j = 1; j <= b.length; j += 1) {
+        const current = row[j];
+        row[j] = Math.min(
+          row[j] + 1,
+          row[j - 1] + 1,
+          previous + (a[i - 1] === b[j - 1] ? 0 : 1),
+        );
+        previous = current;
+      }
+    }
+    return row[b.length];
+  }
+
+  function kinopoiskScore(record, query) {
+    const needle = normalizeSearch(query);
+    if (needle.length < 2) return 0;
+    const fields = [record.name, record.original, String(record.year), ...(record.aliases || [])].map(normalizeSearch);
+    let score = 0;
+    for (const field of fields) {
+      if (field.includes(needle)) score = Math.max(score, 100 - Math.min(field.indexOf(needle), 25));
+      for (const word of field.split(" ").filter(Boolean)) {
+        const distance = levenshtein(needle, word);
+        const similarity = 1 - distance / Math.max(needle.length, word.length);
+        if (similarity >= 0.7) score = Math.max(score, Math.round(similarity * 80));
+      }
+    }
+    return score;
+  }
+
+  function searchKinoPoisk(query) {
+    const needle = normalizeSearch(query);
+    if (needle.length < 2) return [];
+    return KINOPOISK_CATALOG.map((record) => ({ record, score: kinopoiskScore(record, query) }))
+      .filter((entry) => entry.score >= 45)
+      .sort((a, b) => b.score - a.score || a.record.year - b.record.year || a.record.name.localeCompare(b.record.name))
+      .slice(0, 8);
   }
 
   function formatTime(spec) {
@@ -1077,6 +1674,9 @@
             <div class="title-sub">${title.year} · ${esc(t(title.groupKey))}</div>
             <div class="title-meta">
               <span class="chip">${tn("app.titles.variants", title.variants)}</span>
+              ${title.kpId ? `<span class="chip chip--blue">${icon("i-film", "icon--sm")}${t("app.kinopoisk.source")} ${esc(
+                String(title.kpId),
+              )}</span>` : ""}
               ${title.allowlist.length ? `<span class="chip">${t("app.titles.allowlistedCount", { n: title.allowlist.length })}</span>` : ""}
               ${
                 title.paused
@@ -1095,12 +1695,15 @@
       .join("");
 
     return `
-      <section class="page">
+      <section class="page titles-page">
         <header class="page-head">
           <div>
             <p class="eyebrow"><span class="dot"></span>${t("app.titles.eyebrow")} · ${tn("app.common.titles", state.titles.length)}</p>
             <h1 class="page-title">${t("app.titles.title")}</h1>
           </div>
+          <button class="btn btn-primary btn-sm" type="button" data-action="kinopoisk-open">${icon("i-plus", "icon--sm")}${t(
+            "app.kinopoisk.open",
+          )}</button>
         </header>
         <div class="title-grid">${cards}</div>
       </section>`;
@@ -1169,6 +1772,97 @@
         <div class="sign">${esc(notice.signatory)}<span>${t("app.notices.signedAt")}</span></div>
       </article>`,
     );
+  }
+
+
+  /* KinoPoisk import. */
+  function kinopoiskResultMarkup(record) {
+    const type = t(record.type === "series" ? "app.kinopoisk.type.series" : "app.kinopoisk.type.film");
+    const imported = state.titles.some((title) => title.kpId === record.id);
+    return `<article class="kp-result">
+      <span class="kp-poster" aria-hidden="true">${esc(record.name.charAt(0))}</span>
+      <div class="kp-main">
+        <div class="kp-name">${esc(record.name)}</div>
+        <div class="kp-sub">${esc(record.original)}<span>${t("app.kinopoisk.resultMeta", {
+          year: record.year,
+          type,
+          id: record.id,
+        })}</span></div>
+      </div>
+      <button class="btn ${imported ? "btn-ghost" : "btn-primary"} btn-sm" type="button" data-action="kinopoisk-import" data-kp-id="${esc(
+        record.id,
+      )}" ${imported ? "disabled" : ""}>${imported ? t("app.kinopoisk.imported") : t("app.kinopoisk.import")}</button>
+    </article>`;
+  }
+
+  function refreshKinoResults() {
+    const input = document.getElementById("kinopoisk-search");
+    const results = document.getElementById("kinopoisk-results");
+    if (!input || !results) return;
+    const query = input.value.trim();
+    if (normalizeSearch(query).length < 2) {
+      results.innerHTML = `<p class="kp-empty">${t("app.kinopoisk.prompt")}</p>`;
+      return;
+    }
+    const matches = searchKinoPoisk(query);
+    results.innerHTML = matches.length
+      ? matches.map(({ record }) => kinopoiskResultMarkup(record)).join("")
+      : `<p class="kp-empty">${t("app.kinopoisk.empty")}</p>`;
+  }
+
+  function kinopoiskModal(query = "") {
+    modalSpec = { type: "kinopoisk", query };
+    openModal(
+      t("app.kinopoisk.title"),
+      `<div class="kp-search">
+        <label class="settings-field" for="kinopoisk-search">
+          <span>${t("app.kinopoisk.searchLabel")}</span>
+          <input class="settings-input" id="kinopoisk-search" type="search" autocomplete="off" spellcheck="false" placeholder="${esc(
+            t("app.kinopoisk.placeholder"),
+          )}" />
+        </label>
+        <p class="kp-note">${t("app.kinopoisk.demoNote")}</p>
+      </div>
+      <div class="kp-results" id="kinopoisk-results" aria-live="polite"></div>`,
+    );
+    const input = document.getElementById("kinopoisk-search");
+    if (!input) return;
+    input.value = query;
+    refreshKinoResults();
+    requestAnimationFrame(() => input.focus());
+  }
+
+  function importKinoPoiskTitle(id) {
+    const record = KINOPOISK_CATALOG.find((item) => item.id === id);
+    if (!record) return;
+    if (state.titles.some((title) => title.kpId === record.id)) {
+      toast(t("app.kinopoisk.already"), "amber", "i-film");
+      refreshKinoResults();
+      return;
+    }
+    state.titles.push({
+      id: uid("t"),
+      name: record.name,
+      original: record.original,
+      year: record.year,
+      groupKey: record.groupKey,
+      variants: record.variants,
+      allowlist: [],
+      paused: false,
+      glow: record.glow,
+      kpId: record.id,
+      kpType: record.type,
+    });
+    state.activity.unshift({
+      icon: "film",
+      tone: "green",
+      textKey: "app.activity.titleImported",
+      params: { name: record.name },
+      time: { minutes: 0 },
+    });
+    render();
+    refreshKinoResults();
+    toast(t("app.kinopoisk.importedToast", { name: record.name }), "green", "i-film");
   }
 
   /* Actions. */
@@ -1442,6 +2136,14 @@
       render();
       return;
     }
+    if (action === "kinopoisk-open") {
+      kinopoiskModal("");
+      return;
+    }
+    if (action === "kinopoisk-import") {
+      importKinoPoiskTitle(trigger.dataset.kpId);
+      return;
+    }
     if (action === "trend-select") {
       const index = Number(trigger.dataset.index);
       if (Number.isInteger(index)) {
@@ -1530,6 +2232,12 @@
     toast(t("app.deepseek.saved"), "green", "i-check");
   });
 
+  document.addEventListener("input", (event) => {
+    if (event.target.id !== "kinopoisk-search") return;
+    if (modalSpec && modalSpec.type === "kinopoisk") modalSpec.query = event.target.value;
+    refreshKinoResults();
+  });
+
   document.addEventListener("change", (event) => {
     if (event.target.matches("[data-select]")) {
       const id = event.target.dataset.select;
@@ -1574,6 +2282,7 @@
         const notice = state.notices.find((item) => item.id === modalSpec.id);
         if (notice) noticeModal(notice);
       }
+      if (modalSpec.type === "kinopoisk") kinopoiskModal(modalSpec.query || "");
     }
   });
 
