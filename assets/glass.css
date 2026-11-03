@@ -2180,11 +2180,50 @@ body.siren .siren-light {
   flex-direction: column;
 }
 
-:root[data-theme] .trend-range {
-  color: var(--faint);
-  font-size: 14px;
-  letter-spacing: 0;
-  text-transform: none;
+:root[data-theme] .trend-range-switch {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 2px;
+  width: max-content;
+  padding: 2px;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+:root[data-theme="light"] .trend-range-switch {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+:root[data-theme] .trend-range-btn {
+  flex: 0 0 auto;
+  width: max-content;
+  min-width: 0;
+  margin: 0;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font: 600 12px/1 var(--sans);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+:root[data-theme] .trend-range-btn[aria-pressed="true"] {
+  background: var(--surface-2);
+  color: var(--ink);
+  box-shadow: 0 2px 8px -4px #000;
+}
+
+:root[data-theme] .trend-range-btn:hover {
+  color: var(--ink);
+}
+
+:root[data-theme] .trend-range-btn:focus-visible,
+:root[data-theme] .trend-legend-item:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
 }
 
 :root[data-theme] .trend-body {
@@ -2296,10 +2335,28 @@ body.siren .siren-light {
   font-size: 14px;
 }
 
-:root[data-theme] .trend-legend span {
+:root[data-theme] .trend-legend-item {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   gap: 8px;
+  width: max-content;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+:root[data-theme] .trend-legend-item[aria-pressed="false"] {
+  opacity: 0.42;
+}
+
+:root[data-theme] .trend-legend-item:hover {
+  color: var(--ink);
 }
 
 :root[data-theme] .legend-dot {
@@ -2319,6 +2376,46 @@ body.siren .siren-light {
 
 :root[data-theme] .legend-dot--notices {
   background: var(--blue-soft);
+}
+
+:root[data-theme] .trend-guide {
+  stroke: var(--blue);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+:root[data-theme] .trend-hit {
+  cursor: crosshair;
+  pointer-events: all;
+}
+
+:root[data-theme] .trend-hit:hover {
+  fill: var(--blue);
+  fill-opacity: 0.04;
+}
+
+:root[data-theme] .trend-inspector {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 16px;
+  min-height: 22px;
+  margin-top: 8px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border-soft);
+  color: var(--muted);
+  font-size: 14px;
+}
+
+:root[data-theme] .trend-inspector-date {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+:root[data-theme] .trend-inspector-hint {
+  color: var(--faint);
 }
 
 :root[data-theme] .deepseek-panel {
