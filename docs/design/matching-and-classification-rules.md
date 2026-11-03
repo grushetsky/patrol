@@ -53,7 +53,7 @@ A blocklist hit adds 0.02, and the total reputation contribution is capped at 0.
 | B | 0.70 to 0.949 | Review queue: full evidence before a decision. |
 | C | Below 0.70 | Suppressed and logged; no notice path. |
 
-Band boundaries are configurable per engine, with 0.95 and 0.70 as the defaults. Reputation is shown as its own score component and never confirms or promotes a candidate on its own; it only adds to the sum. An allowlist hit suppresses the candidate regardless of score.
+Band boundaries are configurable per engine, with 0.95 and 0.70 as the defaults. Reputation is shown as its own score component. It applies only when the candidate has at least one strong signal, so it can corroborate page evidence but never promote a candidate that has nothing beyond a title match; it adds at most 0.10. An allowlist hit suppresses the candidate regardless of score.
 
 No score confirms a violation. Every violation is created from a review decision recorded by an operator; band A exists to make that decision one click, not to remove it.
 
@@ -112,7 +112,7 @@ The queue orders by score descending, then SERP rank ascending, then observation
 1. A violation is created only from a candidate confirmed by a review decision; no score confirms a violation.
 2. An allowlist hit prevents confirmation regardless of score and routes to allowlist review.
 3. The score is the sum of title match, strong signals, and reputation, capped at 1.0.
-4. Reputation alone never confirms or promotes a candidate; it adds at most 0.10.
+4. Reputation alone never confirms or promotes a candidate; it applies only alongside at least one strong signal and adds at most 0.10.
 5. A dismissal suppresses one (URL, tracked title) pair and no other.
 6. A dismissed pair returns only on an operator reopen or a material change.
 7. A violation's host is the landing page host after redirects; a shortener host never hosts a violation.
