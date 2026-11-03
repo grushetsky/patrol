@@ -437,6 +437,15 @@ kbd {
   text-transform: uppercase;
 }
 
+.hero-stats > span {
+  white-space: nowrap;
+}
+
+:lang(ru) .hero-stats {
+  gap: 12px;
+  letter-spacing: 0.1em;
+}
+
 .hero-stats b {
   margin-right: 6px;
   color: var(--ink);

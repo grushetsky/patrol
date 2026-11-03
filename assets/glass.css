@@ -1958,10 +1958,6 @@ body.siren .siren-light {
   flex-wrap: wrap;
 }
 
-:root[data-theme] .foot > a {
-  overflow-wrap: anywhere;
-}
-
 /* Final chrome and card geometry. */
 :root[data-theme] .brand-mark::after {
   content: "";
@@ -2147,5 +2143,463 @@ body.siren .siren-light {
     width: 74px;
     height: 74px;
     margin-bottom: 18px;
+  }
+}
+
+/* Tighten the Russian hero stats so all three fit on one row. */
+:root[data-theme][lang="ru"] .hero-stats {
+  gap: 10px;
+  letter-spacing: 0.1em;
+}
+
+:root[data-theme] .deck-count {
+  gap: 0;
+}
+
+/* Keep plan CTAs pinned to the bottom of equal-height cards. */
+:root[data-theme] .plan .plan-cta {
+  margin-top: auto;
+}
+
+/* Dashboard analytics and DeepSeek integration. */
+:root[data-theme] .insight-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(290px, 0.75fr);
+  align-items: stretch;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+:root[data-theme] .trend-panel,
+:root[data-theme] .deepseek-panel {
+  min-width: 0;
+}
+
+:root[data-theme] .trend-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+:root[data-theme] .trend-range {
+  color: var(--faint);
+  font-size: 14px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+:root[data-theme] .trend-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 16px 20px 18px;
+}
+
+:root[data-theme] .trend-kpis {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+:root[data-theme] .trend-kpi {
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+:root[data-theme="light"] .trend-kpi {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+:root[data-theme] .trend-kpi-num {
+  display: block;
+  font: 800 28px/1 var(--display);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
+}
+
+:root[data-theme] .trend-kpi-label {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+  text-transform: uppercase;
+}
+
+:root[data-theme] .trend-chart {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin: 8px 0 4px;
+  overflow: visible;
+}
+
+:root[data-theme] .trend-grid-line {
+  stroke: var(--border-soft);
+  stroke-width: 1;
+  opacity: 0.7;
+}
+
+:root[data-theme] .trend-axis {
+  fill: var(--faint);
+  font: 500 10px/1 var(--sans);
+}
+
+:root[data-theme] .trend-line {
+  fill: none;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+:root[data-theme] .trend-line--detected {
+  stroke: var(--red);
+}
+
+:root[data-theme] .trend-line--resolved {
+  stroke: var(--green);
+}
+
+:root[data-theme] .trend-line--notices {
+  stroke: var(--blue-soft);
+  stroke-width: 1.8;
+  stroke-dasharray: 4 5;
+  opacity: 0.8;
+}
+
+:root[data-theme] .trend-area {
+  fill: var(--red);
+  opacity: 0.07;
+}
+
+:root[data-theme] .trend-dot {
+  stroke: var(--surface);
+  stroke-width: 2;
+}
+
+:root[data-theme] .trend-dot--detected {
+  fill: var(--red);
+}
+
+:root[data-theme] .trend-dot--resolved {
+  fill: var(--green);
+}
+
+:root[data-theme] .trend-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+:root[data-theme] .trend-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+:root[data-theme] .legend-dot {
+  display: inline-block;
+  width: 18px;
+  height: 3px;
+  border-radius: 999px;
+}
+
+:root[data-theme] .legend-dot--detected {
+  background: var(--red);
+}
+
+:root[data-theme] .legend-dot--resolved {
+  background: var(--green);
+}
+
+:root[data-theme] .legend-dot--notices {
+  background: var(--blue-soft);
+}
+
+:root[data-theme] .deepseek-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+:root[data-theme] .deepseek-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+:root[data-theme] .deepseek-head .icon {
+  color: var(--blue-soft);
+}
+
+:root[data-theme] .deepseek-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 20px 18px;
+}
+
+:root[data-theme] .deepseek-context {
+  padding: 12px 14px;
+  border: 1px solid var(--border-soft);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+:root[data-theme="light"] .deepseek-context {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+:root[data-theme] .deepseek-context-label {
+  display: block;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+:root[data-theme] .deepseek-context-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 8px;
+}
+
+:root[data-theme] .deepseek-context-stats span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+:root[data-theme] .deepseek-context-stats b {
+  display: block;
+  color: var(--ink);
+  font: 700 20px/1 var(--display);
+  font-variant-numeric: tabular-nums;
+}
+
+:root[data-theme] .deepseek-context p {
+  margin: 10px 0 0;
+  color: var(--faint);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+:root[data-theme] .deepseek-lede {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+:root[data-theme] .deepseek-brief {
+  padding: 12px 14px;
+  border-left: 2px solid var(--blue);
+  border-radius: 0 12px 12px 0;
+  background: rgba(61, 139, 255, 0.06);
+}
+
+:root[data-theme] .deepseek-brief-head {
+  display: block;
+  color: var(--blue-soft);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+:root[data-theme] .deepseek-brief p {
+  margin: 6px 0 0;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+:root[data-theme] .deepseek-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--blue-soft);
+  font-size: 14px;
+}
+
+:root[data-theme] .deepseek-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: auto;
+}
+
+:root[data-theme] .deepseek-link {
+  color: var(--blue-soft);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+:root[data-theme] .deepseek-link:hover {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+:root[data-theme] .deepseek-note {
+  margin: 0;
+  color: var(--amber);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+/* Settings. */
+:root[data-theme] .settings-actions .btn {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+:root[data-theme] .settings-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.3fr) minmax(300px, 0.7fr);
+  align-items: start;
+  gap: 16px;
+}
+
+:root[data-theme] .settings-body {
+  padding: 20px 22px;
+}
+
+:root[data-theme] .settings-lede {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+:root[data-theme] .settings-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+:root[data-theme] .settings-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+:root[data-theme] .settings-field > span {
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+:root[data-theme] .settings-input {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font: 500 14px/1.4 var(--mono);
+  appearance: none;
+}
+
+:root[data-theme] .settings-input:focus {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+:root[data-theme] .settings-hint {
+  margin: 0;
+  color: var(--faint);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+:root[data-theme] .settings-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+:root[data-theme] .settings-saved {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border-soft);
+  color: var(--muted);
+  font-size: 14px;
+}
+
+:root[data-theme] .settings-side .settings-body p {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+:root[data-theme] .settings-meta {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+}
+
+:root[data-theme] .settings-meta div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+:root[data-theme] .settings-meta dt {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+:root[data-theme] .settings-meta dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+@media (max-width: 1080px) {
+  :root[data-theme] .insight-grid,
+  :root[data-theme] .settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  :root[data-theme] .trend-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  :root[data-theme] .trend-body,
+  :root[data-theme] .deepseek-body,
+  :root[data-theme] .settings-body {
+    padding: 14px 16px;
+  }
+
+  :root[data-theme] .trend-kpi {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  :root[data-theme] .trend-kpi-label {
+    margin-top: 0;
+  }
+
+  :root[data-theme] .trend-axis {
+    font-size: 18px;
   }
 }
