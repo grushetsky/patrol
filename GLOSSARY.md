@@ -60,6 +60,10 @@ _Avoid_: Crawl, sweep, job, run.
 One query issued inside a scan, generated from a title variant for one tracked title and one locale.
 _Avoid_: Query, keyword, search term.
 
+**Query plan** (`QueryPlan`):
+The set of search queries one scan issues for one title group on one engine, derived when the scan starts.
+_Avoid_: Query set, query batch, keyword list, search strategy.
+
 **Search result** (`SearchResult`):
 One ranked row returned for a search query, recording URL, rank, title, snippet, and observation time.
 _Avoid_: Hit, listing, SERP row.
@@ -124,6 +128,7 @@ The journey from discovery to closure crosses four lifecycle records rather than
 
 - Exactly one rights holder exists per deployment, and every notice names it.
 - Every tracked title belongs to exactly one title group.
+- Every title group declares at least one locale.
 - Every tracked title has exactly one original-title variant, and that variant is its display title.
 - A violation belongs to exactly one tracked title and exactly one host.
 - A violation's host comes from its destination URL; the submitted URL and the full redirect chain are retained.
