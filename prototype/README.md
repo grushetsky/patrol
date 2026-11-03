@@ -25,8 +25,10 @@ GitHub Pages serves the "_gh-pages_" branch at https://grushetsky.github.io/patr
 - Toggle siren mode in the top bar.
 - Switch the interface language with EN/RU; the choice carries between the prototype and the pitch.
 - Switch between dark mode and the Gruvbox light theme with the sun/moon button.
+- Track detection and resolution rates in the dashboard chart; confirming a violation adds today's detection.
+- Open Settings from the footer or the DeepSeek card, save a DeepSeek API key, then generate a dashboard brief.
 - In the pitch, move with the arrow keys, space, or the dots.
 
 ## Demo Data
 
-The rights holder is a fictional studio. Titles, URLs, and evidence are fictional; hosts use the reserved `.example` domain.
+The rights holder is a fictional studio. Titles, URLs, and evidence are fictional; hosts use the reserved `.example` domain. The DeepSeek key is stored separately in the browser; the prototype calls the API directly, so use only a throwaway key.

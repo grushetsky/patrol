@@ -45,6 +45,10 @@
     { id: "titles", labelKey: "app.nav.titles", icon: "i-film" },
   ];
 
+  const ROUTES = new Set([...TABS.map((tab) => tab.id), "settings"]);
+  const DEEPSEEK_STORAGE_KEY = "patrol.deepseek.key";
+  const DEEPSEEK_ENDPOINT = "https://api.deepseek.com/chat/completions";
+
   const state = seedState();
   const selected = new Set();
 
@@ -64,6 +68,15 @@
       scanning: false,
       cartRecipient: "google",
       nextNotice: 1044,
+      trend: {
+        detected: [2, 3, 1, 4, 3, 5, 4, 6, 3, 4, 5, 3, 4, 3],
+        resolved: [1, 2, 1, 2, 3, 2, 4, 3, 2, 3, 4, 2, 3, 2],
+        notices: [0, 1, 0, 1, 2, 1, 2, 2, 1, 2, 1, 1, 2, 1],
+      },
+      deepseekBrief: null,
+      deepseekBriefMode: null,
+      deepseekLoading: false,
+      deepseekError: null,
       engines: {
         google: { last: { minutes: 2 } },
         bing: { last: { minutes: 9 } },
@@ -261,6 +274,38 @@
     });
   const uid = (prefix) => `${prefix}${Math.random().toString(36).slice(2, 7)}`;
 
+  function getDeepSeekKey() {
+    try {
+      return (localStorage.getItem(DEEPSEEK_STORAGE_KEY) || "").trim();
+    } catch {
+      return "";
+    }
+  }
+
+  function saveDeepSeekKey(value) {
+    try {
+      localStorage.setItem(DEEPSEEK_STORAGE_KEY, value);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function clearDeepSeekKey() {
+    try {
+      localStorage.removeItem(DEEPSEEK_STORAGE_KEY);
+    } catch {
+      /* Ignore unavailable storage. */
+    }
+  }
+
+  function localDeepSeekBrief() {
+    return t("app.deepseek.localBrief", {
+      pending: tn("app.common.candidates", state.candidates.length),
+      open: openViolations().length,
+    });
+  }
+
   function formatTime(spec) {
     if (!spec) return "";
     if (spec.minutes === 0) return t("time.now");
@@ -294,7 +339,7 @@
 
   function currentRoute() {
     const route = location.hash.replace(/^#\/?/, "");
-    return TABS.some((tab) => tab.id === route) ? route : "dashboard";
+    return ROUTES.has(route) ? route : "dashboard";
   }
 
   function render() {
@@ -305,6 +350,7 @@
       violations: renderViolations,
       notices: renderNotices,
       titles: renderTitles,
+      settings: renderSettings,
     };
     view.innerHTML = renderers[route]();
     updateChrome();
@@ -461,7 +507,257 @@
             <div class="panel-body activity">${activity}</div>
           </div>
         </div>
+        ${renderInsights()}
       </section>`;
+  }
+
+
+  /* Analytics and DeepSeek. */
+  function renderInsights() {
+    const { detected, resolved, notices } = state.trend;
+    const count = detected.length;
+    const width = 720;
+    const height = 220;
+    const pad = { left: 38, right: 18, top: 18, bottom: 32 };
+    const plotWidth = width - pad.left - pad.right;
+    const plotHeight = height - pad.top - pad.bottom;
+    const maxValue = Math.max(...detected, ...resolved, ...notices, 1);
+    const step = Math.max(1, Math.ceil(maxValue / 4));
+    const topValue = step * 4;
+    const x = (index) => pad.left + (count === 1 ? plotWidth / 2 : (index / (count - 1)) * plotWidth);
+    const y = (value) => pad.top + plotHeight - (value / topValue) * plotHeight;
+    const path = (values) =>
+      values.map((value, index) => `${index === 0 ? "M" : "L"}${x(index).toFixed(1)} ${y(value).toFixed(1)}`).join(" ");
+    const bottom = pad.top + plotHeight;
+    const area = `M${x(0).toFixed(1)} ${bottom.toFixed(1)} ${detected
+      .map((value, index) => `L${x(index).toFixed(1)} ${y(value).toFixed(1)}`)
+      .join(" ")} L${x(count - 1).toFixed(1)} ${bottom.toFixed(1)} Z`;
+    const ticks = [0, 1, 2, 3, 4].map((index) => index * step);
+    const grid = ticks
+      .map(
+        (tick) =>
+          `<line class="trend-grid-line" x1="${pad.left}" x2="${width - pad.right}" y1="${y(tick).toFixed(1)}" y2="${y(tick).toFixed(1)}" />` +
+          `<text class="trend-axis trend-axis--y" x="${pad.left - 10}" y="${(y(tick) + 4).toFixed(1)}" text-anchor="end">${tick}</text>`,
+      )
+      .join("");
+    const labelIndexes = [0, Math.floor((count - 1) / 2), count - 1];
+    const xLabels = labelIndexes
+      .map((index) => {
+        const label = index === count - 1 ? t("app.chart.today") : t("app.chart.daysAgo", { n: count - 1 - index });
+        const anchor = index === 0 ? "start" : index === count - 1 ? "end" : "middle";
+        return `<text class="trend-axis" x="${x(index).toFixed(1)}" y="${height - 8}" text-anchor="${anchor}">${esc(label)}</text>`;
+      })
+      .join("");
+    const totalDetected = detected.reduce((sum, value) => sum + value, 0);
+    const totalResolved = resolved.reduce((sum, value) => sum + value, 0);
+    const resolutionRate = totalDetected ? Math.round((totalResolved / totalDetected) * 100) : 0;
+    const number = new Intl.NumberFormat(PatrolI18n.lang === "ru" ? "ru-RU" : "en-US", { maximumFractionDigits: 1 });
+    const avgDetected = number.format(totalDetected / count);
+    const avgResolved = number.format(totalResolved / count);
+    const dots = [
+      ["detected", detected],
+      ["resolved", resolved],
+    ]
+      .map(([series, values]) => {
+        const value = values[values.length - 1];
+        return `<circle class="trend-dot trend-dot--${series}" cx="${x(count - 1).toFixed(1)}" cy="${y(value).toFixed(1)}" r="3.5" />`;
+      })
+      .join("");
+    const chart = `<svg class="trend-chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="${esc(
+      t("app.chart.aria", { detected: totalDetected, resolved: totalResolved }),
+    )}">
+        ${grid}
+        <path class="trend-area" d="${area}" />
+        <path class="trend-line trend-line--detected" d="${path(detected)}" />
+        <path class="trend-line trend-line--resolved" d="${path(resolved)}" />
+        <path class="trend-line trend-line--notices" d="${path(notices)}" />
+        ${dots}
+        ${xLabels}
+      </svg>`;
+
+    return `<div class="insight-grid">
+      <section class="panel trend-panel">
+        <div class="panel-head"><span>${t("app.chart.title")}</span><span class="trend-range">${t("app.chart.range")}</span></div>
+        <div class="trend-body">
+          <div class="trend-kpis">
+            <div class="trend-kpi"><span class="trend-kpi-num">${avgDetected}</span><span class="trend-kpi-label">${t("app.chart.detectedRate")}</span></div>
+            <div class="trend-kpi"><span class="trend-kpi-num">${avgResolved}</span><span class="trend-kpi-label">${t("app.chart.resolvedRate")}</span></div>
+            <div class="trend-kpi"><span class="trend-kpi-num">${resolutionRate}%</span><span class="trend-kpi-label">${t("app.chart.resolutionRate")}</span></div>
+          </div>
+          ${chart}
+          <div class="trend-legend">
+            <span><i class="legend-dot legend-dot--detected"></i>${t("app.chart.detected")}</span>
+            <span><i class="legend-dot legend-dot--resolved"></i>${t("app.chart.resolved")}</span>
+            <span><i class="legend-dot legend-dot--notices"></i>${t("app.chart.notices")}</span>
+          </div>
+        </div>
+      </section>
+      ${renderDeepSeekCard()}
+    </div>`;
+  }
+
+  function renderDeepSeekCard() {
+    const configured = Boolean(getDeepSeekKey());
+    const brief = state.deepseekBrief;
+    const loading = state.deepseekLoading;
+    const local = state.deepseekBriefMode === "local";
+    return `<section class="panel deepseek-panel">
+      <div class="panel-head">
+        <span class="deepseek-head">${icon("i-spark", "icon--sm")}${t("app.deepseek.title")}</span>
+        <span class="chip ${configured ? "chip--live" : "chip--muted"}">${configured ? t("app.deepseek.ready") : t("app.deepseek.notSet")}</span>
+      </div>
+      <div class="deepseek-body">
+        <p class="deepseek-lede">${t(configured ? "app.deepseek.connectedLede" : "app.deepseek.emptyLede")}</p>
+        <div class="deepseek-context">
+          <span class="deepseek-context-label">${t("app.deepseek.context")}</span>
+          <div class="deepseek-context-stats">
+            <span><b>${openViolations().length}</b>${t("app.deepseek.open")}</span>
+            <span><b>${state.candidates.length}</b>${t("app.deepseek.queued")}</span>
+            <span><b>${state.notices.length}</b>${t("app.deepseek.notices")}</span>
+          </div>
+          <p>${t("app.deepseek.contextNote")}</p>
+        </div>
+        ${
+          brief
+            ? `<div class="deepseek-brief"><span class="deepseek-brief-head">${t(
+                local ? "app.deepseek.localBriefTitle" : "app.deepseek.brief",
+              )}</span><p>${esc(brief)}</p></div>`
+            : ""
+        }
+        ${loading ? `<div class="deepseek-loading"><span class="spinner" aria-hidden="true"></span>${t("app.deepseek.generating")}</div>` : ""}
+        <div class="deepseek-actions">
+          ${
+            configured
+              ? `<button class="btn btn-primary btn-sm" type="button" data-action="deepseek-brief" ${
+                  loading ? "disabled" : ""
+                }>${icon("i-spark", "icon--sm")}${t(brief ? "app.deepseek.refresh" : "app.deepseek.generate")}</button>`
+              : `<a class="btn btn-primary btn-sm" href="#/settings">${t("app.deepseek.configure")}</a>`
+          }
+          ${configured ? `<a class="deepseek-link" href="#/settings">${t("app.deepseek.settings")}</a>` : ""}
+        </div>
+        ${local ? `<p class="deepseek-note">${t("app.deepseek.localNote")}</p>` : ""}
+      </div>
+    </section>`;
+  }
+
+  function renderSettings() {
+    const key = getDeepSeekKey();
+    const configured = Boolean(key);
+    const last4 = key.slice(-4);
+    return `<section class="page settings-page">
+      <header class="page-head">
+        <div>
+          <p class="eyebrow"><span class="dot"></span>${t("app.settings.eyebrow")}</p>
+          <h1 class="page-title">${t("app.settings.title")}</h1>
+        </div>
+      </header>
+      <div class="settings-grid">
+        <section class="panel settings-panel">
+          <div class="panel-head">
+            <span>${t("app.deepseek.title")}</span>
+            <span class="chip ${configured ? "chip--live" : "chip--muted"}">${configured ? t("app.deepseek.ready") : t("app.deepseek.notSet")}</span>
+          </div>
+          <div class="settings-body">
+            <p class="settings-lede">${t("app.deepseek.settingsLede")}</p>
+            <form id="deepseek-form" class="settings-form">
+              <label class="settings-field" for="deepseek-key">
+                <span>${t("app.deepseek.keyLabel")}</span>
+                <input class="settings-input" id="deepseek-key" name="deepseek-key" type="password" autocapitalize="off" autocomplete="off" spellcheck="false" placeholder="${esc(
+                  configured ? t("app.deepseek.replacePlaceholder") : t("app.deepseek.keyPlaceholder"),
+                )}" />
+              </label>
+              <p class="settings-hint">${t("app.deepseek.keyHint")}</p>
+              <div class="settings-actions">
+                <button class="btn btn-primary" type="submit">${icon("i-spark", "icon--sm")}${t("app.deepseek.save")}</button>
+                ${
+                  configured
+                    ? `<button class="btn btn-ghost" type="button" data-action="clear-deepseek">${t("app.deepseek.clear")}</button>`
+                    : ""
+                }
+              </div>
+            </form>
+            ${configured ? `<div class="settings-saved">${t("app.deepseek.savedStatus", { last4 })}</div>` : ""}
+          </div>
+        </section>
+        <aside class="panel settings-side">
+          <div class="panel-head"><span>${t("app.settings.how")}</span></div>
+          <div class="settings-body">
+            <p>${t("app.deepseek.privacy")}</p>
+            <dl class="settings-meta">
+              <div><dt>${t("app.deepseek.model")}</dt><dd>${t("app.deepseek.modelValue")}</dd></div>
+              <div><dt>${t("app.deepseek.endpoint")}</dt><dd>api.deepseek.com</dd></div>
+            </dl>
+            <a class="deepseek-link" href="https://api-docs.deepseek.com/" target="_blank" rel="noreferrer">${t("app.deepseek.apiLink")} ↗</a>
+          </div>
+        </aside>
+      </div>
+    </section>`;
+  }
+
+  async function generateDeepSeekBrief() {
+    const key = getDeepSeekKey();
+    if (!key) {
+      toast(t("app.deepseek.keyRequired"), "amber", "i-spark");
+      go("settings");
+      return;
+    }
+    if (state.deepseekLoading) return;
+    state.deepseekLoading = true;
+    state.deepseekError = null;
+    render();
+
+    const snapshot = {
+      language: PatrolI18n.lang === "ru" ? "Russian" : "English",
+      openViolations: openViolations().length,
+      candidatesToReview: state.candidates.length,
+      noticesOnFile: state.notices.length,
+      acknowledged: state.notices.filter((notice) => notice.submission && notice.submission.state === "acknowledged").length,
+      trackedTitles: state.titles.map((title) => title.name),
+      recentActivity: state.activity.slice(0, 5).map(activityLabel),
+    };
+    const fallback = localDeepSeekBrief();
+    let timer;
+    try {
+      const controller = new AbortController();
+      timer = setTimeout(() => controller.abort(), 20000);
+      const response = await fetch(DEEPSEEK_ENDPOINT, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${key}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "deepseek-chat",
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are Patrol, an anti-piracy operations assistant. Write a concise, practical 2-3 sentence triage brief for a dashboard. Use only the provided data. Do not invent titles or numbers. Answer in the requested language.",
+            },
+            { role: "user", content: JSON.stringify(snapshot) },
+          ],
+          temperature: 0.2,
+          max_tokens: 180,
+        }),
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error(`DeepSeek ${response.status}`);
+      const data = await response.json();
+      const text = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+      if (!text || !String(text).trim()) throw new Error("Empty DeepSeek response");
+      state.deepseekBrief = String(text).trim();
+      state.deepseekBriefMode = "remote";
+      toast(t("app.deepseek.readyToast"), "green", "i-spark");
+    } catch (error) {
+      state.deepseekBrief = fallback;
+      state.deepseekBriefMode = "local";
+      state.deepseekError = error && error.message ? error.message : "DeepSeek unavailable";
+      toast(t("app.deepseek.failedFallback"), "amber", "i-spark");
+    } finally {
+      if (timer) clearTimeout(timer);
+      state.deepseekLoading = false;
+      render();
+    }
   }
 
   function renderReview() {
@@ -866,6 +1162,7 @@
       state: "open",
       noticeId: null,
     });
+    state.trend.detected[state.trend.detected.length - 1] += 1;
     state.activity.unshift({
       icon: "siren",
       tone: "red",
@@ -1061,6 +1358,15 @@
     if (action === "approve-notice") approveNotice(trigger.dataset.id);
     if (action === "send-notice") sendNotice(trigger.dataset.id);
     if (action === "draft-notice") buildNotice();
+    if (action === "deepseek-brief") generateDeepSeekBrief();
+    if (action === "clear-deepseek") {
+      clearDeepSeekKey();
+      state.deepseekBrief = null;
+      state.deepseekBriefMode = null;
+      state.deepseekError = null;
+      render();
+      toast(t("app.deepseek.cleared"), "blue", "i-x");
+    }
     if (action === "close-modal") modal.close();
     if (action === "toggle-title") {
       const title = state.titles.find((item) => item.id === trigger.dataset.id);
@@ -1073,6 +1379,26 @@
         );
       }
     }
+  });
+
+  document.addEventListener("submit", (event) => {
+    if (event.target.id !== "deepseek-form") return;
+    event.preventDefault();
+    const input = document.getElementById("deepseek-key");
+    const key = input ? input.value.trim() : "";
+    if (!key) {
+      toast(t("app.deepseek.keyRequired"), "amber", "i-spark");
+      return;
+    }
+    if (!saveDeepSeekKey(key)) {
+      toast(t("app.deepseek.storageError"), "amber", "i-spark");
+      return;
+    }
+    state.deepseekBrief = null;
+    state.deepseekBriefMode = null;
+    state.deepseekError = null;
+    render();
+    toast(t("app.deepseek.saved"), "green", "i-check");
   });
 
   document.addEventListener("change", (event) => {
@@ -1104,6 +1430,10 @@
 
   PatrolI18n.onChange(() => {
     toasts.replaceChildren();
+    if (state.deepseekBrief) {
+      state.deepseekBrief = null;
+      state.deepseekBriefMode = null;
+    }
     updateChrome();
     render();
     if (modal.open && modalSpec) {

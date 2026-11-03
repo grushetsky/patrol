@@ -107,6 +107,10 @@
         <path d="m12 14 4-4" />
         <circle cx="12" cy="18" r="1.2" fill="currentColor" stroke="none" />
       </symbol>
+      <symbol id="i-spark" viewBox="0 0 24 24">
+        <path d="M12 2.8l1.8 6.4L20.2 11l-6.4 1.8L12 19.2l-1.8-6.4L3.8 11l6.4-1.8L12 2.8Z" />
+        <path d="M19 3v3M17.5 4.5h3" />
+      </symbol>
     </svg>
 
     <div class="scan-line" id="scan-line" aria-hidden="true"></div>
@@ -143,10 +147,13 @@
     <main id="view" aria-live="polite"></main>
 
     <footer class="foot">
-      <a href="https://github.com/grushetsky/patrol" target="_blank" rel="noreferrer">Source Code</a>
       <span class="foot-links">
-        <a href="./pitch.html" data-i18n="app.footer.pitch">pitch deck</a>
-        <button type="button" data-action="reset" data-i18n="app.footer.reset">Reset demo</button>
+        <a href="https://github.com/grushetsky/patrol" target="_blank" rel="noreferrer" data-i18n="app.footer.source">Source Code</a>
+        <a href="./pitch.html" data-i18n="app.footer.pitch">Pitch Deck</a>
+      </span>
+      <span class="foot-links">
+        <a href="#/settings" data-i18n="app.nav.settings">Settings</a>
+        <button type="button" data-action="reset" data-i18n="app.footer.reset">Reset Demo</button>
       </span>
     </footer>
 
