@@ -2700,3 +2700,118 @@ body.siren .siren-light {
     font-size: 18px;
   }
 }
+
+/* KinoPoisk import. */
+:root[data-theme] .titles-page .page-head .btn {
+  flex: 0 0 auto;
+}
+
+:root[data-theme] .kp-search {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+:root[data-theme] .kp-note {
+  margin: 0;
+  color: var(--faint);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+:root[data-theme] .kp-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+:root[data-theme] .kp-result {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-soft);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+:root[data-theme="light"] .kp-result {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+:root[data-theme] .kp-poster {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 56px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background:
+    radial-gradient(70% 55% at 70% 20%, rgba(139, 123, 255, 0.45), transparent 62%),
+    linear-gradient(160deg, #1d2e4e, #0b1322);
+  color: rgba(255, 255, 255, 0.85);
+  font: 800 20px/1 var(--display);
+}
+
+:root[data-theme] .kp-main {
+  min-width: 0;
+}
+
+:root[data-theme] .kp-name {
+  font: 700 16px/1.25 var(--display);
+}
+
+:root[data-theme] .kp-sub {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+:root[data-theme] .kp-sub span {
+  display: block;
+  margin-top: 2px;
+  color: var(--faint);
+  font-family: var(--mono);
+  font-size: 11px;
+}
+
+:root[data-theme] .kp-result .btn {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+:root[data-theme] .kp-empty {
+  margin: 18px 0 0;
+  padding: 18px;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+@media (max-width: 620px) {
+  :root[data-theme] .titles-page .page-head {
+    flex-wrap: wrap;
+  }
+
+  :root[data-theme] .titles-page .page-head .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  :root[data-theme] .kp-result {
+    grid-template-columns: 40px minmax(0, 1fr);
+  }
+
+  :root[data-theme] .kp-result .btn {
+    grid-column: 1 / -1;
+    width: 100%;
+    justify-content: center;
+  }
+}
