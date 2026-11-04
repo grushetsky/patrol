@@ -306,7 +306,11 @@ export const submission = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }),
   },
-  (table) => [uniqueIndex("submission_notice_key").on(table.noticeId)],
+  (table) => [
+    uniqueIndex("submission_notice_key").on(table.noticeId),
+    index("submission_state_created_idx").on(table.state, table.createdAt),
+    index("submission_updated_idx").on(table.updatedAt),
+  ],
 );
 
 export const noticeTemplate = pgTable(
@@ -364,6 +368,8 @@ export const notice = pgTable(
   (table) => [
     index("notice_state_idx").on(table.state, table.createdAt),
     index("notice_profile_idx").on(table.recipientProfileId, table.state),
+    index("notice_approved_idx").on(table.approvedAt),
+    index("notice_recipient_created_idx").on(table.recipient, table.createdAt),
   ],
 );
 
@@ -515,12 +521,17 @@ export const violation = pgTable(
     closureEvidenceId: text("closure_evidence_id"),
     closedBy: text("closed_by"),
     closureNote: text("closure_note"),
+    engine: text("engine"),
+    titleGroupId: text("title_group_id"),
+    startedByScanId: text("started_by_scan_id"),
   },
   (table) => [
     uniqueIndex("violation_open_pair_key")
       .on(table.normalizedUrl, table.trackedTitleId)
       .where(sql`state = 'open'`),
     index("violation_state_idx").on(table.state, table.confirmedAt),
+    index("violation_closed_idx").on(table.closedAt),
+    index("violation_detected_idx").on(table.detectedAt),
   ],
 );
 
@@ -547,6 +558,7 @@ export const reviewDecision = pgTable(
       table.candidateId,
       table.decidedAt,
     ),
+    index("review_decision_decided_idx").on(table.decidedAt),
   ],
 );
 
@@ -638,6 +650,7 @@ export const scan = pgTable(
       table.engine,
       table.dueDate,
     ),
+    index("scan_finished_idx").on(table.finishedAt),
   ],
 );
 

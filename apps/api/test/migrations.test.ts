@@ -102,8 +102,9 @@ describe("committed migrations", () => {
       "0004_evidence",
       "0005_matching_review",
       "0006_notices",
+      "0007_dashboard",
     ]);
-    expect(result.version).toBe("0006_notices");
+    expect(result.version).toBe("0007_dashboard");
   });
 });
 

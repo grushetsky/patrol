@@ -24,6 +24,8 @@ import { NoticeService } from "./notices/service.js";
 import { registerNoticeRoutes } from "./notices/routes.js";
 import { SubmissionService } from "./submissions/service.js";
 import { registerSubmissionRoutes } from "./submissions/routes.js";
+import { DashboardService } from "./dashboard/service.js";
+import { registerDashboardRoutes } from "./dashboard/routes.js";
 import {
   storeFromEnvironment,
   type ArtifactStore,
@@ -44,6 +46,8 @@ export interface AppOptions {
   notices?: NoticeService;
   submissions?: SubmissionService;
   evidenceStore?: ArtifactStore;
+  dashboard?: DashboardService;
+  clock?: () => Date;
 }
 
 export function buildApp(options: AppOptions): FastifyInstance {
@@ -53,7 +57,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
   });
   const auth = options.auth ?? new AuthService(options.db);
   const catalogue = options.catalogue ?? new CatalogueService(options.db);
-  const settings = options.settings ?? new SettingsService(options.db);
+  const settings =
+    options.settings ?? new SettingsService(options.db, options.clock);
   const scans = options.scans ?? new ScanService(options.db);
   const candidates = options.candidates ?? new CandidateService(options.db);
   const violations = options.violations ?? new ViolationService(options.db);
@@ -62,6 +67,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
     options.notices ?? new NoticeService(options.db, artifactStore);
   const submissions =
     options.submissions ?? new SubmissionService(options.db);
+  const dashboard =
+    options.dashboard ?? new DashboardService(options.db, settings, options.clock);
   const evidence = new EvidenceService(options.db, artifactStore);
   const guards = createAuthGuards(auth);
 
@@ -127,6 +134,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       registerViolationRoutes(api, violations, options.contract, guards);
       registerNoticeRoutes(api, notices, options.contract, guards);
       registerSubmissionRoutes(api, submissions, options.contract, guards);
+      registerDashboardRoutes(api, dashboard, guards);
       registerEvidenceRoutes(api, evidence, options.contract, guards);
     },
     { prefix: "/api" },

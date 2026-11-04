@@ -89,7 +89,7 @@ interface BudgetConfig {
   recheckSharePercent: number;
 }
 
-const ENGINES = ["google", "bing", "yandex"] as const;
+export const ENGINES = ["google", "bing", "yandex"] as const;
 const DEFAULT_ENGINE_CAPS: Record<
   string,
   { currency: string; monthlyCapMinor: number; unitPricePerThousandMinor: number; unitsPerQuery: number }
