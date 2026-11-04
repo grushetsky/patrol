@@ -267,6 +267,7 @@ export const recipientProfile = pgTable(
     maxUrlsPerNotice: integer("max_urls_per_notice"),
     maxUrlsPerFile: integer("max_urls_per_file"),
     maxUrlsPerDay: integer("max_urls_per_day"),
+    formUrl: text("form_url"),
     lastObservedMaxUrlsPerFile: integer("last_observed_max_urls_per_file"),
     lastObservedDailyQuota: integer("last_observed_daily_quota"),
     paused: boolean("paused").notNull().default(false),
@@ -283,12 +284,164 @@ export const recipientProfile = pgTable(
   ],
 );
 
-export const submission = pgTable("submission", {
-  id: text("id").primaryKey(),
-  recipientProfileId: text("recipient_profile_id").notNull(),
-  state: text("state").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
-});
+export const submission = pgTable(
+  "submission",
+  {
+    id: text("id").primaryKey(),
+    recipientProfileId: text("recipient_profile_id").notNull(),
+    state: text("state").notNull(),
+    noticeId: text("notice_id"),
+    channel: text("channel"),
+    packLanguage: text("pack_language"),
+    attemptCount: integer("attempt_count").notNull().default(0),
+    packRef: text("pack_ref"),
+    packSha256: text("pack_sha256"),
+    packGeneratedAt: timestamp("pack_generated_at", { withTimezone: true }),
+    cancelledAt: timestamp("cancelled_at", { withTimezone: true }),
+    deliveredAt: timestamp("delivered_at", { withTimezone: true }),
+    deliveredBy: text("delivered_by"),
+    attestation: text("attestation"),
+    acknowledgement: text("acknowledgement"),
+    failure: text("failure"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }),
+  },
+  (table) => [uniqueIndex("submission_notice_key").on(table.noticeId)],
+);
+
+export const noticeTemplate = pgTable(
+  "notice_template",
+  {
+    id: text("id").primaryKey(),
+    recipient: text("recipient").notNull(),
+    language: text("language").notNull(),
+    major: integer("major").notNull(),
+    hash: text("hash").notNull(),
+    statements: text("statements").notNull(),
+    sourceUrls: text("source_urls").notNull(),
+    accessedAt: timestamp("accessed_at", { withTimezone: true }).notNull(),
+    verifiedBy: text("verified_by"),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }),
+    supersedes: text("supersedes"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("notice_template_revision_key").on(
+      table.recipient,
+      table.language,
+      table.major,
+    ),
+  ],
+);
+
+export const notice = pgTable(
+  "notice",
+  {
+    id: text("id").primaryKey(),
+    recipient: text("recipient").notNull(),
+    recipientProfileId: text("recipient_profile_id").notNull(),
+    channel: text("channel").notNull(),
+    state: text("state").notNull(),
+    templateVersion: text("template_version").notNull(),
+    content: text("content"),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+    approvedBy: text("approved_by"),
+    approvedAt: timestamp("approved_at", { withTimezone: true }),
+    rightsHolderSnapshot: text("rights_holder_snapshot"),
+    signatorySnapshot: text("signatory_snapshot"),
+    profileSnapshot: text("profile_snapshot"),
+    packLanguage: text("pack_language"),
+    withdrawnBy: text("withdrawn_by"),
+    withdrawnAt: timestamp("withdrawn_at", { withTimezone: true }),
+    withdrawalReason: text("withdrawal_reason"),
+    supersededBy: text("superseded_by"),
+    supersededAt: timestamp("superseded_at", { withTimezone: true }),
+    supersededByNoticeId: text("superseded_by_notice_id"),
+    secondOperatorCheck: text("second_operator_check"),
+  },
+  (table) => [
+    index("notice_state_idx").on(table.state, table.createdAt),
+    index("notice_profile_idx").on(table.recipientProfileId, table.state),
+  ],
+);
+
+export const noticeCitation = pgTable(
+  "notice_citation",
+  {
+    noticeId: text("notice_id").notNull(),
+    violationId: text("violation_id").notNull(),
+    evidenceIds: text("evidence_ids").notNull(),
+    citedAt: timestamp("cited_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("notice_citation_key").on(table.noticeId, table.violationId),
+    index("notice_citation_violation_idx").on(table.violationId),
+  ],
+);
+
+export const noticeWork = pgTable(
+  "notice_work",
+  {
+    noticeId: text("notice_id").notNull(),
+    trackedTitleId: text("tracked_title_id").notNull(),
+    displayTitle: text("display_title").notNull(),
+    releaseYear: integer("release_year").notNull(),
+    titleType: text("title_type").notNull(),
+    authorizedExampleUrl: text("authorized_example_url"),
+  },
+  (table) => [
+    uniqueIndex("notice_work_key").on(table.noticeId, table.trackedTitleId),
+  ],
+);
+
+export const noticeResolvedField = pgTable(
+  "notice_resolved_field",
+  {
+    noticeId: text("notice_id").notNull(),
+    ordinal: integer("ordinal").notNull(),
+    name: text("name").notNull(),
+    value: text("value").notNull(),
+    required: boolean("required").notNull(),
+    maxLength: integer("max_length"),
+  },
+  (table) => [
+    uniqueIndex("notice_resolved_field_key").on(table.noticeId, table.ordinal),
+  ],
+);
+
+export const noticeStatement = pgTable(
+  "notice_statement",
+  {
+    noticeId: text("notice_id").notNull(),
+    ordinal: integer("ordinal").notNull(),
+    key: text("key").notNull(),
+    text: text("text").notNull(),
+    templateVersion: text("template_version").notNull(),
+  },
+  (table) => [
+    uniqueIndex("notice_statement_key").on(table.noticeId, table.key),
+  ],
+);
+
+export const noticePackArtifact = pgTable(
+  "notice_pack_artifact",
+  {
+    submissionId: text("submission_id").notNull(),
+    kind: text("kind").notNull(),
+    fileName: text("file_name").notNull(),
+    contentType: text("content_type").notNull(),
+    byteSize: integer("byte_size").notNull(),
+    sha256: text("sha256").notNull(),
+    objectKey: text("object_key").notNull(),
+    objectVersion: text("object_version"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("notice_pack_artifact_key").on(table.submissionId, table.kind),
+  ],
+);
 
 export const candidate = pgTable(
   "candidate",

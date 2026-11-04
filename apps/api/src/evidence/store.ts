@@ -1,4 +1,8 @@
-import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  GetObjectCommand,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import { ApiError } from "../errors.js";
 
@@ -13,6 +17,8 @@ export interface ArtifactStore {
     version: string | null,
     expiresInSeconds?: number,
   ): Promise<SignedArtifact>;
+  /** Store immutable bytes and return the object version, when the store has one. */
+  put?(key: string, body: Buffer, contentType: string): Promise<string | null>;
 }
 
 export class S3ArtifactStore implements ArtifactStore {
@@ -41,6 +47,22 @@ export class S3ArtifactStore implements ArtifactStore {
           }
         : {}),
     });
+  }
+
+  async put(
+    key: string,
+    body: Buffer,
+    contentType: string,
+  ): Promise<string | null> {
+    const result = await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+      }),
+    );
+    return result.VersionId ?? null;
   }
 
   async signedUrl(

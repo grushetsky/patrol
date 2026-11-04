@@ -118,10 +118,27 @@ const DEFAULT_PROFILES: Array<{
   recipient: string;
   maxUrlsPerNotice: number;
   maxUrlsPerFile: number;
+  formUrl: string;
 }> = [
-  { recipient: "google", maxUrlsPerNotice: 500, maxUrlsPerFile: 500 },
-  { recipient: "bing", maxUrlsPerNotice: 1_000, maxUrlsPerFile: 1_000 },
-  { recipient: "yandex", maxUrlsPerNotice: 1, maxUrlsPerFile: 1 },
+  {
+    recipient: "google",
+    maxUrlsPerNotice: 500,
+    maxUrlsPerFile: 500,
+    formUrl: "https://reportcontent.google.com/forms/dmca_search",
+  },
+  {
+    recipient: "bing",
+    maxUrlsPerNotice: 1_000,
+    maxUrlsPerFile: 1_000,
+    formUrl:
+      "https://www.bing.com/webmaster/contentremovalform/showcontentremovalform",
+  },
+  {
+    recipient: "yandex",
+    maxUrlsPerNotice: 1,
+    maxUrlsPerFile: 1,
+    formUrl: "https://forms.yandex.com/surveys/1773/?lang=en&iframe=1",
+  },
 ];
 const SETTING_KEY = "recheck_share_percent";
 const LEDGER_NAMESPACE = "2f8f6f7e-4a1b-4c2d-9e3f-6a5b4c3d2e1f";
@@ -627,11 +644,12 @@ export class SettingsService {
           `INSERT INTO recipient_profile
             (id, recipient, channel, account, contact_email, composition_trigger,
              window_time, eligible_territories, max_urls_per_notice,
-             max_urls_per_file, max_urls_per_day, last_observed_max_urls_per_file,
+             max_urls_per_file, max_urls_per_day, form_url,
+             last_observed_max_urls_per_file,
              last_observed_daily_quota, paused, pause_reason, version, updated_by,
              updated_at)
            VALUES ($1, $2, 'web_form', '', NULL, 'scheduled', '07:00:00', '[]',
-                   $3, $4, NULL, NULL, NULL, false, NULL, 1, $5, $6)`,
+                   $3, $4, NULL, $7, NULL, NULL, false, NULL, 1, $5, $6)`,
           [
             newId(),
             profile.recipient,
@@ -639,6 +657,7 @@ export class SettingsService {
             profile.maxUrlsPerFile,
             operatorId,
             this.clock(),
+            profile.formUrl,
           ],
         );
       }
