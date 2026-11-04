@@ -15,6 +15,17 @@ export interface AppConfig {
    */
   env: string;
   /**
+   * The server-side pepper mixed into every recovery-code hash. A stable
+   * value from PATROL_RECOVERY_PEPPER in production; the development default
+   * exists only so a local database boots without secrets.
+   */
+  recoveryPepper: string;
+  /**
+   * The origin invitation and reset emails link back to. Defaults to the
+   * local compose web port.
+   */
+  publicUrl: string;
+  /**
    * Injectable clock, real time unless a test freezes it. Pre-agreed seam:
    * slice 1 consumes it for session idle/absolute expiry; do not inline
    * `new Date()` in domain code.
@@ -32,11 +43,27 @@ function packageVersion(): string {
 /**
  * Reads the environment. PATROL_PORT wins over PORT, which exists so tests
  * can override the listener port without colliding with a dev API.
+ * PATROL_RECOVERY_PEPPER is required in production: without it every
+ * recovery-code hash would derive from a public literal, so the boot
+ * refuses; outside production the development default stands with a
+ * warning so a local database starts without secrets.
  */
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
   const databaseUrl = env.DATABASE_URL;
   if (!databaseUrl) {
     throw new Error("DATABASE_URL is required");
+  }
+  const deploymentEnv = env.PATROL_ENV ?? "dev";
+  const pepper = env.PATROL_RECOVERY_PEPPER;
+  if (pepper === undefined || pepper === "") {
+    if (deploymentEnv === "production") {
+      throw new Error(
+        "PATROL_RECOVERY_PEPPER is required in production: recovery-code hashes must derive from a deployment secret, not the development default",
+      );
+    }
+    console.warn(
+      "PATROL_RECOVERY_PEPPER is not set; using the development default. Set it before any recovery code is issued outside a throwaway database.",
+    );
   }
   const port = env.PATROL_PORT
     ? parseInteger(env.PATROL_PORT, "PATROL_PORT")
@@ -48,7 +75,9 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     port,
     buildVersion: env.PATROL_BUILD_VERSION ?? packageVersion(),
     schemaStamp: expectedSchemaStamp(env.PATROL_SCHEMA_STAMP),
-    env: env.PATROL_ENV ?? "dev",
+    env: deploymentEnv,
+    recoveryPepper: pepper ?? "patrol-development-recovery-pepper",
+    publicUrl: env.PATROL_PUBLIC_URL ?? "http://localhost:3000",
     now: () => new Date(),
   };
 }

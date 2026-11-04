@@ -10,33 +10,89 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthEnrollmentRouteImport } from './routes/auth/enrollment'
+import { Route as AuthPreferencesRouteImport } from './routes/auth/preferences'
+import { Route as AuthSetupRouteImport } from './routes/auth/setup'
+import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthEnrollmentRoute = AuthEnrollmentRouteImport.update({
+  id: '/auth/enrollment',
+  path: '/auth/enrollment',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthPreferencesRoute = AuthPreferencesRouteImport.update({
+  id: '/auth/preferences',
+  path: '/auth/preferences',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSetupRoute = AuthSetupRouteImport.update({
+  id: '/auth/setup',
+  path: '/auth/setup',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthSignInRoute = AuthSignInRouteImport.update({
+  id: '/auth/sign-in',
+  path: '/auth/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth/enrollment': typeof AuthEnrollmentRoute
+  '/auth/preferences': typeof AuthPreferencesRoute
+  '/auth/setup': typeof AuthSetupRoute
+  '/auth/sign-in': typeof AuthSignInRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth/enrollment': typeof AuthEnrollmentRoute
+  '/auth/preferences': typeof AuthPreferencesRoute
+  '/auth/setup': typeof AuthSetupRoute
+  '/auth/sign-in': typeof AuthSignInRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/auth/enrollment': typeof AuthEnrollmentRoute
+  '/auth/preferences': typeof AuthPreferencesRoute
+  '/auth/setup': typeof AuthSetupRoute
+  '/auth/sign-in': typeof AuthSignInRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/auth/enrollment'
+    | '/auth/preferences'
+    | '/auth/setup'
+    | '/auth/sign-in'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/auth/enrollment'
+    | '/auth/preferences'
+    | '/auth/setup'
+    | '/auth/sign-in'
+  id:
+    | '__root__'
+    | '/'
+    | '/auth/enrollment'
+    | '/auth/preferences'
+    | '/auth/setup'
+    | '/auth/sign-in'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthEnrollmentRoute: typeof AuthEnrollmentRoute
+  AuthPreferencesRoute: typeof AuthPreferencesRoute
+  AuthSetupRoute: typeof AuthSetupRoute
+  AuthSignInRoute: typeof AuthSignInRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +104,43 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/enrollment': {
+      id: '/auth/enrollment'
+      path: '/auth/enrollment'
+      fullPath: '/auth/enrollment'
+      preLoaderRoute: typeof AuthEnrollmentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/preferences': {
+      id: '/auth/preferences'
+      path: '/auth/preferences'
+      fullPath: '/auth/preferences'
+      preLoaderRoute: typeof AuthPreferencesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/setup': {
+      id: '/auth/setup'
+      path: '/auth/setup'
+      fullPath: '/auth/setup'
+      preLoaderRoute: typeof AuthSetupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/sign-in': {
+      id: '/auth/sign-in'
+      path: '/auth/sign-in'
+      fullPath: '/auth/sign-in'
+      preLoaderRoute: typeof AuthSignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthEnrollmentRoute: AuthEnrollmentRoute,
+  AuthPreferencesRoute: AuthPreferencesRoute,
+  AuthSetupRoute: AuthSetupRoute,
+  AuthSignInRoute: AuthSignInRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

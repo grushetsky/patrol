@@ -1,11 +1,15 @@
 import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import type { AppConfig } from "../config.js";
+import { t } from "@patrol/i18n";
+import type { DeploymentSetupState } from "../domain/bootstrap.js";
 
 /** The system routes' view of the database's bootstrap bookkeeping. */
 export interface SystemDeps {
   config: AppConfig;
   /** Reads the patrol_meta stamp; null before any migration is recorded. */
   schemaStamp: () => Promise<number | null>;
+  /** Reads the rights-holder and administrator counts setup gating uses. */
+  setupState: () => Promise<DeploymentSetupState>;
 }
 
 /**
@@ -19,14 +23,13 @@ export function systemRoutes(deps: SystemDeps): FastifyPluginAsync {
   return async (app: FastifyInstance) => {
     app.get("/health", async () => ({ status: "ok" }));
 
-    app.get("/system/version", async (_request, reply) => {
+    app.get("/system/version", async (request, reply) => {
       const stamp = await deps.schemaStamp();
       if (stamp === null || stamp !== deps.config.schemaStamp) {
         reply.status(503);
         return {
           code: "schema_mismatch",
-          message:
-            "The database schema does not match this image; run the migrate task before starting the service.",
+          message: t(request.locale, "errors.schema_mismatch"),
         };
       }
       return {
@@ -37,12 +40,13 @@ export function systemRoutes(deps: SystemDeps): FastifyPluginAsync {
     });
 
     app.get("/system/setup", async () => {
-      // Slice 0 stub: the contract-shaped unconfigured state. Slice 1 makes
-      // this read the rights holder and administrator tables for real.
+      // Slice 1: the real bootstrap state — the rights holder's existence
+      // and the administrator count the setup gating reads.
+      const state = await deps.setupState();
       return {
-        bootstrapped: false,
-        rightsHolderConfigured: false,
-        administratorCount: 0,
+        bootstrapped: state.bootstrapped,
+        rightsHolderConfigured: state.rightsHolderConfigured,
+        administratorCount: state.administratorCount,
       };
     });
   };

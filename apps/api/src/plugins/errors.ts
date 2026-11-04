@@ -1,8 +1,8 @@
-import type { FastifyError, FastifyPluginAsync, FastifyReply } from "fastify";
+import type { FastifyError, FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
 import fp from "fastify-plugin";
 import { t } from "@patrol/i18n";
 import { resolveLocale } from "../i18n.js";
-import { ValidationError, type FieldError } from "../errors.js";
+import { ApiError, ValidationError, type FieldError } from "../errors.js";
 
 /** The ErrorBody every error response carries (contract Patrol.Http). */
 interface ErrorBody {
@@ -20,18 +20,37 @@ function sendError(
   reply.status(statusCode).send(body);
 }
 
+/** The locale a request resolved to: the operator's preference when signed in. */
+function requestLocale(request: FastifyRequest): ReturnType<typeof resolveLocale> {
+  return request.locale ?? resolveLocale(undefined, request.headers["accept-language"]);
+}
+
 /**
  * The shared error handler. The UI branches on `code`, which is never
  * localized; `message` is display text and resolves through the catalogue
- * for the codes that have entries, in the locale the request resolved to
- * (implementation-rules "Language resolution" — slice 1 adds the operator
- * preference ahead of Accept-Language). Internal failures log the request id
- * but never leak it or any stack into the response body. Wrapped with
- * fastify-plugin so the handler applies to every scope, not just this one.
+ * for the request's resolved language — the signed-in operator's stored
+ * preference ahead of Accept-Language (implementation-rules "Language
+ * resolution"). Internal failures log the request id but never leak it or
+ * any stack into the response body. Wrapped with fastify-plugin so the
+ * handler applies to every scope, not just this one.
  */
 export const errorsPlugin: FastifyPluginAsync = fp(async (app) => {
   app.setErrorHandler((error: FastifyError, request, reply) => {
-    const locale = resolveLocale(undefined, request.headers["accept-language"]);
+    const locale = requestLocale(request);
+
+    if (error instanceof ApiError) {
+      sendError(reply, error.statusCode, {
+        code: error.code,
+        message: t(locale, error.messageKey),
+        ...(error.retryAfterSeconds !== undefined
+          ? { retryAfterSeconds: error.retryAfterSeconds }
+          : {}),
+        ...(error.fieldErrors !== undefined
+          ? { fieldErrors: error.fieldErrors }
+          : {}),
+      });
+      return;
+    }
 
     if (error instanceof ValidationError) {
       sendError(reply, 400, {
@@ -66,7 +85,7 @@ export const errorsPlugin: FastifyPluginAsync = fp(async (app) => {
   app.setNotFoundHandler((request, reply) => {
     sendError(reply, 404, {
       code: "not_found",
-      message: `No route matches ${request.method} ${request.url}.`,
+      message: t(requestLocale(request), "errors.not_found"),
     });
   });
 });

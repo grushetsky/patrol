@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "description": "Fastify 5 API serving the contract from @patrol/contract.",
+  "bin": {
+    "patrol": "./dist/cli/index.js"
+  },
   "scripts": {
     "dev": "PATROL_PRETTY_LOGS=1 tsx watch src/index.ts",
     "build": "tsc -p tsconfig.build.json",
@@ -11,10 +14,12 @@
     "test:unit": "vitest run --config vitest.unit.config.ts",
     "test:db": "vitest run --config vitest.db.config.ts",
     "db:migrate": "tsx src/db/migrate-cli.ts",
+    "cli": "tsx src/cli/index.ts",
     "gen": "echo 'nothing to generate yet; Drizzle Kit generation arrives with the first domain tables'",
     "gen:api": "openapi-typescript ../../contract/generated/openapi/Patrol.openapi.yaml -o src/lib/api/schema.d.ts"
   },
   "dependencies": {
+    "@node-rs/argon2": "^2.2.2",
     "@patrol/contract": "workspace:*",
     "@patrol/db": "workspace:*",
     "@patrol/i18n": "workspace:*",
@@ -23,8 +28,10 @@
     "drizzle-orm": "^0.45.4",
     "fastify": "^5.12.8",
     "fastify-plugin": "^5.1.0",
+    "otpauth": "^9.6.0",
     "pg": "^8.23.1",
-    "pino": "^10.4.0"
+    "pino": "^10.4.0",
+    "yaml": "2.9.1"
   },
   "devDependencies": {
     "@types/node": "26.6.6",

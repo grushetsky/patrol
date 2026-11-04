@@ -1,21 +1,34 @@
 import { randomUUID } from "node:crypto";
+import type { Pool } from "pg";
 import Fastify, { type FastifyInstance } from "fastify";
 import type { AppConfig } from "./config.js";
 import { errorsPlugin } from "./plugins/errors.js";
 import { requestIdPlugin } from "./plugins/request-id.js";
 import { validatorPlugin } from "./plugins/validator.js";
-import { stubEchoRoutes } from "./routes/stub-echo.js";
+import { authPlugin } from "./plugins/auth.js";
 import { systemRoutes, type SystemDeps } from "./routes/system.js";
+import { authRoutes } from "./routes/auth.js";
+import { operatorRoutes } from "./routes/operators.js";
+import { readSetupState } from "./domain/bootstrap.js";
+import type { MailTransport } from "./mail/transport.js";
 
-export interface AppDeps extends SystemDeps {
+export interface AppDeps {
   config: AppConfig;
+  /** The database the identity tables live in; routes query it directly. */
+  pool: Pool;
+  /** The outbound mail port; the in-memory recorder in tests, console in dev. */
+  mail: MailTransport;
+  /** Reads the patrol_meta stamp; null before any migration is recorded. */
+  schemaStamp: () => Promise<number | null>;
 }
 
 /**
  * Assembles the API. Routes mount under /api, matching the deployment's ALB
  * split and the generated client's base. Pino logs one child per request
  * keyed by the request id, with credential-bearing headers redacted. The
- * slice-0 stub routes are scaffolding and never mount in production.
+ * auth plugin resolves sessions and locales, gates unbootstrapped
+ * deployments, enforces the CSRF double submit, and guards roles from the
+ * route metadata.
  */
 export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   const app = Fastify({
@@ -42,11 +55,24 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
   await app.register(requestIdPlugin);
   await app.register(validatorPlugin);
+  // Before the error handler: session and locale resolve on every request,
+  // including the ones that fail.
+  await app.register(authPlugin, { config: deps.config, pool: deps.pool });
   await app.register(errorsPlugin);
-  await app.register(systemRoutes(deps), { prefix: "/api" });
-  if (deps.config.env !== "production") {
-    await app.register(stubEchoRoutes, { prefix: "/api" });
-  }
+  const systemDeps: SystemDeps = {
+    config: deps.config,
+    schemaStamp: deps.schemaStamp,
+    setupState: () => readSetupState(deps.pool),
+  };
+  await app.register(systemRoutes(systemDeps), { prefix: "/api" });
+  await app.register(
+    authRoutes({ config: deps.config, pool: deps.pool, mail: deps.mail }),
+    { prefix: "/api" },
+  );
+  await app.register(
+    operatorRoutes({ config: deps.config, pool: deps.pool, mail: deps.mail }),
+    { prefix: "/api" },
+  );
 
   return app;
 }

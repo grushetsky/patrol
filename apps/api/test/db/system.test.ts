@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { FastifyInstance } from "fastify";
 import { getValidator } from "../../src/plugins/validator.js";
 import { buildApp, poolSchemaStamp, testConfig } from "../test-app.js";
+import { MemoryMailTransport } from "../../src/mail/transport.js";
 import { testPool } from "./helpers.js";
 
 /**
@@ -16,6 +17,8 @@ describe("system routes against the test database", () => {
   beforeAll(async () => {
     app = await buildApp({
       config: testConfig(),
+      pool,
+      mail: new MemoryMailTransport(),
       schemaStamp: poolSchemaStamp(pool),
     });
   });
@@ -40,7 +43,7 @@ describe("system routes against the test database", () => {
     expect(response.statusCode).toBe(200);
     const body = response.json();
     expect(body.buildVersion).toBe("test-build");
-    expect(body.migrationVersion).toBe("0");
+    expect(body.migrationVersion).toBe("1");
     expect(body.schemaCompatible).toBe(true);
     expect(getValidator("VersionReport")(body)).toBe(true);
   });
@@ -56,7 +59,7 @@ describe("system routes against the test database", () => {
       expect(typeof body.message).toBe("string");
       expect(getValidator("ErrorBody")(body)).toBe(true);
     } finally {
-      await pool.query("update patrol_meta set schema_version = 0");
+      await pool.query("update patrol_meta set schema_version = 1");
     }
   });
 
@@ -69,7 +72,7 @@ describe("system routes against the test database", () => {
       expect(response.json().code).toBe("schema_mismatch");
     } finally {
       await pool.query(
-        "insert into patrol_meta (singleton, schema_version, applied_at, name) values (true, 0, now(), '0000_meta')",
+        "insert into patrol_meta (singleton, schema_version, applied_at, name) values (true, 1, now(), '0001_identity')",
       );
     }
   });
