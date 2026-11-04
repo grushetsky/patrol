@@ -1,0 +1,8 @@
+.git
+node_modules
+**/node_modules
+**/dist
+contract/node_modules
+contract/verify/node_modules
+docs
+.agents

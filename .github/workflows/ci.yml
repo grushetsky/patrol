@@ -1,0 +1,90 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+      - run: npm ci --prefix contract
+      - run: npm run compile --prefix contract
+      - run: npm run check --prefix contract
+      - run: npm ci --prefix contract/verify
+      - run: npm run check --prefix contract/verify
+      - name: Generated artifacts are committed
+        run: git diff --exit-code -- contract/generated contract/verify/src/generated
+
+  app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm contract:types
+      - name: Generated client is committed
+        run: git diff --exit-code -- apps/web/src/generated
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - run: docker compose config
+
+  database:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: patrol
+          POSTGRES_PASSWORD: patrol
+          POSTGRES_DB: patrol
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U patrol -d patrol"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @patrol/api build
+      - name: Migration runner against a real database
+        env:
+          DATABASE_URL: postgres://patrol:patrol@localhost:5432/patrol
+        run: pnpm --filter @patrol/api test
+      - name: API starts against a fresh database
+        env:
+          DATABASE_URL: postgres://patrol:patrol@localhost:5432/patrol
+          PATROL_SCHEMA_BUNDLE: ${{ github.workspace }}/contract/generated/json-schema/patrol
+          PATROL_MIGRATIONS_DIR: ${{ github.workspace }}/apps/api/drizzle
+        run: |
+          node apps/api/dist/server.js &
+          server_pid=$!
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/health >/dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl -fsS http://localhost:3000/health
+          curl -fsS http://localhost:3000/api/system/version
+          kill "$server_pid"

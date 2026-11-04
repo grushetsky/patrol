@@ -285,7 +285,7 @@ Observed on TypeSpec 1.17.0; a build effort that upgrades emitters must re-run t
 
 ```bash
 cd contract
-npm run check          # compile, then 45 schema checks over domain and HTTP payloads
+npm run check          # compile, then 46 schema checks over domain and HTTP payloads
 npm run verify         # generate client types, build the TanStack Start stub, typecheck, then run the stub end to end
 ```
 

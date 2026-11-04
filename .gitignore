@@ -1,2 +1,6 @@
 mise.*.local.toml
 mise.local.toml
+node_modules/
+dist/
+coverage/
+.env

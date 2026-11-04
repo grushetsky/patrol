@@ -103,7 +103,7 @@ These are named so a build effort does not assume them silently:
 ```bash
 cd contract
 npm install
-npm run check     # 45 Ajv checks over domain and HTTP payloads
+npm run check     # 46 Ajv checks over domain and HTTP payloads
 npm run verify    # client types, TanStack Start build, typecheck, stub end to end
 ```
 

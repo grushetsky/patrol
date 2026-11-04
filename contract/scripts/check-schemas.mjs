@@ -223,6 +223,7 @@ const cases = [
   ["interface language", "InterfaceLanguage", "ru", true],
   ["unsupported interface language", "InterfaceLanguage", "de", false],
   ["error body", "ErrorBody", { code: "state_conflict", message: "The notice is already approved." }, true],
+  ["error body with an internal failure", "ErrorBody", { code: "internal_error", message: "Internal server error." }, true],
   ["error body with an unknown code", "ErrorBody", { code: "exploded", message: "No." }, false],
 ];
 
