@@ -28,7 +28,7 @@ async function harness(
     contract,
     auth: service,
     buildVersion: "0.1.0",
-    expectedMigration: "0003_scheduling",
+    expectedMigration: "0004_evidence",
     logger: false,
   });
   return { app, service, db };

@@ -3,6 +3,9 @@ import { PgBoss } from "pg-boss";
 import { DataForSeoGoogleAdapter } from "./acquisition/adapters/dataforseo.js";
 import { YandexAdapter } from "./acquisition/adapters/yandex.js";
 import { ScanRunner } from "./acquisition/runner.js";
+import { PlaywrightCapture } from "./evidence/browser.js";
+import { CaptureRunner, retryDelay } from "./evidence/runner.js";
+import { storeFromEnvironment } from "./evidence/store.js";
 import {
   createDueRechecks,
   createDueScans,
@@ -19,6 +22,7 @@ const ENGINE_QUEUES: Record<Engine, string> = {
   yandex: "scan.yandex",
 };
 const CONTROL_QUEUES = [
+  "capture.run",
   "scan.schedule",
   "recheck.schedule",
   "budget.rollover",
@@ -52,6 +56,11 @@ export async function startJobs(connectionString: string): Promise<WorkerJobs> {
     });
   }
   const runner = new ScanRunner(pool, adapters);
+  const browser = new PlaywrightCapture();
+  const captureStore = storeFromEnvironment();
+  const captureRunner = captureStore
+    ? new CaptureRunner(pool, browser, captureStore)
+    : undefined;
 
   for (const queue of [...Object.values(ENGINE_QUEUES), ...CONTROL_QUEUES]) {
     await boss.createQueue(queue, { retryLimit: 3 });
@@ -74,6 +83,41 @@ export async function startJobs(connectionString: string): Promise<WorkerJobs> {
       await boss.send(queue, {}, { expireInSeconds: 3_600 });
     });
   }
+
+  await boss.work(
+    "capture.run",
+    { batchSize: 1 },
+    async ([job]) => {
+      if (!captureRunner) {
+        throw new Error("Evidence object storage is not configured.");
+      }
+      const data = job.data as {
+        url: string;
+        reason: "detection" | "review" | "pre_handoff";
+        attempt?: number;
+        trackedTitleId?: string;
+        titleGroupId?: string;
+        capturePoint?: string;
+      };
+      const result = await captureRunner.capture(data);
+      if (result.captured) {
+        const delay = retryDelay(
+          result.outcome,
+          data.attempt ?? 1,
+          new Date(result.observedAt),
+          new Date(),
+        );
+        if (delay !== undefined) {
+          await boss.sendAfter(
+            "capture.run",
+            { ...data, attempt: (data.attempt ?? 1) + 1 },
+            null,
+            Math.ceil(delay / 1_000),
+          );
+        }
+      }
+    },
+  );
 
   await boss.work("scan.schedule", { batchSize: 1 }, async () => {
     const now = new Date();
@@ -125,6 +169,7 @@ export async function startJobs(connectionString: string): Promise<WorkerJobs> {
     pool,
     async stop() {
       await boss.stop({ graceful: true });
+      await browser.close();
       await pool.end();
     },
   };

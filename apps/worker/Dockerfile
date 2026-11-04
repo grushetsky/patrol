@@ -1,6 +1,8 @@
 FROM node:26-alpine
 WORKDIR /app
-RUN npm install -g pnpm@10.0.0
+RUN apk add --no-cache chromium \
+ && npm install -g pnpm@10.0.0
+ENV PATROL_CHROMIUM_PATH=/usr/bin/chromium
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/worker/package.json apps/worker/package.json

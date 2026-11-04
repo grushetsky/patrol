@@ -476,3 +476,70 @@ export const schedulingSchema = {
   budgetAlert,
   intentPhrase,
 };
+
+export const evidence = pgTable("evidence", {
+  id: text("id").primaryKey(),
+  trackedTitleId: text("tracked_title_id"),
+  titleGroupId: text("title_group_id"),
+  requestedUrl: text("requested_url").notNull(),
+  normalizedRequestedUrl: text("normalized_requested_url").notNull(),
+  redirectChain: text("redirect_chain").notNull(),
+  finalUrl: text("final_url"),
+  host: text("host"),
+  hostSource: text("host_source"),
+  reason: text("reason").notNull(),
+  capturePoint: text("capture_point"),
+  outcome: text("outcome").notNull(),
+  httpStatus: integer("http_status"),
+  failureReason: text("failure_reason"),
+  attemptNumber: integer("attempt_number").notNull(),
+  observedAt: timestamp("observed_at", { withTimezone: true }).notNull(),
+  profile: text("profile").notNull(),
+  purgedAt: timestamp("purged_at", { withTimezone: true }),
+  purgeReason: text("purge_reason"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+});
+
+export const evidenceArtifact = pgTable(
+  "evidence_artifact",
+  {
+    evidenceId: text("evidence_id").notNull(),
+    kind: text("kind").notNull(),
+    sha256: text("sha256").notNull(),
+    byteSize: integer("byte_size").notNull(),
+    contentType: text("content_type").notNull(),
+    width: integer("width"),
+    height: integer("height"),
+    truncated: boolean("truncated").notNull(),
+    objectKey: text("object_key").notNull(),
+    objectVersion: text("object_version"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("evidence_artifact_key").on(
+      table.evidenceId,
+      table.kind,
+      table.sha256,
+    ),
+  ],
+);
+
+export const hostObjection = pgTable("host_objection", {
+  id: text("id").primaryKey(),
+  host: text("host").notNull(),
+  registrableDomain: text("registrable_domain").notNull(),
+  reason: text("reason").notNull(),
+  source: text("source").notNull(),
+  recordedAt: timestamp("recorded_at", { withTimezone: true }).notNull(),
+  recordedBy: text("recorded_by"),
+  affectedCandidateCount: integer("affected_candidate_count").notNull(),
+  clearedAt: timestamp("cleared_at", { withTimezone: true }),
+  clearedBy: text("cleared_by"),
+  clearanceReason: text("clearance_reason"),
+});
+
+export const evidenceSchema = {
+  evidence,
+  evidenceArtifact,
+  hostObjection,
+};

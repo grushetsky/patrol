@@ -8,6 +8,7 @@ import { loadContract, type Contract } from "../../src/contract.js";
 import { migrate, type Connectable } from "../../src/db/migrations.js";
 import { SettingsService } from "../../src/settings/service.js";
 import type { WikidataSource } from "../../src/catalogue/wikidata.js";
+import type { ArtifactStore } from "../../src/evidence/store.js";
 
 export const PASSWORD = "correct horse battery";
 export const MIGRATIONS_DIR = new URL("../../drizzle", import.meta.url).pathname;
@@ -25,7 +26,10 @@ export interface TestHarness {
   db: Connectable;
 }
 
-export async function harness(wikidata?: WikidataSource): Promise<TestHarness> {
+export async function harness(
+  wikidata?: WikidataSource,
+  evidenceStore?: ArtifactStore,
+): Promise<TestHarness> {
   const memory = newDb();
   const adapter = memory.adapters.createPg();
   const db = new adapter.Pool() as unknown as Connectable;
@@ -40,8 +44,9 @@ export async function harness(wikidata?: WikidataSource): Promise<TestHarness> {
     auth,
     catalogue,
     settings,
+    evidenceStore,
     buildVersion: "0.1.0",
-    expectedMigration: "0003_scheduling",
+    expectedMigration: "0004_evidence",
     logger: process.env.DEBUG_APP === "1",
   });
   return { app, auth, catalogue, settings, contract, db };

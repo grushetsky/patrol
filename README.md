@@ -57,6 +57,10 @@ docker compose run --rm api node apps/api/dist/cli/patrol.js bootstrap \
 
 Open the setup flow with that token, set the password, and enroll TOTP. `patrol admin recover --email <address>` mints a recovery token for an administrator who lost both factors.
 
+### Evidence storage
+
+Captures run in the worker through Playwright and Chromium. Artifacts are content-addressed in the S3-compatible bucket named by `S3_BUCKET`, with `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, and `S3_SECRET_ACCESS_KEY` for local MinIO. Compose creates the bucket with versioning and Object Lock; the API answers artifact downloads with short-lived, version-pinned signed URLs.
+
 ### Acquisition providers
 
 The worker runs the scan schedule and the per-engine queues from PostgreSQL through pg-boss. Set `DATAFORSEO_LOGIN` and `DATAFORSEO_PASSWORD` for the Google route, and `YANDEX_API_KEY` plus `YANDEX_FOLDER_ID` for the Yandex route. An engine without credentials keeps its scans in the queue, and a rejected key or an empty provider balance disables the route until the hourly probe recovers it.

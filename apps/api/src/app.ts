@@ -14,6 +14,12 @@ import { SettingsService } from "./settings/service.js";
 import { registerSettingsRoutes } from "./settings/routes.js";
 import { ScanService } from "./scans/service.js";
 import { registerScanRoutes } from "./scans/routes.js";
+import { EvidenceService } from "./evidence/service.js";
+import { registerEvidenceRoutes } from "./evidence/routes.js";
+import {
+  storeFromEnvironment,
+  type ArtifactStore,
+} from "./evidence/store.js";
 
 export interface AppOptions {
   db: Connectable;
@@ -25,6 +31,7 @@ export interface AppOptions {
   catalogue?: CatalogueService;
   settings?: SettingsService;
   scans?: ScanService;
+  evidenceStore?: ArtifactStore;
 }
 
 export function buildApp(options: AppOptions): FastifyInstance {
@@ -36,6 +43,10 @@ export function buildApp(options: AppOptions): FastifyInstance {
   const catalogue = options.catalogue ?? new CatalogueService(options.db);
   const settings = options.settings ?? new SettingsService(options.db);
   const scans = options.scans ?? new ScanService(options.db);
+  const evidence = new EvidenceService(
+    options.db,
+    options.evidenceStore ?? storeFromEnvironment(),
+  );
   const guards = createAuthGuards(auth);
 
   app.setErrorHandler(async (error, request, reply) => {
@@ -96,6 +107,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       registerCatalogueRoutes(api, catalogue, options.contract, guards);
       registerSettingsRoutes(api, settings, options.contract, guards);
       registerScanRoutes(api, scans, options.contract, guards);
+      registerEvidenceRoutes(api, evidence, options.contract, guards);
     },
     { prefix: "/api" },
   );

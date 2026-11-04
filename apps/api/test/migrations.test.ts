@@ -99,8 +99,9 @@ describe("committed migrations", () => {
       "0001_identity",
       "0002_catalogue_settings",
       "0003_scheduling",
+      "0004_evidence",
     ]);
-    expect(result.version).toBe("0003_scheduling");
+    expect(result.version).toBe("0004_evidence");
   });
 });
 
