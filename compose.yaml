@@ -74,6 +74,11 @@ services:
       dockerfile: apps/worker/Dockerfile
     environment:
       WORKER_PORT: "3001"
+      DATABASE_URL: postgres://${POSTGRES_USER:-patrol}:${POSTGRES_PASSWORD:-patrol}@postgres:5432/${POSTGRES_DB:-patrol}
+      DATAFORSEO_LOGIN: ${DATAFORSEO_LOGIN:-}
+      DATAFORSEO_PASSWORD: ${DATAFORSEO_PASSWORD:-}
+      YANDEX_API_KEY: ${YANDEX_API_KEY:-}
+      YANDEX_FOLDER_ID: ${YANDEX_FOLDER_ID:-}
     depends_on:
       postgres:
         condition: service_healthy

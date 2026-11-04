@@ -136,7 +136,7 @@ export class SettingsService {
   ) {}
 
   async readRightsHolder(operatorId: string) {
-    await this.ensureDefaults(operatorId);
+    await this.ensureBudgetDefaults(operatorId);
     const holder = await this.holder(this.db);
     const budget = await this.budget(this.db);
     return this.holderView(holder, budget);
@@ -146,7 +146,7 @@ export class SettingsService {
     input: UpdateRightsHolderInput,
     operatorId: string,
   ) {
-    await this.ensureDefaults(operatorId);
+    await this.ensureBudgetDefaults(operatorId);
     const holder = await this.holder(this.db);
     const sets: string[] = [];
     const values: unknown[] = [];
@@ -195,9 +195,22 @@ export class SettingsService {
   }
 
   async readBudget(operatorId: string) {
-    await this.ensureDefaults(operatorId);
+    await this.ensureBudgetDefaults(operatorId);
     const budget = await this.budget(this.db);
     const ledger = await this.currentLedger(this.db, budget, false);
+    const alerts = (
+      await this.db.query(
+        "SELECT * FROM budget_alert WHERE month_start = $1 ORDER BY created_at ASC",
+        [this.monthStart()],
+      )
+    ).rows;
+    const disabled = new Set(
+      (
+        await this.db.query(
+          "SELECT engine FROM engine_route WHERE disabled_at IS NOT NULL",
+        )
+      ).rows.map((row) => String(row.engine)),
+    );
     return {
       budget: {
         engineCaps: budget.caps.map((cap) => ({
@@ -217,13 +230,20 @@ export class SettingsService {
         recheckReserved: Number(row.recheck_reserved),
         recheckCommitted: Number(row.recheck_committed),
       })),
-      engines: ledger.map((row) => this.engineStatus(row, budget)),
-      alerts: [],
+      engines: ledger.map((row) => this.engineStatus(row, budget, disabled)),
+      alerts: alerts.map((row) => ({
+        engine: String(row.engine),
+        bucket: String(row.bucket),
+        level: String(row.level),
+        percentUsed: Number(row.percent_used),
+        message: String(row.message),
+        groupsNotScanned: Number(row.groups_not_scanned),
+      })),
     };
   }
 
   async updateBudget(input: AcquisitionBudgetInput, operatorId: string) {
-    await this.ensureDefaults(operatorId);
+    await this.ensureBudgetDefaults(operatorId);
     const seen = new Set<string>();
     for (const cap of input.engineCaps) {
       if (!ENGINES.includes(cap.engine as (typeof ENGINES)[number])) {
@@ -273,7 +293,7 @@ export class SettingsService {
   }
 
   async readCapacity(query: CapacityQuery, operatorId: string) {
-    await this.ensureDefaults(operatorId);
+    await this.ensureBudgetDefaults(operatorId);
     const locales = query.locales ?? 2;
     if (!Number.isInteger(locales) || locales < 1 || locales > 3) {
       throw new ApiError(
@@ -332,7 +352,7 @@ export class SettingsService {
   }
 
   async listRecipientProfiles(page: Page, operatorId: string) {
-    await this.ensureDefaults(operatorId);
+    await this.ensureProfileDefaults(operatorId);
     const profiles = await this.profileViews(this.db);
     return pageOf(profiles, page);
   }
@@ -342,7 +362,7 @@ export class SettingsService {
     input: UpdateRecipientProfileInput,
     operatorId: string,
   ) {
-    await this.ensureDefaults(operatorId);
+    await this.ensureProfileDefaults(operatorId);
     const row = await this.findProfile(this.db, id);
     if (!row) {
       throw new ApiError(404, "not_found", "The recipient profile does not exist.");
@@ -395,7 +415,7 @@ export class SettingsService {
   }
 
   async clearProfilePause(id: string, reason: string, operatorId: string) {
-    await this.ensureDefaults(operatorId);
+    await this.ensureProfileDefaults(operatorId);
     const row = await this.findProfile(this.db, id);
     if (!row) {
       throw new ApiError(404, "not_found", "The recipient profile does not exist.");
@@ -562,7 +582,7 @@ export class SettingsService {
     );
   }
 
-  private async ensureDefaults(operatorId: string) {
+  private async ensureBudgetDefaults(operatorId: string) {
     const holder = await this.holder(this.db);
     if (!holder) {
       return;
@@ -589,6 +609,13 @@ export class SettingsService {
         "INSERT INTO application_setting (key, value) VALUES ($1, $2)",
         [SETTING_KEY, String(DEFAULT_RECHECK_SHARE_PERCENT)],
       );
+    }
+  }
+
+  private async ensureProfileDefaults(operatorId: string) {
+    const holder = await this.holder(this.db);
+    if (!holder) {
+      return;
     }
     for (const profile of DEFAULT_PROFILES) {
       const existing = await this.db.query(
@@ -688,18 +715,24 @@ export class SettingsService {
         });
         continue;
       }
-      await db.query(
-        `INSERT INTO quota_ledger
-          (id, engine, month_start, allowance_units, scan_reserved,
-           scan_committed, recheck_reserved, recheck_committed)
-         VALUES ($1, $2, $3, $4, 0, 0, 0, 0)`,
-        [id, cap.engine, monthStart, allowance],
-      );
+      try {
+        await db.query(
+          `INSERT INTO quota_ledger
+            (id, engine, month_start, allowance_units, scan_reserved,
+             scan_committed, recheck_reserved, recheck_committed)
+           VALUES ($1, $2, $3, $4, 0, 0, 0, 0)`,
+          [id, cap.engine, monthStart, allowance],
+        );
+      } catch {
+        // The worker opened the month first; read its row instead.
+      }
       const created = await db.query(
-        "SELECT * FROM quota_ledger WHERE id = $1",
-        [id],
+        "SELECT * FROM quota_ledger WHERE engine = $1 AND month_start = $2",
+        [cap.engine, monthStart],
       );
-      rows.push(created.rows[0]);
+      if (created.rows[0]) {
+        rows.push(created.rows[0]);
+      }
     }
     return rows;
   }
@@ -717,6 +750,7 @@ export class SettingsService {
   private engineStatus(
     row: Record<string, unknown>,
     budget: BudgetConfig,
+    disabled: ReadonlySet<string> = new Set(),
   ) {
     const engine = String(row.engine);
     const cap = budget.caps.find((item) => item.engine === engine);
@@ -742,7 +776,7 @@ export class SettingsService {
         allowanceUnits > 0 &&
         ((scanShareUnits > 0 && scanUsedUnits >= scanShareUnits) ||
           (recheckShareUnits > 0 && recheckUsedUnits >= recheckShareUnits)),
-      routeDisabled: false,
+      routeDisabled: disabled.has(engine),
     };
   }
 

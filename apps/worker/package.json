@@ -12,8 +12,15 @@
   },
   "devDependencies": {
     "@types/node": "^26.6.6",
+    "@types/pg": "^8.23.1",
+    "pg-mem": "^3.0.14",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "vitest": "^5.1.0"
+  },
+  "dependencies": {
+    "pg": "^8.23.1",
+    "pg-boss": "^12.38.0",
+    "uuid": "^14.0.3"
   }
 }

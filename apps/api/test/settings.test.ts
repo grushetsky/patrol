@@ -144,6 +144,44 @@ describe("settings", () => {
     ]);
   });
 
+  it("reports a disabled route and the month's alerts", async () => {
+    await h.db.query(
+      `INSERT INTO engine_route
+        (engine, disabled_at, disabled_reason, last_probe_at, updated_at)
+       VALUES ('yandex', $1, 'revoked key', NULL, $1)`,
+      [new Date()],
+    );
+    const today = new Date();
+    const monthStart = `${today.getUTCFullYear()}-${String(today.getUTCMonth() + 1).padStart(2, "0")}-01`;
+    await h.db.query(
+      `INSERT INTO budget_alert
+        (id, engine, bucket, threshold, level, percent_used, message,
+         groups_not_scanned, month_start, created_at)
+       VALUES ('alert-1', 'google', 'scan', '90', 'critical', 90,
+               'Google scan share is at 90%.', 1, $2, $1)`,
+      [today, monthStart],
+    );
+
+    const response = await read(h.app, session, "/api/settings/budget");
+
+    expect(response.statusCode).toBe(200);
+    expect(
+      response.json().engines.find(
+        (engine: { engine: string }) => engine.engine === "yandex",
+      ).routeDisabled,
+    ).toBe(true);
+    expect(response.json().alerts).toEqual([
+      {
+        engine: "google",
+        bucket: "scan",
+        level: "critical",
+        percentUsed: 90,
+        message: "Google scan share is at 90%.",
+        groupsNotScanned: 1,
+      },
+    ]);
+  });
+
   it("updates the caps and the re-check share without un-spending committed units", async () => {
     const now = new Date();
     const monthStart = `${now.getUTCFullYear()}-${String(now.getUTCMonth() + 1).padStart(2, "0")}-01`;

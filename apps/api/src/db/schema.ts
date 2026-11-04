@@ -2,6 +2,7 @@ import {
   boolean,
   integer,
   pgTable,
+  real,
   text,
   timestamp,
   uniqueIndex,
@@ -311,4 +312,167 @@ export const catalogueSchema = {
   submission,
   candidate,
   violation,
+};
+
+export const scan = pgTable(
+  "scan",
+  {
+    id: text("id").primaryKey(),
+    titleGroupId: text("title_group_id").notNull(),
+    engine: text("engine").notNull(),
+    trigger: text("trigger").notNull(),
+    dueDate: text("due_date").notNull(),
+    requestedBy: text("requested_by"),
+    trackedTitleId: text("tracked_title_id"),
+    plannedQueries: integer("planned_queries").notNull().default(0),
+    queryPlan: text("query_plan"),
+    state: text("state").notNull(),
+    queuedAt: timestamp("queued_at", { withTimezone: true }).notNull(),
+    queuedReason: text("queued_reason"),
+    startedAt: timestamp("started_at", { withTimezone: true }),
+    lastHeartbeatAt: timestamp("last_heartbeat_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+    issuedQueries: integer("issued_queries"),
+    failureReason: text("failure_reason"),
+    failures: text("failures"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("scan_identity_key").on(
+      table.titleGroupId,
+      table.engine,
+      table.dueDate,
+    ),
+  ],
+);
+
+export const scanQuery = pgTable("scan_query", {
+  id: text("id").primaryKey(),
+  scanId: text("scan_id").notNull(),
+  trackedTitleId: text("tracked_title_id").notNull(),
+  locale: text("locale").notNull(),
+  kind: text("kind").notNull(),
+  text: text("text").notNull(),
+  variantId: text("variant_id"),
+  intentPhraseText: text("intent_phrase_text"),
+  intentPhraseVersion: integer("intent_phrase_version"),
+  ordinal: integer("ordinal").notNull(),
+});
+
+export const searchResult = pgTable("search_result", {
+  id: text("id").primaryKey(),
+  scanId: text("scan_id").notNull(),
+  queryId: text("query_id").notNull(),
+  engine: text("engine").notNull(),
+  url: text("url").notNull(),
+  normalizedUrl: text("normalized_url").notNull(),
+  rank: integer("rank").notNull(),
+  title: text("title").notNull(),
+  snippet: text("snippet").notNull(),
+  locale: text("locale").notNull(),
+  territory: text("territory"),
+  observedAt: timestamp("observed_at", { withTimezone: true }).notNull(),
+  rawPayloadRef: text("raw_payload_ref").notNull(),
+  host: text("host").notNull(),
+  registrableDomain: text("registrable_domain").notNull(),
+  candidateId: text("candidate_id"),
+});
+
+export const serpPayload = pgTable("serp_payload", {
+  id: text("id").primaryKey(),
+  scanId: text("scan_id").notNull(),
+  engine: text("engine").notNull(),
+  body: text("body").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+});
+
+export const budgetReservation = pgTable("budget_reservation", {
+  id: text("id").primaryKey(),
+  scanId: text("scan_id").notNull(),
+  engine: text("engine").notNull(),
+  bucket: text("bucket").notNull(),
+  units: integer("units").notNull(),
+  monthStart: text("month_start").notNull(),
+  state: text("state").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  settledAt: timestamp("settled_at", { withTimezone: true }),
+  committedUnits: integer("committed_units"),
+  releasedUnits: integer("released_units"),
+});
+
+export const recheckSchedule = pgTable(
+  "recheck_schedule",
+  {
+    id: text("id").primaryKey(),
+    titleGroupId: text("title_group_id").notNull(),
+    engine: text("engine").notNull(),
+    rung: integer("rung").notNull(),
+    startedAt: timestamp("started_at", { withTimezone: true }).notNull(),
+    nextDueAt: timestamp("next_due_at", { withTimezone: true }).notNull(),
+    active: boolean("active").notNull(),
+    startedByScanId: text("started_by_scan_id"),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("recheck_schedule_pair_key").on(
+      table.titleGroupId,
+      table.engine,
+    ),
+  ],
+);
+
+export const engineRoute = pgTable("engine_route", {
+  engine: text("engine").primaryKey(),
+  disabledAt: timestamp("disabled_at", { withTimezone: true }),
+  disabledReason: text("disabled_reason"),
+  lastProbeAt: timestamp("last_probe_at", { withTimezone: true }),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+});
+
+export const budgetAlert = pgTable(
+  "budget_alert",
+  {
+    id: text("id").primaryKey(),
+    engine: text("engine").notNull(),
+    bucket: text("bucket").notNull(),
+    threshold: text("threshold").notNull(),
+    level: text("level").notNull(),
+    percentUsed: real("percent_used").notNull(),
+    message: text("message").notNull(),
+    groupsNotScanned: integer("groups_not_scanned").notNull(),
+    monthStart: text("month_start").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("budget_alert_key").on(
+      table.engine,
+      table.bucket,
+      table.threshold,
+      table.monthStart,
+    ),
+  ],
+);
+
+export const intentPhrase = pgTable(
+  "intent_phrase",
+  {
+    id: text("id").primaryKey(),
+    locale: text("locale").notNull(),
+    text: text("text").notNull(),
+    version: integer("version").notNull(),
+  },
+  (table) => [uniqueIndex("intent_phrase_text_key").on(table.locale, table.text)],
+);
+
+export const schedulingSchema = {
+  scan,
+  scanQuery,
+  searchResult,
+  serpPayload,
+  budgetReservation,
+  recheckSchedule,
+  engineRoute,
+  budgetAlert,
+  intentPhrase,
 };

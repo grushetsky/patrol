@@ -41,7 +41,7 @@ export async function harness(wikidata?: WikidataSource): Promise<TestHarness> {
     catalogue,
     settings,
     buildVersion: "0.1.0",
-    expectedMigration: "0002_catalogue_settings",
+    expectedMigration: "0003_scheduling",
     logger: process.env.DEBUG_APP === "1",
   });
   return { app, auth, catalogue, settings, contract, db };
