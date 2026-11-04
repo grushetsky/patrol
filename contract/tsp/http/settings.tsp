@@ -66,13 +66,13 @@ model BudgetAlert {
   @doc("The engine the alert concerns.")
   engine: Engine;
 
-  @doc("The bucket that reached the threshold.")
-  bucket: BudgetBucket;
+  @doc("The bucket that reached the threshold. Present only for the bucket-level thresholds — the ninety-percent critical and the exhaustion; the engine-level rules, the seventy-five-percent monthly warning and the provider-balance critical, concern no bucket and omit it.")
+  bucket?: BudgetBucket;
 
   @doc("The alert's severity.")
   level: QuotaAlertLevel;
 
-  @doc("The share of the bucket that is committed or reserved, as a percentage.")
+  @doc("The share the alert measured, as a percentage: of the bucket for the bucket thresholds, of the monthly allowance for the warning, and of the engine's monthly cap for the provider-balance critical.")
   percentUsed: float32;
 
   @doc("The message the dashboard renders.")
