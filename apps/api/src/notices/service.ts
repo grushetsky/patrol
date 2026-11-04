@@ -387,7 +387,7 @@ export class NoticeService {
         `INSERT INTO submission
           (id, recipient_profile_id, state, notice_id, channel, pack_language,
            attempt_count, created_at, updated_at)
-         VALUES ($1, $2, 'pending', $3, $4, $5, 0, $6, $6)`,
+         VALUES ($1, $2, 'pending', $3, $4, $5, 1, $6, $6)`,
         [submissionId, profile.id, id, profile.channel, packLanguage, now],
       );
     });

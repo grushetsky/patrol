@@ -358,7 +358,7 @@ model Submission {
   @doc("The language of the operator-facing handoff checklist, frozen from the approving operator at approval.")
   packLanguage: InterfaceLanguage;
 
-  @doc("How many delivery attempts the operator has made.")
+  @doc("How many delivery attempts the operator has made or is currently making; the first pending submission counts one.")
   @minValue(0)
   attemptCount: int32;
 

@@ -263,6 +263,9 @@ model SubmissionDetail {
 
   @doc("Whether the frozen handoff pack exists and can be downloaded.")
   packAvailable: boolean;
+
+  @doc("Whether three delivery attempts have failed and an administrator must review the submission.")
+  flaggedForAdministrator: boolean;
 }
 
 @doc("A page of submissions, newest first.")

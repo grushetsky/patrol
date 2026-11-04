@@ -9,6 +9,7 @@ import {
 
 const PAUSE_THRESHOLD = 0.1;
 const PAUSE_WINDOW = 20;
+const ATTEMPT_FLAG_THRESHOLD = 3;
 
 export interface SubmissionFilters {
   state?: string;
@@ -34,6 +35,13 @@ export interface AcknowledgementInput {
 export interface FailureInput {
   reason: string;
   note: string;
+}
+
+function flaggedForAdministrator(row: Record<string, unknown>): boolean {
+  return (
+    String(row.state) === "failed" &&
+    Number(row.attempt_count ?? 0) >= ATTEMPT_FLAG_THRESHOLD
+  );
 }
 
 /** Submission state, delivery attestation, acknowledgements, failures, and retries. */
@@ -62,6 +70,7 @@ export class SubmissionService {
       );
       conditions.push(`s.created_at <= $${values.length}`);
       conditions.push("s.state = 'pending'");
+      conditions.push("s.cancelled_at IS NULL");
     }
     const where = conditions.length > 0 ? `WHERE ${conditions.join(" AND ")}` : "";
     const rows = (
@@ -87,6 +96,7 @@ export class SubmissionService {
           noticeStatus({ state: row.notice_state }, { state: row.state }),
         ),
         packAvailable: Boolean(row.pack_ref),
+        flaggedForAdministrator: flaggedForAdministrator(row),
       })),
       page,
     );
@@ -105,6 +115,7 @@ export class SubmissionService {
         noticeStatus({ state: row.notice_state }, { state: row.state }),
       ),
       packAvailable: Boolean(row.pack_ref),
+      flaggedForAdministrator: flaggedForAdministrator(row),
     };
   }
 
@@ -171,15 +182,7 @@ export class SubmissionService {
 
   async fail(id: string, input: FailureInput, operatorId: string) {
     const row = await this.load(id);
-    if (!["pending", "delivered"].includes(String(row.state))) {
-      throw new ApiError(
-        409,
-        "state_conflict",
-        "The submission is already terminal.",
-        undefined,
-        { currentState: String(row.state) },
-      );
-    }
+    this.assertPending(row);
     if (!input.note || input.note.trim() === "") {
       throw new ApiError(422, "note_required", "A failure note is required.");
     }
@@ -188,8 +191,7 @@ export class SubmissionService {
     const now = this.clock();
     await this.db.query(
       `UPDATE submission
-          SET state = $2, failure = $3, updated_at = $4,
-              delivered_by = COALESCE(delivered_by, $5)
+          SET state = $2, failure = $3, updated_at = $4, delivered_by = $5
         WHERE id = $1`,
       [
         id,
@@ -209,11 +211,11 @@ export class SubmissionService {
 
   async retry(id: string, _operatorId: string) {
     const row = await this.load(id);
-    if (!["failed", "rejected"].includes(String(row.state))) {
+    if (String(row.state) !== "failed") {
       throw new ApiError(
         409,
         "state_conflict",
-        "Only a failed or rejected submission can be retried.",
+        "Only a failed submission can be retried; a rejected submission's notice is superseded by a corrected one.",
         undefined,
         { currentState: String(row.state) },
       );
@@ -260,7 +262,7 @@ export class SubmissionService {
       throw new ApiError(
         409,
         "state_conflict",
-        "Only a pending submission can be delivered.",
+        "Only a pending submission can change state.",
         undefined,
         { currentState: String(row.state) },
       );
