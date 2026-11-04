@@ -44,7 +44,7 @@ The queue defaults to dense rows, with a card layout kept as an alternative for 
 | Column | Content |
 | --- | --- |
 | Score | The numeric score out of one, the component formula behind it, and a bar. |
-| Work | The tracked title and year, the matched title variant, and the variant's kind, language, script, and territory. |
+| Tracked title | The tracked title and year, the matched title variant, and the variant's kind, language, script, and territory. |
 | URL | The requested URL, the final URL when it differs, the host, and the registrable domain. |
 | Source | The engine, rank, query, locale, and territory. |
 | Evidence | The evidence identifier, its hash, and its capture time. |
