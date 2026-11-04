@@ -1,0 +1,22 @@
+{
+  "name": "@patrol/contract",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TypeSpec source of truth for Patrol's domain and HTTP contracts.",
+  "scripts": {
+    "compile": "tsp compile tsp/main.tsp && node scripts/format-generated.mjs",
+    "check": "npm run compile && node scripts/check-schemas.mjs",
+    "verify": "npm --prefix verify run check",
+    "clean": "rm -rf generated"
+  },
+  "devDependencies": {
+    "@typespec/compiler": "1.17.0",
+    "@typespec/http": "1.17.0",
+    "@typespec/json-schema": "1.17.0",
+    "@typespec/openapi": "1.17.0",
+    "@typespec/openapi3": "1.17.0",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1"
+  }
+}

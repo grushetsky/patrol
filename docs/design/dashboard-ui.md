@@ -8,7 +8,13 @@ The prototype is a rough artifact, not production UI. Its spacing, typography, a
 
 Six sections form the interface, each a hash route: Dashboard, Review, Violations, Notices, Titles, and Settings. The tab bar holds the first five; Settings is reached from the footer. Review, Violations, and Notices carry a badge with their pending count, where pending is candidates awaiting review, open violations, and draft notices respectively.
 
-A persistent top bar holds the section tabs, the language switch, the theme toggle, and Run scans. The footer carries Settings and the reset control. The prototype's language switch (English and Russian) proves that strings externalise; the product's UI language is still open.
+A persistent top bar holds the section tabs, the language switch, the theme toggle, and Run scans. The footer carries Settings and the reset control.
+
+## Language
+
+The interface ships in English and Russian. The top bar's switch changes the language, the choice persists on the operator's account, and a visit before any choice follows the browser's language with English as the fallback.
+
+Every operator-facing string exists in both languages: the screens, validation and error messages, alerts, invitation and reset emails, and the handoff checklist. Two kinds of text never translate: recipient-facing notice content, which reproduces the recipient's form language verbatim, and catalogue values, which keep the native title strings. The operator-facing checklist in a frozen pack keeps the approving operator's language at approval. Tests and screenshots fix English.
 
 ## Dashboard
 
@@ -44,7 +50,7 @@ The queue defaults to dense rows, with a card layout kept as an alternative for 
 | Column | Content |
 | --- | --- |
 | Score | The numeric score out of one, the component formula behind it, and a bar. |
-| Work | The tracked title and year, the matched title variant, and the variant's kind, language, script, and territory. |
+| Tracked title | The tracked title and year, the matched title variant, and the variant's kind, language, script, and territory. |
 | URL | The requested URL, the final URL when it differs, the host, and the registrable domain. |
 | Source | The engine, rank, query, locale, and territory. |
 | Evidence | The evidence identifier, its hash, and its capture time. |
@@ -86,6 +92,6 @@ Dialogs cover evidence detail, candidate evidence, the composed notice, and cata
 
 ## Deliberately not specified
 
-- The DeepSeek brief card, the siren toggle, the prototype-state bar, and the language switch are demonstration aids. None is adopted by this design.
+- The DeepSeek brief card, the siren toggle, and the prototype-state bar are demonstration aids. None is adopted by this design.
 - The KinoPoisk import was a prototype shortcut and is superseded by the catalogue entry decision: the add path searches the local catalogue and Wikidata, and KinoPoisk is not a browsing reference.
 - Breakpoints, spacing, and the component library's theme tokens are left to the build effort, constrained by `shadcn/ui` and TanStack Start conventions.

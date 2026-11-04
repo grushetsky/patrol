@@ -63,6 +63,18 @@ A draft may be **withdrawn** by an operator while it is still a draft, and an ap
 
 A notice is **superseded** when its cited set must change after approval — a page died and the operator decided to drop it, a field was wrong, or a new violation belongs in the same batch. The old notice becomes `Superseded`, its `Pending` submission is cancelled, and a new draft carries the corrected set. No operator edits an approved notice's contents in place.
 
+## Statement templates and verification
+
+The statements a notice carries are the recipient's own form text, reproduced verbatim; Patrol never translates or paraphrases them. No recipient publishes a statement version, a change log, or a dated revision, so Patrol versions the set itself. The research is on `research/recipient-statements` at `fb1cc78`, "_docs/research/recipient-statements.md_".
+
+A template set is identified as `<recipient>.<language>.v<major>@<hash12>`: the recipient slug (`google-search`, `bing`, or `yandex`), the form language, a major number bumped when the set's shape or legal meaning changes, and the first twelve hex characters of SHA-256 over the ordered statements. The hash input is a UTF-8 JSON array of `{key, text}` objects in form order, with each text normalised to NFC, trimmed, and with every whitespace run collapsed; keys are Patrol's stable keys, never the recipient's display labels. A label-only change bumps the major and leaves the hash unchanged.
+
+The registry row behind an identifier holds the recipient, language, ordered statements, canonical hash, source URLs, access date, verifying operator and time, and the revision it supersedes. A notice's `templateVersion` names the set; every `NoticeStatement.templateVersion` repeats it, because the recipient accepts the statements as a set.
+
+An approval is blocked when the template is older than ninety days, when a newer revision exists, or when the recipient and language have no verified template. The notice detail exposes the identifier, the source URLs, the last verification, and the stale flag; the approving operator opens every source in a normal browser and confirms the text is current through the approval attestation, which stamps the verification and freezes the identifier into the notice. A later revision never rewrites an approved notice; a draft under an older template is re-composed.
+
+Change detection is procedural because none of the three recipients publishes a consumable signal: every source is re-read before a release that changes notice rendering and at least quarterly, with the access date recorded. Google's form is sign-in-gated, so the human check covers the form as well as the help article; Bing and Yandex forms are read in a browser, never fetched from CI. A checked-in fixture per identifier holds the ordered statements and their expected hash, and a unit test recomputes it, so a local drift or an accidental edit fails before an approval.
+
 ## The handoff pack
 
 A submission gives the operator an immutable pack, stored content-addressed in the evidence bucket and linked from the submission. The decision is "_docs/adr/0020-handoff-is-a-frozen-pack.md_"; the pack holds:

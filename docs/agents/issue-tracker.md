@@ -13,6 +13,7 @@ Issues and specs for this repo live as GitHub issues. Use the `gh` CLI for all o
 - **Comment on an issue**: `gh issue comment <number> --body "..."`
 - **Apply / remove labels**: `gh issue edit <number> --add-label "..."` / `--remove-label "..."`
 - **Close**: post the explanation with `gh issue comment <number> --body "..."`, then `gh issue close <number>`. On an already-closed issue, `gh issue close --comment` drops the comment and still exits 0.
+- **Close after merge**: a slice closes only after its pull request is merged. Comment the PR URL and merge commit, then close. A local commit or a green local test run is not completion. See "_docs/agents/git-workflow.md_".
 
 Infer the repo from `git remote -v`; `gh` does this automatically when run inside a clone.
 
