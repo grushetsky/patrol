@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -19,29 +20,30 @@ suite("postgres migrations", () => {
   });
 
   it("applies a migration on a real database and refuses a mismatched image", async () => {
-    const dir = await mkdtemp(join(tmpdir(), "patrol-pg-"));
-    await writeFile(
-      join(dir, "0001_probe.sql"),
-      "CREATE TABLE IF NOT EXISTS slice0_probe (id text);",
-    );
-    await currentVersion(pool);
-    await pool.query("DROP TABLE IF EXISTS slice0_probe");
-    await pool.query("DELETE FROM schema_migrations WHERE version = $1", [
-      "0001_probe",
-    ]);
+    const schema = `probe_${randomUUID().replaceAll("-", "")}`;
+    await pool.query(`CREATE SCHEMA "${schema}"`);
+    const probe = new Pool({
+      connectionString: databaseUrl,
+      options: `-c search_path=${schema}`,
+    });
 
-    const result = await migrate(pool, dir);
+    try {
+      const dir = await mkdtemp(join(tmpdir(), "patrol-pg-"));
+      await writeFile(
+        join(dir, "0001_probe.sql"),
+        "CREATE TABLE IF NOT EXISTS slice0_probe (id text);",
+      );
 
-    expect(result.applied).toContain("0001_probe");
-    expect(await currentVersion(pool)).toBe("0001_probe");
-    expect(() => assertSchemaCompatible("0001_probe", "0002_next")).toThrow(
-      /schema/i,
-    );
+      const result = await migrate(probe, dir);
 
-    await currentVersion(pool);
-    await pool.query("DROP TABLE IF EXISTS slice0_probe");
-    await pool.query("DELETE FROM schema_migrations WHERE version = $1", [
-      "0001_probe",
-    ]);
+      expect(result.applied).toContain("0001_probe");
+      expect(await currentVersion(probe)).toBe("0001_probe");
+      expect(() => assertSchemaCompatible("0001_probe", "0002_next")).toThrow(
+        /schema/i,
+      );
+    } finally {
+      await probe.end();
+      await pool.query(`DROP SCHEMA "${schema}" CASCADE`);
+    }
   });
 });

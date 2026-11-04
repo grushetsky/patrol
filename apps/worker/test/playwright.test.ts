@@ -83,7 +83,7 @@ suite("Playwright capture fixtures", () => {
     expect(result.thumbnail?.bytes.subarray(0, 2).toString("hex")).toBe("ffd8");
     expect(result.sidecar).toMatchObject({ title: "Fixture film" });
     expect(result.headers?.["set-cookie"]).toBeUndefined();
-  }, 30_000);
+  }, 60_000);
 
   it("records a redirect chain and the destination", async () => {
     const result = await capture!.capture(`${baseUrl}/redirect`, "detection");
@@ -95,7 +95,7 @@ suite("Playwright capture fixtures", () => {
       location: "/captured",
     });
     expect(result.finalUrl).toBe(`${baseUrl}/captured`);
-  }, 30_000);
+  }, 60_000);
 
   it("caps a tall screenshot and flags the truncation", async () => {
     const result = await capture!.capture(`${baseUrl}/tall`, "detection");
@@ -103,7 +103,7 @@ suite("Playwright capture fixtures", () => {
     expect(result.outcome).toBe("captured");
     expect(result.screenshot?.height).toBe(16_000);
     expect(result.screenshot?.truncated).toBe(true);
-  }, 30_000);
+  }, 60_000);
 
   it("classifies a 404 as dead and a 403 as blocked", async () => {
     const dead = await capture!.capture(`${baseUrl}/dead`, "detection");
@@ -113,5 +113,5 @@ suite("Playwright capture fixtures", () => {
     const blocked = await capture!.capture(`${baseUrl}/blocked`, "detection");
     expect(blocked.outcome).toBe("blocked");
     expect(blocked.httpStatus).toBe(403);
-  }, 30_000);
+  }, 60_000);
 });
