@@ -29,6 +29,7 @@ export interface TestHarness {
 export async function harness(
   wikidata?: WikidataSource,
   evidenceStore?: ArtifactStore,
+  clock?: () => Date,
 ): Promise<TestHarness> {
   const memory = newDb();
   const adapter = memory.adapters.createPg();
@@ -36,7 +37,7 @@ export async function harness(
   await migrate(db, MIGRATIONS_DIR);
   const auth = new AuthService(db);
   const catalogue = new CatalogueService(db, wikidata);
-  const settings = new SettingsService(db);
+  const settings = new SettingsService(db, clock);
   const contract = await loadContract(SCHEMA_BUNDLE);
   const app = buildApp({
     db,
@@ -45,8 +46,9 @@ export async function harness(
     catalogue,
     settings,
     evidenceStore,
+    clock,
     buildVersion: "0.1.0",
-    expectedMigration: "0006_notices",
+    expectedMigration: "0007_dashboard",
     logger: process.env.DEBUG_APP === "1",
   });
   return { app, auth, catalogue, settings, contract, db };
