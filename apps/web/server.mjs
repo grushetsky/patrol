@@ -66,10 +66,12 @@ createServer(async (request, response) => {
       body: hasBody ? Readable.toWeb(request) : undefined,
       duplex: hasBody ? "half" : undefined,
     });
-    response.writeHead(
-      proxyResponse.status,
-      Object.fromEntries(proxyResponse.headers.entries()),
-    );
+    const proxyHeaders = Object.fromEntries(proxyResponse.headers.entries());
+    const setCookies = proxyResponse.headers.getSetCookie();
+    if (setCookies.length > 0) {
+      proxyHeaders["set-cookie"] = setCookies;
+    }
+    response.writeHead(proxyResponse.status, proxyHeaders);
     if (proxyResponse.body) {
       Readable.fromWeb(proxyResponse.body).pipe(response);
     } else {

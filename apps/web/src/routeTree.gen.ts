@@ -10,33 +10,115 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DashboardRouteImport } from './routes/dashboard'
+import { Route as NoticesRouteImport } from './routes/notices'
+import { Route as ReviewRouteImport } from './routes/review'
+import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as TitlesRouteImport } from './routes/titles'
+import { Route as ViolationsRouteImport } from './routes/violations'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DashboardRoute = DashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NoticesRoute = NoticesRouteImport.update({
+  id: '/notices',
+  path: '/notices',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ReviewRoute = ReviewRouteImport.update({
+  id: '/review',
+  path: '/review',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TitlesRoute = TitlesRouteImport.update({
+  id: '/titles',
+  path: '/titles',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ViolationsRoute = ViolationsRouteImport.update({
+  id: '/violations',
+  path: '/violations',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/notices': typeof NoticesRoute
+  '/review': typeof ReviewRoute
+  '/settings': typeof SettingsRoute
+  '/titles': typeof TitlesRoute
+  '/violations': typeof ViolationsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/notices': typeof NoticesRoute
+  '/review': typeof ReviewRoute
+  '/settings': typeof SettingsRoute
+  '/titles': typeof TitlesRoute
+  '/violations': typeof ViolationsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/dashboard': typeof DashboardRoute
+  '/notices': typeof NoticesRoute
+  '/review': typeof ReviewRoute
+  '/settings': typeof SettingsRoute
+  '/titles': typeof TitlesRoute
+  '/violations': typeof ViolationsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/dashboard'
+    | '/notices'
+    | '/review'
+    | '/settings'
+    | '/titles'
+    | '/violations'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/dashboard'
+    | '/notices'
+    | '/review'
+    | '/settings'
+    | '/titles'
+    | '/violations'
+  id:
+    | '__root__'
+    | '/'
+    | '/dashboard'
+    | '/notices'
+    | '/review'
+    | '/settings'
+    | '/titles'
+    | '/violations'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DashboardRoute: typeof DashboardRoute
+  NoticesRoute: typeof NoticesRoute
+  ReviewRoute: typeof ReviewRoute
+  SettingsRoute: typeof SettingsRoute
+  TitlesRoute: typeof TitlesRoute
+  ViolationsRoute: typeof ViolationsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +130,59 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/dashboard': {
+      id: '/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof DashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notices': {
+      id: '/notices'
+      path: '/notices'
+      fullPath: '/notices'
+      preLoaderRoute: typeof NoticesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/review': {
+      id: '/review'
+      path: '/review'
+      fullPath: '/review'
+      preLoaderRoute: typeof ReviewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/titles': {
+      id: '/titles'
+      path: '/titles'
+      fullPath: '/titles'
+      preLoaderRoute: typeof TitlesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/violations': {
+      id: '/violations'
+      path: '/violations'
+      fullPath: '/violations'
+      preLoaderRoute: typeof ViolationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DashboardRoute: DashboardRoute,
+  NoticesRoute: NoticesRoute,
+  ReviewRoute: ReviewRoute,
+  SettingsRoute: SettingsRoute,
+  TitlesRoute: TitlesRoute,
+  ViolationsRoute: ViolationsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
