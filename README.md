@@ -43,3 +43,16 @@ npm ci --prefix contract/verify && npm run check --prefix contract/verify
 ```
 
 The API refuses to start when the database schema and the image disagree; run the migration task before the API, as Compose does.
+
+### Bootstrap
+
+The first administrator and the rights holder are created by the host-side CLI, which prints a one-time setup token:
+
+```bash
+docker compose run --rm api node apps/api/dist/cli/patrol.js bootstrap \
+  --legal-name "Example Rights Holder" --country US \
+  --address "1 Example Street" --role-mailbox legal@example.test \
+  --admin-email admin@example.test
+```
+
+Open the setup flow with that token, set the password, and enroll TOTP. `patrol admin recover --email <address>` mints a recovery token for an administrator who lost both factors.

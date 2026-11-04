@@ -67,6 +67,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm --filter @patrol/api build
+      - name: Migrate the fresh database
+        env:
+          DATABASE_URL: postgres://patrol:patrol@localhost:5432/patrol
+        run: pnpm --filter @patrol/api migrate
       - name: Migration runner against a real database
         env:
           DATABASE_URL: postgres://patrol:patrol@localhost:5432/patrol

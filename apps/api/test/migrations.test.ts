@@ -88,6 +88,18 @@ describe("migrate", () => {
   });
 });
 
+describe("identity migration", () => {
+  it("applies the committed migrations from zero", async () => {
+    const db = memoryDb();
+    const dir = new URL("../drizzle", import.meta.url).pathname;
+
+    const result = await migrate(db, dir);
+
+    expect(result.applied).toContain("0001_identity");
+    expect(result.version).toBe("0001_identity");
+  });
+});
+
 describe("assertSchemaCompatible", () => {
   it("accepts an applied schema that matches the image", () => {
     expect(() => assertSchemaCompatible("0002_beta", "0002_beta")).not.toThrow();

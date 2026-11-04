@@ -91,13 +91,25 @@ async function appWithValidationRoute() {
   return app;
 }
 
+async function csrf(app: Awaited<ReturnType<typeof appUnderTest>>) {
+  const response = await app.inject({ method: "GET", url: "/api/auth/csrf" });
+  const cookies = response.cookies;
+  return {
+    header: { "x-patrol-csrf": cookies[0].value },
+    cookies: { patrol_csrf: cookies[0].value },
+  };
+}
+
 describe("sign-in validation", () => {
   it("rejects an invalid sign-in body with field errors", async () => {
     const app = await appUnderTest();
+    const token = await csrf(app);
 
     const response = await app.inject({
       method: "POST",
       url: "/api/auth/sign-in",
+      headers: { ...token.header },
+      cookies: token.cookies,
       payload: { email: "not-an-email", password: "" },
     });
 
@@ -112,10 +124,13 @@ describe("sign-in validation", () => {
 
   it("refuses a valid sign-in until the deployment is bootstrapped", async () => {
     const app = await appUnderTest();
+    const token = await csrf(app);
 
     const response = await app.inject({
       method: "POST",
       url: "/api/auth/sign-in",
+      headers: { ...token.header },
+      cookies: token.cookies,
       payload: { email: "operator@example.test", password: "correct horse battery" },
     });
 
