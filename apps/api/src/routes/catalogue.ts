@@ -1,8 +1,8 @@
-import type { FastifyInstance, FastifyPluginAsync, FastifyRequest } from "fastify";
+import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import type { Pool } from "pg";
 import type { AppConfig } from "../config.js";
 import { ApiError } from "../errors.js";
-import { resolveLocale } from "../i18n.js";
+import { requestLocale } from "../i18n.js";
 import { pageParams } from "./support.js";
 import {
   createTitleGroup,
@@ -46,10 +46,6 @@ export interface CatalogueRoutesDeps {
 
 export function catalogueRoutes(deps: CatalogueRoutesDeps): FastifyPluginAsync {
   const { config, pool } = deps;
-
-  /** The interface language the request resolved to, for the Wikidata reads. */
-  const requestLocale = (request: FastifyRequest): string =>
-    request.locale ?? resolveLocale(undefined, request.headers["accept-language"]);
 
   return async (app: FastifyInstance) => {
     // -----------------------------------------------------------------

@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyPluginAsync } from "fastify";
 import type { Pool } from "pg";
 import type { AppConfig } from "../config.js";
 import { ApiError } from "../errors.js";
+import { requestLocale } from "../i18n.js";
 import { pageParams } from "./support.js";
 import {
   countTrackedTitles,
@@ -75,7 +76,9 @@ export function settingsRoutes(deps: SettingsRoutesDeps): FastifyPluginAsync {
     // -----------------------------------------------------------------
     // Budget and capacity.
 
-    app.get("/settings/budget", async () => readBudgetOverview(pool));
+    app.get("/settings/budget", async (request) =>
+      readBudgetOverview(pool, config.now, requestLocale(request)),
+    );
 
     app.put("/settings/budget", async (request) => {
       const body = app.validate(request.body, "AcquisitionBudget") as {
@@ -87,7 +90,7 @@ export function settingsRoutes(deps: SettingsRoutesDeps): FastifyPluginAsync {
         recheckSharePercent: number;
       };
       await updateBudget(pool, config.now, body);
-      return readBudgetOverview(pool);
+      return readBudgetOverview(pool, config.now, requestLocale(request));
     });
 
     app.get("/settings/budget/capacity", async (request) => {

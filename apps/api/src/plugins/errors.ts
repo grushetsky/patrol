@@ -1,7 +1,7 @@
-import type { FastifyError, FastifyPluginAsync, FastifyReply, FastifyRequest } from "fastify";
+import type { FastifyError, FastifyPluginAsync, FastifyReply } from "fastify";
 import fp from "fastify-plugin";
 import { t } from "@patrol/i18n";
-import { resolveLocale } from "../i18n.js";
+import { requestLocale } from "../i18n.js";
 import { ApiError, ValidationError, type FieldError } from "../errors.js";
 
 /** The ErrorBody every error response carries (contract Patrol.Http). */
@@ -18,11 +18,6 @@ function sendError(
   body: ErrorBody,
 ): void {
   reply.status(statusCode).send(body);
-}
-
-/** The locale a request resolved to: the operator's preference when signed in. */
-function requestLocale(request: FastifyRequest): ReturnType<typeof resolveLocale> {
-  return request.locale ?? resolveLocale(undefined, request.headers["accept-language"]);
 }
 
 /**

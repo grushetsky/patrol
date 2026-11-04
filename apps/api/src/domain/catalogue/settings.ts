@@ -1,7 +1,15 @@
 import type { Pool, PoolClient } from "pg";
+import type { Locale } from "@patrol/i18n";
 import { ApiError } from "../../errors.js";
 import { allowanceUnits, type EngineName } from "./capacity.js";
 import { rightsHolderJson, type RightsHolderRow } from "./serialize.js";
+import {
+  budgetAlertJson,
+  quotaLedgerJson,
+  type QuotaLedgerRow,
+} from "../budget/serialize.js";
+import { bucketShares, monthStartOf, readMonthLedgerRows } from "../budget/ledger.js";
+import { listMonthAlerts } from "../budget/alerts.js";
 
 /**
  * Settings reads and writes: the rights holder and its signatory, and the
@@ -9,7 +17,7 @@ import { rightsHolderJson, type RightsHolderRow } from "./serialize.js";
  * embedded in the rights holder row (the domain model nests
  * AcquisitionBudget inside RightsHolder). Lowering a cap never un-spends
  * what the ledger committed — no endpoint deletes a ledger row, and the
- * ledger itself arrives with slice 3.
+ * ledger's committed counters only ever rise.
  */
 
 export async function readRightsHolderRow(
@@ -228,15 +236,28 @@ export async function updateBudget(
   }
 }
 
-/** One engine's derived budget position for the current UTC month. */
+/**
+ * One engine's derived budget position for the current UTC month. The
+ * used counters read the month's ledger row — committed plus reserved,
+ * the share of the bucket already spoken for — and a bucket reads as
+ * exhausted once its usage reaches its share, or once spend stands past
+ * a share a lowered cap has since shrunk below zero-budget territory.
+ */
 function engineStatus(
   engine: EngineName,
   monthlyCapMinor: number,
   recheckSharePercent: number,
+  row: QuotaLedgerRow | undefined,
 ): Record<string, unknown> {
   const units = allowanceUnits(engine, monthlyCapMinor);
-  const scanShare = Math.floor((units * (100 - recheckSharePercent)) / 100);
-  const recheckShare = units - scanShare;
+  const { scan: scanShare, recheck: recheckShare } = bucketShares(
+    units,
+    recheckSharePercent,
+  );
+  const scanUsed = (row?.scanReserved ?? 0) + (row?.scanCommitted ?? 0);
+  const recheckUsed = (row?.recheckReserved ?? 0) + (row?.recheckCommitted ?? 0);
+  const spent = (used: number, share: number): boolean =>
+    share <= 0 ? used > 0 : used >= share;
   return {
     engine,
     currency: "usd",
@@ -244,20 +265,31 @@ function engineStatus(
     allowanceUnits: units,
     scanShareUnits: scanShare,
     recheckShareUnits: recheckShare,
-    // Slice 3's ledger fills the used counters; nothing is spent yet.
-    scanUsedUnits: 0,
-    recheckUsedUnits: 0,
-    exhausted: false,
+    scanUsedUnits: scanUsed,
+    recheckUsedUnits: recheckUsed,
+    exhausted: spent(scanUsed, scanShare) || spent(recheckUsed, recheckShare),
+    // Route disable arrives with the acquisition adapters (slice 3b).
     routeDisabled: false,
   };
 }
 
-/** The budget overview: the configured cap, the (empty until slice 3)
- * ledger, the derived per-engine allowance, and the (empty) alerts. */
+/**
+ * The budget overview: the configured cap, the current month's ledger
+ * rows, the derived per-engine allowance with its used counters, and the
+ * alerts that have fired this month, rendered in the requesting
+ * operator's language.
+ */
 export async function readBudgetOverview(
   pool: Pool,
+  now: () => Date,
+  locale: Locale,
 ): Promise<Record<string, unknown>> {
   const caps = await readBudgetCaps(pool);
+  const monthStart = monthStartOf(now());
+  const ledgerRows = await readMonthLedgerRows(pool, monthStart);
+  const alerts = await listMonthAlerts(pool, monthStart);
+  const rowFor = (engine: EngineName): QuotaLedgerRow | undefined =>
+    ledgerRows.find((row) => row.engine === engine);
   return {
     budget: {
       engineCaps: [
@@ -267,13 +299,13 @@ export async function readBudgetOverview(
       ],
       recheckSharePercent: caps.recheckSharePercent,
     },
-    ledger: [],
+    ledger: ledgerRows.map(quotaLedgerJson),
     engines: [
-      engineStatus("google", caps.google, caps.recheckSharePercent),
-      engineStatus("bing", caps.bing, caps.recheckSharePercent),
-      engineStatus("yandex", caps.yandex, caps.recheckSharePercent),
+      engineStatus("google", caps.google, caps.recheckSharePercent, rowFor("google")),
+      engineStatus("bing", caps.bing, caps.recheckSharePercent, rowFor("bing")),
+      engineStatus("yandex", caps.yandex, caps.recheckSharePercent, rowFor("yandex")),
     ],
-    alerts: [],
+    alerts: alerts.map((alert) => budgetAlertJson(alert, locale)),
   };
 }
 

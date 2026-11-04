@@ -1,3 +1,4 @@
+import type { FastifyRequest } from "fastify";
 import type { Locale } from "@patrol/i18n";
 
 /** The interface languages the API can resolve a request to. */
@@ -56,4 +57,13 @@ export function resolveLocale(
     }
   }
   return "en";
+}
+
+/**
+ * The locale a request renders its localized strings in: the signed-in
+ * operator's stored preference when the auth plugin resolved one, then
+ * the request's Accept-Language, then English.
+ */
+export function requestLocale(request: FastifyRequest): Locale {
+  return request.locale ?? resolveLocale(undefined, request.headers["accept-language"]);
 }
