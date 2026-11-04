@@ -1,11 +1,11 @@
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import type { Contract } from "../contract.js";
-import { ApiError, ValidationError } from "../errors.js";
+import { paginate, validateBody } from "../http.js";
+import { createAuthGuards } from "./guards.js";
 import {
   csrfCookie,
   parseCookies,
   sessionCookie,
-  SESSION_COOKIE,
   CSRF_COOKIE,
   clearSessionCookie,
 } from "./cookies.js";
@@ -19,51 +19,15 @@ import {
 import type { AuthService, SessionMeta } from "./service.js";
 import { randomToken } from "./tokens.js";
 
-const PAGE_SIZE = 50;
-
 export function registerAuthRoutes(
   app: FastifyInstance,
   service: AuthService,
   contract: Contract,
 ): void {
-  app.addHook("preHandler", async (request) => {
-    if (["GET", "HEAD", "OPTIONS"].includes(request.method)) {
-      return;
-    }
-    const cookies = parseCookies(request.headers.cookie);
-    const header = request.headers["x-patrol-csrf"];
-    const token = cookies[CSRF_COOKIE];
-    if (!token || typeof header !== "string" || header !== token) {
-      throw new ApiError(403, "forbidden", "The CSRF token is missing or wrong.");
-    }
-  });
-
-  async function authenticate(request: FastifyRequest): Promise<void> {
-    const cookies = parseCookies(request.headers.cookie);
-    const token = cookies[SESSION_COOKIE];
-    if (!token) {
-      throw new ApiError(401, "unauthenticated", "No valid session.");
-    }
-    const { operator, session } = await service.findSession(token);
-    request.auth = {
-      operator,
-      session,
-      csrfToken: cookies[CSRF_COOKIE] ?? "",
-    };
-  }
-
-  async function requireBootstrapped(): Promise<void> {
-    const state = await service.setupState();
-    if (!state.bootstrapped) {
-      throw new ApiError(503, "setup_required", "The deployment is not bootstrapped.");
-    }
-  }
-
-  async function requireAdmin(request: FastifyRequest): Promise<void> {
-    if (request.auth?.operator.role !== "administrator") {
-      throw new ApiError(403, "forbidden", "The administrator role is required.");
-    }
-  }
+  const guards = createAuthGuards(service);
+  const authenticate = guards.authenticate;
+  const requireBootstrapped = guards.requireBootstrapped;
+  const requireAdmin = guards.requireAdmin;
 
   function meta(request: FastifyRequest): SessionMeta {
     return {
@@ -72,40 +36,14 @@ export function registerAuthRoutes(
     };
   }
 
-  function validate(request: FastifyRequest, name: string): Record<string, unknown> {
-    const result = contract.validate(name, request.body);
-    if (!result.valid) {
-      throw new ValidationError(result.issues);
-    }
-    return request.body as Record<string, unknown>;
-  }
+  const validate = (request: FastifyRequest, name: string) =>
+    validateBody(contract, request, name);
 
-  function page<T>(items: T[], pageNumber = 1, pageSize = PAGE_SIZE) {
-    const start = (pageNumber - 1) * pageSize;
-    return {
-      items: items.slice(start, start + pageSize),
-      total: items.length,
-      page: pageNumber,
-      pageSize,
-    };
-  }
-
-  function paginated<T, R = T>(
+  const paginated = <T, R = T>(
     request: FastifyRequest,
     items: T[],
     map?: (item: T) => R,
-  ) {
-    const { page: pageNumber, pageSize } = queryPage(request);
-    return page(items.map((item) => (map ? map(item) : (item as unknown as R))), pageNumber, pageSize);
-  }
-
-  function queryPage(request: FastifyRequest): { page: number; pageSize: number } {
-    const query = request.query as { page?: string; pageSize?: string };
-    return {
-      page: Math.max(1, Number(query.page ?? 1)),
-      pageSize: Math.min(200, Math.max(1, Number(query.pageSize ?? PAGE_SIZE))),
-    };
-  }
+  ) => paginate(request, items, map);
 
   function issueCsrf(reply: FastifyReply, existing?: string): string {
     const token = existing || randomToken(24);

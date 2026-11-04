@@ -88,15 +88,18 @@ describe("migrate", () => {
   });
 });
 
-describe("identity migration", () => {
+describe("committed migrations", () => {
   it("applies the committed migrations from zero", async () => {
     const db = memoryDb();
     const dir = new URL("../drizzle", import.meta.url).pathname;
 
     const result = await migrate(db, dir);
 
-    expect(result.applied).toContain("0001_identity");
-    expect(result.version).toBe("0001_identity");
+    expect(result.applied).toEqual([
+      "0001_identity",
+      "0002_catalogue_settings",
+    ]);
+    expect(result.version).toBe("0002_catalogue_settings");
   });
 });
 

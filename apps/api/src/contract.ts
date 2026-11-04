@@ -30,6 +30,9 @@ export async function loadContract(
   ) as SchemaBundle;
   const ajv = new Ajv2020({ strict: false, allErrors: true });
   addFormats(ajv);
+  // `plainTime` emits as format "time", whose ajv-formats default demands an
+  // RFC 3339 offset. A plain time has none, so accept HH:MM or HH:MM:SS.
+  ajv.addFormat("time", /^([01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/);
   for (const schema of Object.values(bundle.$defs)) {
     if (schema.$id) {
       ajv.addSchema(schema);

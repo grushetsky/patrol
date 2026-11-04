@@ -6,7 +6,12 @@ import { currentVersion } from "./db/migrations.js";
 import { ApiError, ValidationError } from "./errors.js";
 import { registerAuthRoutes } from "./auth/routes.js";
 import { AuthService } from "./auth/service.js";
+import { createAuthGuards, registerCsrfHook } from "./auth/guards.js";
 import { localize, resolveLanguage } from "./auth/messages.js";
+import { CatalogueService } from "./catalogue/service.js";
+import { registerCatalogueRoutes } from "./catalogue/routes.js";
+import { SettingsService } from "./settings/service.js";
+import { registerSettingsRoutes } from "./settings/routes.js";
 
 export interface AppOptions {
   db: Connectable;
@@ -15,6 +20,8 @@ export interface AppOptions {
   expectedMigration: string;
   logger?: boolean;
   auth?: AuthService;
+  catalogue?: CatalogueService;
+  settings?: SettingsService;
 }
 
 export function buildApp(options: AppOptions): FastifyInstance {
@@ -23,6 +30,9 @@ export function buildApp(options: AppOptions): FastifyInstance {
     genReqId: () => randomUUID(),
   });
   const auth = options.auth ?? new AuthService(options.db);
+  const catalogue = options.catalogue ?? new CatalogueService(options.db);
+  const settings = options.settings ?? new SettingsService(options.db);
+  const guards = createAuthGuards(auth);
 
   app.setErrorHandler(async (error, request, reply) => {
     const language =
@@ -33,6 +43,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
         reply.header("retry-after", String(error.retryAfterSeconds));
       }
       return reply.status(error.statusCode).send({
+        ...error.extras,
         code: error.code,
         message: localize(error.code, language, error.message),
         ...(error.retryAfterSeconds !== undefined
@@ -65,6 +76,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
 
   app.register(
     async (api) => {
+      registerCsrfHook(api);
+
       api.get("/system/version", async () => {
         const migrationVersion = await currentVersion(options.db);
         return {
@@ -76,6 +89,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
 
       api.get("/system/setup", async () => auth.setupState());
       registerAuthRoutes(api, auth, options.contract);
+      registerCatalogueRoutes(api, catalogue, options.contract, guards);
+      registerSettingsRoutes(api, settings, options.contract, guards);
     },
     { prefix: "/api" },
   );

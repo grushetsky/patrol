@@ -7,6 +7,7 @@ export class ApiError extends Error {
     readonly code: string,
     message: string,
     readonly retryAfterSeconds?: number,
+    readonly extras: Record<string, unknown> = {},
   ) {
     super(message);
     this.name = "ApiError";
@@ -22,4 +23,14 @@ export class ValidationError extends Error {
     this.name = "ValidationError";
     this.issues = issues;
   }
+}
+
+/** A well-formed request that breaks a domain rule, answered with 422. */
+export function unprocessable(
+  issues: FieldIssue[],
+  message = "The request breaks a domain rule.",
+): ApiError {
+  return new ApiError(422, "validation_failed", message, undefined, {
+    fieldErrors: issues,
+  });
 }
