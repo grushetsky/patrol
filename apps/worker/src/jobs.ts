@@ -6,6 +6,7 @@ import { ScanRunner } from "./acquisition/runner.js";
 import { PlaywrightCapture } from "./evidence/browser.js";
 import { CaptureRunner, retryDelay } from "./evidence/runner.js";
 import { storeFromEnvironment } from "./evidence/store.js";
+import { pollCaptureRequests } from "./matching/requests.js";
 import {
   createDueRechecks,
   createDueScans,
@@ -23,6 +24,7 @@ const ENGINE_QUEUES: Record<Engine, string> = {
 };
 const CONTROL_QUEUES = [
   "capture.run",
+  "capture.poll",
   "scan.schedule",
   "recheck.schedule",
   "budget.rollover",
@@ -92,9 +94,12 @@ export async function startJobs(connectionString: string): Promise<WorkerJobs> {
         throw new Error("Evidence object storage is not configured.");
       }
       const data = job.data as {
+        requestId: string;
         url: string;
         reason: "detection" | "review" | "pre_handoff";
         attempt?: number;
+        candidateId?: string;
+        violationId?: string;
         trackedTitleId?: string;
         titleGroupId?: string;
         capturePoint?: string;
@@ -114,10 +119,23 @@ export async function startJobs(connectionString: string): Promise<WorkerJobs> {
             null,
             Math.ceil(delay / 1_000),
           );
+          return;
         }
+      }
+      if (data.requestId) {
+        await pool.query(
+          "UPDATE capture_request SET state = 'finished', finished_at = $2 WHERE id = $1",
+          [data.requestId, new Date()],
+        );
       }
     },
   );
+
+  await boss.work("capture.poll", { batchSize: 1 }, async () => {
+    await pollCaptureRequests(pool, (data) =>
+      boss.send("capture.run", data, { expireInSeconds: 3_600 }),
+    );
+  });
 
   await boss.work("scan.schedule", { batchSize: 1 }, async () => {
     const now = new Date();
@@ -156,11 +174,13 @@ export async function startJobs(connectionString: string): Promise<WorkerJobs> {
     await probeRoutes(pool, adapters, new Date());
   });
 
+  await boss.schedule("capture.poll", "* * * * *");
   await boss.schedule("scan.schedule", "*/15 * * * *");
   await boss.schedule("recheck.schedule", "*/15 * * * *");
   await boss.schedule("budget.rollover", "0 0 1 * *");
   await boss.schedule("budget.balance", "0 6 * * *");
   await boss.schedule("route.probe", "0 * * * *");
+  await boss.send("capture.poll", {});
   await boss.send("scan.schedule", {});
   await boss.send("recheck.schedule", {});
 

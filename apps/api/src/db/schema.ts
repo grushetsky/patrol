@@ -1,5 +1,8 @@
+import { sql } from "drizzle-orm";
 import {
   boolean,
+  doublePrecision,
+  index,
   integer,
   pgTable,
   real,
@@ -287,16 +290,155 @@ export const submission = pgTable("submission", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
 });
 
-export const candidate = pgTable("candidate", {
-  id: text("id").primaryKey(),
-  trackedTitleId: text("tracked_title_id").notNull(),
-  state: text("state").notNull(),
-});
+export const candidate = pgTable(
+  "candidate",
+  {
+    id: text("id").primaryKey(),
+    trackedTitleId: text("tracked_title_id").notNull(),
+    state: text("state").notNull(),
+    url: text("url"),
+    normalizedUrl: text("normalized_url"),
+    finalUrl: text("final_url"),
+    host: text("host"),
+    registrableDomain: text("registrable_domain"),
+    source: text("source"),
+    engine: text("engine"),
+    rank: integer("rank"),
+    queryText: text("query_text"),
+    locale: text("locale"),
+    territory: text("territory"),
+    matchedVariantId: text("matched_variant_id"),
+    matchedVariant: text("matched_variant"),
+    score: doublePrecision("score"),
+    scoreComponents: text("score_components"),
+    reputation: text("reputation"),
+    allowlistEntryId: text("allowlist_entry_id"),
+    firstObservedAt: timestamp("first_observed_at", { withTimezone: true }),
+    lastObservedAt: timestamp("last_observed_at", { withTimezone: true }),
+    reviewDecisionId: text("review_decision_id"),
+    violationId: text("violation_id"),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    episodeMax: integer("episode_max"),
+    dismissal: text("dismissal"),
+    dismissalSignals: text("dismissal_signals"),
+    dismissalEpisodeMax: integer("dismissal_episode_max"),
+    dismissalRegistrableDomain: text("dismissal_registrable_domain"),
+    createdBy: text("created_by"),
+    createdAt: timestamp("created_at", { withTimezone: true }),
+  },
+  (table) => [
+    uniqueIndex("candidate_pair_key").on(
+      table.normalizedUrl,
+      table.trackedTitleId,
+    ),
+    index("candidate_queue_idx").on(
+      table.state,
+      table.score,
+      table.rank,
+      table.lastObservedAt,
+    ),
+  ],
+);
 
-export const violation = pgTable("violation", {
-  id: text("id").primaryKey(),
-  trackedTitleId: text("tracked_title_id").notNull(),
-  state: text("state").notNull(),
+export const violation = pgTable(
+  "violation",
+  {
+    id: text("id").primaryKey(),
+    trackedTitleId: text("tracked_title_id").notNull(),
+    state: text("state").notNull(),
+    candidateId: text("candidate_id"),
+    reviewDecisionId: text("review_decision_id"),
+    url: text("url"),
+    normalizedUrl: text("normalized_url"),
+    host: text("host"),
+    hostSource: text("host_source"),
+    registrableDomain: text("registrable_domain"),
+    detectedAt: timestamp("detected_at", { withTimezone: true }),
+    confirmedAt: timestamp("confirmed_at", { withTimezone: true }),
+    confirmedBy: text("confirmed_by"),
+    predecessorViolationId: text("predecessor_violation_id"),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+    closureReason: text("closure_reason"),
+    closureEvidenceId: text("closure_evidence_id"),
+    closedBy: text("closed_by"),
+    closureNote: text("closure_note"),
+  },
+  (table) => [
+    uniqueIndex("violation_open_pair_key")
+      .on(table.normalizedUrl, table.trackedTitleId)
+      .where(sql`state = 'open'`),
+    index("violation_state_idx").on(table.state, table.confirmedAt),
+  ],
+);
+
+export const reviewDecision = pgTable(
+  "review_decision",
+  {
+    id: text("id").primaryKey(),
+    candidateId: text("candidate_id").notNull(),
+    action: text("action").notNull(),
+    operatorId: text("operator_id").notNull(),
+    decidedAt: timestamp("decided_at", { withTimezone: true }).notNull(),
+    note: text("note"),
+    evidenceIds: text("evidence_ids").notNull(),
+    violationId: text("violation_id"),
+    rematchedTrackedTitleId: text("rematched_tracked_title_id"),
+    proposedAllowlistEntryId: text("proposed_allowlist_entry_id"),
+    scoreSnapshot: text("score_snapshot"),
+    signalsSnapshot: text("signals_snapshot"),
+    episodeMax: integer("episode_max"),
+    registrableDomain: text("registrable_domain"),
+  },
+  (table) => [
+    index("review_decision_candidate_idx").on(
+      table.candidateId,
+      table.decidedAt,
+    ),
+  ],
+);
+
+export const violationEvidence = pgTable(
+  "violation_evidence",
+  {
+    violationId: text("violation_id").notNull(),
+    evidenceId: text("evidence_id").notNull(),
+    role: text("role").notNull(),
+    citedAt: timestamp("cited_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [
+    uniqueIndex("violation_evidence_key").on(
+      table.violationId,
+      table.evidenceId,
+    ),
+  ],
+);
+
+export const captureRequest = pgTable(
+  "capture_request",
+  {
+    id: text("id").primaryKey(),
+    url: text("url").notNull(),
+    normalizedUrl: text("normalized_url").notNull(),
+    reason: text("reason").notNull(),
+    candidateId: text("candidate_id"),
+    violationId: text("violation_id"),
+    trackedTitleId: text("tracked_title_id"),
+    titleGroupId: text("title_group_id"),
+    capturePoint: text("capture_point"),
+    state: text("state").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    queuedAt: timestamp("queued_at", { withTimezone: true }),
+    finishedAt: timestamp("finished_at", { withTimezone: true }),
+  },
+  (table) => [
+    index("capture_request_pending_idx").on(table.state, table.createdAt),
+  ],
+);
+
+export const blocklist = pgTable("blocklist", {
+  domain: text("domain").primaryKey(),
+  reason: text("reason"),
+  addedAt: timestamp("added_at", { withTimezone: true }).notNull(),
 });
 
 export const catalogueSchema = {

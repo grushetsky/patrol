@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1161.0",
+    "@patrol/matching": "workspace:*",
     "@aws-sdk/s3-request-presigner": "^3.1161.0",
     "@node-rs/argon2": "^2.2.2",
     "ajv": "^8.20.0",

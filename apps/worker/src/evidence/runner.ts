@@ -18,6 +18,7 @@ import {
   type CaptureOutcome,
   type CaptureReason,
 } from "./types.js";
+import { scoreCandidateAfterCapture } from "../matching/scoring.js";
 
 const REVIEW_FRESH_MS = 24 * 60 * 60 * 1000;
 const HANDOFF_FRESH_MS = 7 * 24 * 60 * 60 * 1000;
@@ -29,6 +30,7 @@ export interface CaptureInput {
   url: string;
   reason: CaptureReason;
   attempt?: number;
+  candidateId?: string;
   trackedTitleId?: string;
   titleGroupId?: string;
   capturePoint?: string;
@@ -131,6 +133,17 @@ export class CaptureRunner {
     );
     if (result.outcome === "blocked" && result.httpStatus === 451) {
       await this.recordObjection(requestedUrl);
+    }
+    if (input.candidateId) {
+      await scoreCandidateAfterCapture(this.db, {
+        candidateId: input.candidateId,
+        sidecar: result.sidecar,
+        dom: result.dom,
+        finalUrl: result.finalUrl,
+        host: result.host,
+        outcome: result.outcome,
+        observedAt,
+      });
     }
     return {
       captured: true,

@@ -5,8 +5,10 @@ COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps/api/package.json apps/api/package.json
 COPY apps/worker/package.json apps/worker/package.json
 COPY apps/web/package.json apps/web/package.json
+COPY packages/matching/package.json packages/matching/package.json
 RUN pnpm install --frozen-lockfile
 COPY contract contract
+COPY packages/matching packages/matching
 COPY apps/api apps/api
-RUN pnpm --filter @patrol/api build
+RUN pnpm --filter @patrol/matching build && pnpm --filter @patrol/api build
 CMD ["node", "apps/api/dist/server.js"]

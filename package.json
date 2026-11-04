@@ -5,8 +5,8 @@
   "packageManager": "pnpm@10.0.0",
   "scripts": {
     "build": "pnpm -r build",
-    "typecheck": "pnpm -r typecheck",
-    "test": "pnpm -r test",
+    "typecheck": "pnpm --filter @patrol/matching build && pnpm -r typecheck",
+    "test": "pnpm --filter @patrol/matching build && pnpm -r test",
     "contract:check": "npm --prefix contract run check",
     "contract:verify": "npm --prefix contract run verify",
     "contract:types": "openapi-typescript contract/generated/openapi/Patrol.openapi.yaml -o apps/web/src/generated/openapi.d.ts",

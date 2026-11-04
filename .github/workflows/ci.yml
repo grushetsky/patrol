@@ -62,6 +62,7 @@ jobs:
           node-version: 26
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter @patrol/matching build
       - run: pnpm --filter @patrol/api build
       - name: Migrate the fresh database
         env:

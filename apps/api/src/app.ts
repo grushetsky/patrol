@@ -16,6 +16,10 @@ import { ScanService } from "./scans/service.js";
 import { registerScanRoutes } from "./scans/routes.js";
 import { EvidenceService } from "./evidence/service.js";
 import { registerEvidenceRoutes } from "./evidence/routes.js";
+import { CandidateService } from "./review/service.js";
+import { registerCandidateRoutes } from "./review/routes.js";
+import { ViolationService } from "./violations/service.js";
+import { registerViolationRoutes } from "./violations/routes.js";
 import {
   storeFromEnvironment,
   type ArtifactStore,
@@ -31,6 +35,8 @@ export interface AppOptions {
   catalogue?: CatalogueService;
   settings?: SettingsService;
   scans?: ScanService;
+  candidates?: CandidateService;
+  violations?: ViolationService;
   evidenceStore?: ArtifactStore;
 }
 
@@ -43,6 +49,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
   const catalogue = options.catalogue ?? new CatalogueService(options.db);
   const settings = options.settings ?? new SettingsService(options.db);
   const scans = options.scans ?? new ScanService(options.db);
+  const candidates = options.candidates ?? new CandidateService(options.db);
+  const violations = options.violations ?? new ViolationService(options.db);
   const evidence = new EvidenceService(
     options.db,
     options.evidenceStore ?? storeFromEnvironment(),
@@ -107,6 +115,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
       registerCatalogueRoutes(api, catalogue, options.contract, guards);
       registerSettingsRoutes(api, settings, options.contract, guards);
       registerScanRoutes(api, scans, options.contract, guards);
+      registerCandidateRoutes(api, candidates, options.contract, guards);
+      registerViolationRoutes(api, violations, options.contract, guards);
       registerEvidenceRoutes(api, evidence, options.contract, guards);
     },
     { prefix: "/api" },
