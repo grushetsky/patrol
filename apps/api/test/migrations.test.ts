@@ -100,8 +100,9 @@ describe("committed migrations", () => {
       "0002_catalogue_settings",
       "0003_scheduling",
       "0004_evidence",
+      "0005_matching_review",
     ]);
-    expect(result.version).toBe("0004_evidence");
+    expect(result.version).toBe("0005_matching_review");
   });
 });
 

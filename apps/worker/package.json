@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1161.0",
+    "@patrol/matching": "workspace:*",
     "@aws-sdk/s3-request-presigner": "^3.1161.0",
     "pg": "^8.23.1",
     "pg-boss": "^12.38.0",

@@ -29,6 +29,7 @@ import {
   type QueryPlan,
   type SearchAdapter,
 } from "./types.js";
+import { formCandidate } from "../matching/candidates.js";
 
 export interface ScanRow {
   id: string;
@@ -292,6 +293,7 @@ export class ScanRunner {
     );
     for (const row of rows) {
       const host = row.host || hostOf(row.url);
+      const resultId = uuidv7();
       await this.db.query(
         `INSERT INTO search_result
           (id, scan_id, query_id, engine, url, normalized_url, rank, title,
@@ -300,7 +302,7 @@ export class ScanRunner {
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
                  $14, $15, NULL)`,
         [
-          uuidv7(),
+          resultId,
           scanId,
           query.id,
           engine,
@@ -316,6 +318,23 @@ export class ScanRunner {
           host,
           registrableDomainOf(row.url),
         ],
+      );
+      const candidate = await formCandidate(this.db, {
+        scanId,
+        engine,
+        trackedTitleId: query.trackedTitleId,
+        variantId: query.variantId,
+        locale: query.locale,
+        territory: territoryForLocale(query.locale) ?? undefined,
+        queryText: query.text,
+        rank: row.position,
+        url: row.url,
+        title: row.title,
+        observedAt: new Date(row.retrievedAt),
+      });
+      await this.db.query(
+        "UPDATE search_result SET candidate_id = $2 WHERE id = $1",
+        [resultId, candidate.id],
       );
     }
   }
