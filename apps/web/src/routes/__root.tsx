@@ -14,6 +14,7 @@ import {
 } from "../api/server";
 import { AuthFlow } from "../components/auth";
 import { AppShell } from "../components/shell";
+import { SessionContext } from "../components/session";
 import { LanguageContext } from "../i18n";
 import "../styles.css";
 
@@ -57,7 +58,9 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <RootDocument language={language}>
         {session && summary ? (
-          <AppShell session={session} summary={summary} language={language} />
+          <SessionContext.Provider value={session}>
+            <AppShell session={session} summary={summary} language={language} />
+          </SessionContext.Provider>
         ) : (
           <LanguageContext.Provider value={language}>
             <AuthFlow setup={setup} language={language} />
