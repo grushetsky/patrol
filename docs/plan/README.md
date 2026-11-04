@@ -93,10 +93,10 @@ The sliced plan is in "_docs/plan/build-slices.md_". The order is driven by depe
 
 These are named so a build effort does not assume them silently:
 
-- **Recipient statement texts.** The contract carries a statement version and resolves fields, but the exact current text per recipient and how versions are tracked is undecided; it blocks notice composition (slice 6), not the slices before it.
+- **Recipient statement texts.** The contract carries a statement version and resolves fields, but the exact current text per recipient and how versions are tracked is undecided; it blocks notice composition (slice 6), not the slices before it. Tracked in "Recipient statement texts and template versions".
 - **Optimistic concurrency.** No `If-Match` or idempotency key exists; state guards and unique constraints are the boundary. A build effort that needs more records a new decision.
 - **Audit read surface.** Security events are written but no read endpoint is fixed; the session and operator lists cover the administrative views.
-- **UI language and notice language.** Strings externalise, but no product language is chosen.
+- **UI language and notice language.** Strings externalise, but no product language is chosen. Tracked in "Product and notice language".
 - **Provider prices and caps.** The Google per-file cap and per-day quotas are learned at runtime; list prices are re-quoted before build and reviewed quarterly.
 
 ## Verification before building
