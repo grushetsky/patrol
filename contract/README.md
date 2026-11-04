@@ -43,7 +43,7 @@ The verification workspace under "_contract/verify/_" has its own dependencies; 
 
 The generated artifacts are committed:
 
-- "_contract/generated/openapi/Patrol.openapi.yaml_" is the OpenAPI 3.1 document for the single service: 76 paths, 89 operations, and every domain and HTTP component.
+- "_contract/generated/openapi/Patrol.openapi.yaml_" is the OpenAPI 3.1 document for the single service: 77 paths, 90 operations, and every domain and HTTP component.
 - "_contract/generated/json-schema/patrol_" is the JSON Schema 2020-12 bundle. It has no file extension, which is what the emitter produces; read it as JSON explicitly. Every definition keeps an absolute `$id` of `https://patrol.example/schemas/<Name>.json`.
 
 The check script compiles every emitted definition with Ajv and asserts that valid states and payloads validate while impossible ones — an approved notice without its approver, a closed violation without its closer, a failed scan without its reason, a review decision with an unknown action, an approval attestation with a refusal, a chart under the wrong metric — are rejected. It now covers request bodies, attestations, acknowledgements, chart envelopes, and error bodies alongside the domain lifecycles.

@@ -249,6 +249,12 @@ model EmailChangeRequest {
   currentCode: string;
 }
 
+@doc("The interface language an operator chooses. It persists on the account and applies to later emails and handoff checklists.")
+model UpdatePreferencesRequest {
+  @doc("The interface language. English and Russian are supported.")
+  language: InterfaceLanguage;
+}
+
 @doc("A page of the signed-in operator's sessions.")
 model OperatorSessionPage {
   @doc("The sessions on this page, newest first.")
@@ -356,6 +362,12 @@ interface Sessions {
   @post
   @route("/email")
   op changeEmail(...CsrfToken, @body body: EmailChangeRequest): NoContent | MutationErrors;
+
+  @doc("Set the interface language for this operator. The choice persists on the account and applies to emails addressed to the operator.")
+  @extension("x-patrol-roles", #["operator", "administrator"])
+  @patch
+  @route("/preferences")
+  op updatePreferences(...CsrfToken, @body body: UpdatePreferencesRequest): Operator | MutationErrors;
 
   @doc("Start re-enrolling the second factor, authorised by the current password and code.")
   @extension("x-patrol-roles", #["operator", "administrator"])

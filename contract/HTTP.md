@@ -6,7 +6,7 @@ The HTTP surface is TypeSpec source in "_contract/tsp/http/_", compiled into the
 
 | Artifact | Path | Contents |
 | --- | --- | --- |
-| OpenAPI 3.1 | "_contract/generated/openapi/Patrol.openapi.yaml_" | One service, 76 paths, 89 operations, domain and HTTP components under `Domain.*` and `Http.*`. |
+| OpenAPI 3.1 | "_contract/generated/openapi/Patrol.openapi.yaml_" | One service, 77 paths, 90 operations, domain and HTTP components under `Domain.*` and `Http.*`. |
 | JSON Schema 2020-12 | "_contract/generated/json-schema/patrol_" | One bundle with every model, each definition under an absolute `$id` of `https://patrol.example/schemas/<Name>.json`. |
 | Generated client types | "_contract/verify/src/generated/openapi.d.ts_" | `openapi-typescript` output over the OpenAPI document. |
 | Verification workspace | "_contract/verify/_" | A TanStack Start stub, the generated client, the Node-side validator, and the end-to-end check. |
@@ -22,6 +22,14 @@ One security scheme exists: `ApiKeyAuth`, a cookie named `__Host-patrol_session`
 The sign-in flow is two-step: a correct password answers `202` with a `challengeId`, and the second factor answers `200` with the session cookie and the operator. A locked account answers `429` with code `account_locked`.
 
 The bootstrap administrator consumes the token printed by `patrol bootstrap` at `POST /auth/setup`; an invited operator consumes the emailed token at `POST /invitations/{token}/acceptance`. Both answer `201` with an `enrollmentToken`, and the TOTP ceremony completes through `POST /auth/enrollment` and `POST /auth/enrollment/confirmation`. No operation returns a password hash, a TOTP secret, a session token, or a recovery-code hash; recovery codes are returned once, at enrolment.
+
+### Language
+
+The interface ships in English and Russian (`InterfaceLanguage`). An operator's choice is stored on the account (`Operator.preferredLanguage`) and set through `PATCH /auth/preferences`; before a choice exists, the request's `Accept-Language` decides and English is the fallback. The API localizes operator-facing `message` and `fieldErrors[].message` in the same order, while `code` stays stable, and tests fix English.
+
+Recipient-facing content never translates. A notice's statements and resolved fields reproduce the recipient's form language, catalogue values keep their native strings, and the printable notice and upload file are in the recipient's language. The operator-facing checklist in a frozen pack is generated in the approving operator's language at approval and recorded on the submission as `packLanguage`; a later language change never rewrites the pack.
+
+Emails use the recipient operator's stored preference; an invitation or setup email, sent before a preference exists, is English.
 
 ### CSRF
 
@@ -83,7 +91,7 @@ These read models live in `Patrol.Http`, so the domain namespace remains validat
 
 ### Notice lifecycle
 
-A notice's `NoticeStatus` is derived: `draft`, `approved`, then the submission's `delivered`, `acknowledged`, `rejected`, or `failed`; `withdrawn` and `superseded` are terminal. Approval requires the three literal confirmations in `ApprovalAttestation` and freezes the content; no operation mutates an approved notice. Withdrawal is allowed for a draft, or for an approved notice whose submission is still pending. A supersession creates the replacement draft and cancels the pending submission in one operation.
+A notice's `NoticeStatus` is derived: `draft`, `approved`, then the submission's `delivered`, `acknowledged`, `rejected`, or `failed`; `withdrawn` and `superseded` are terminal. Approval requires the three literal confirmations in `ApprovalAttestation` and freezes the content; no operation mutates an approved notice. The notice detail also exposes the statement template summary — identifier, source URLs, last verification, and a stale flag — and approval is refused when the template is older than ninety days, a newer revision exists, or no verified template exists for the recipient and language; the `currentStatements` attestation is the operator's re-read confirmation. Withdrawal is allowed for a draft, or for an approved notice whose submission is still pending. A supersession creates the replacement draft and cancels the pending submission in one operation.
 
 ### Evidence
 
@@ -118,6 +126,7 @@ The tables below are generated from the emitted document. `Role` lists the contr
 | POST | `/auth/enrollment` | `Authentication_beginEnrollment` | anonymous | 200 |
 | POST | `/auth/enrollment/confirmation` | `Authentication_confirmEnrollment` | anonymous | 201 |
 | POST | `/auth/password` | `Sessions_changePassword` | operator, administrator | 204 |
+| PATCH | `/auth/preferences` | `Sessions_updatePreferences` | operator, administrator | 200 |
 | POST | `/auth/second-factor` | `Authentication_secondFactor` | anonymous | 200 |
 | DELETE | `/auth/session` | `Sessions_signOut` | operator, administrator | 204 |
 | GET | `/auth/session` | `Sessions_read` | operator, administrator | 200 |
@@ -276,7 +285,7 @@ Observed on TypeSpec 1.17.0; a build effort that upgrades emitters must re-run t
 
 ```bash
 cd contract
-npm run check          # compile, then 43 schema checks over domain and HTTP payloads
+npm run check          # compile, then 45 schema checks over domain and HTTP payloads
 npm run verify         # generate client types, build the TanStack Start stub, typecheck, then run the stub end to end
 ```
 
@@ -294,8 +303,6 @@ The recorded results are: the generated client compiles under TanStack Start 1.1
 ## Open constraints for the build effort
 
 - Optimistic concurrency is not specified; the state guards and the unique constraints are the only boundary. Adding `If-Match` is a new decision.
-- The statement template text and its versions are the build effort's to source; the contract carries the version string an operator confirmed.
-- The UI language and the language of each recipient's notice are undecided; the contract carries locales only for scans and catalogue variants.
 - The audit stream that feeds sign-in and operator views is not a read model here; the security events are written but their read endpoint is undecided.
 - The staging environment's disabled delivery is deployment configuration, not a contract field; delivery is an operator action in every environment.
 - Provider prices, the Google per-file cap discovered at runtime, and the per-day quota remain settings the profile records; none is hard-coded in the contract.

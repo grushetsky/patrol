@@ -40,6 +40,19 @@ Every threshold and rule a build effort must implement, compiled from the design
 | Setup gating | Domain endpoints answer `503 setup_required` until a rights holder and at least one administrator exist. | API middleware; contract. | Authentication |
 | Roles | `Operator` reviews, edits the catalogue and allowlists, runs scans, and composes, approves, and files notices; `Administrator` additionally manages operators, invitations, the rights holder, signatory, recipient profiles, the budget, legal holds, and profile pauses. | `x-patrol-roles` per operation. | Authentication |
 
+## Language
+
+| Rule | Testable statement | Enforcement | Source |
+| --- | --- | --- | --- |
+| Interface languages | English and Russian, selected in the top bar. | `InterfaceLanguage`; UI catalogues. | Dashboard |
+| Language resolution | A signed-in operator's stored preference wins; otherwise the request's `Accept-Language`; otherwise English. | API and SSR middleware. | Dashboard |
+| Preference storage | The choice is stored on the operator account and applies across devices and to emails addressed to the operator. | `Operator.preferredLanguage`; `PATCH /auth/preferences`. | Dashboard |
+| Translation scope | Every operator-facing string exists in both languages: screens, validation and error messages, alerts, invitation and reset emails, and the handoff checklist. | Key-parity test; `code` stays untranslated. | Dashboard |
+| Never translated | Recipient-facing statements and resolved fields reproduce the recipient's form language; catalogue values keep their native strings; URLs and evidence are unchanged. | Pack builder; catalogue model. | Notices |
+| Pack checklist | The operator-facing checklist is generated in the approving operator's language at approval and frozen on the submission as `packLanguage`; a later language change never rewrites the pack. | `Submission.packLanguage`; pack builder. | Notices |
+| Pre-preference email | An invitation or setup email, sent before the account has a preference, is English. | Mailer. | Authentication |
+| Tests | Automated tests and screenshot baselines fix English. | Test harness. | Dashboard |
+
 ## Catalogue and scope
 
 | Rule | Testable statement | Enforcement | Source |
@@ -167,6 +180,21 @@ Every threshold and rule a build effort must implement, compiled from the design
 | Submission transitions | Pending → delivered with an attestation; pending → acknowledged with the recipient's identifier; pending → rejected or failed with a reason and note. | State guard. | Invariants |
 | Acknowledgement shapes | Google: reference number of 4–40 characters plus the Removals Dashboard URL. Bing: `TicketId` plus the ticket-details URL. Yandex: reply `Message-ID` plus date. | HTTP union per recipient. | Notices |
 | Contact rule | No scheduled process contacts a recipient; every submission names an operator. | No adapter exists; contract. | ADR 0014 |
+
+## Notice templates
+
+| Rule | Testable statement | Enforcement | Source |
+| --- | --- | --- | --- |
+| Identifier | `<recipient>.<language>.v<major>@<hash12>`, with the recipient slug, form language, major revision, and the first twelve hex characters of the canonical set hash. | Registry; contract `templateVersion`. | Notices |
+| Hash canonicalisation | SHA-256 over a UTF-8 JSON array of ordered `{key, text}` objects; each text NFC, trimmed, whitespace runs collapsed; keys are Patrol's, not display labels; interpolated values excluded. | Registry; fixture test. | Notices |
+| Set version | `NoticeContent.templateVersion` and every `NoticeStatement.templateVersion` carry the same set identifier; per-statement versions are refused. | Application; contract. | Notices |
+| Approval gate | Approval is refused when the template is older than ninety days, a newer revision exists, or no verified template exists for the recipient and language. | Approval guard; `409`. | Notices |
+| Verification | The approving operator opens every source URL in a browser and confirms the text through the `currentStatements` attestation; approval stamps the verifier and time. | `NoticeTemplateSummary`; approval. | Notices |
+| Freeze | An approved notice keeps its identifier and statements; a later revision never rewrites it, and a draft under an older template is re-composed. | Immutable notice content. | Notices |
+| Re-read cadence | Every source is re-read before a release that changes notice rendering and at least quarterly; the access date is recorded. | Release checklist; registry. | Notices |
+| Fixture drift | A checked-in fixture per identifier holds the ordered statements and expected hash; a unit test recomputes it. | CI. | Notices |
+| Recipient wording | Google combines accuracy, perjury, and authority in one statement; Bing splits authority and adds a separate 512(f) acknowledgement; Yandex adds a required data-processing consent and a date. Patrol reproduces each recipient's own split and never invents a statement for another. | Registry content. | Notices |
+| Form language | Google follows the published localized text; Bing and Yandex are English only in the observed channel; Yandex eligibility is limited to US, EU, or Swiss rights holders. | Registry; profile eligibility. | Notices |
 
 ## Dashboard
 

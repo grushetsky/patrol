@@ -26,7 +26,7 @@ Passkeys are a compatible later addition — a second credential type on the sam
 | Login rate | Ten failures per account trigger a 15-minute lock; per-IP attempts are throttled separately, and both are audited |
 | Email | A deployment-configured SMTP relay sends invitations, resets, and operator alerts; it is not the authentication factor |
 
-The account's email address is its identifier and is unique. Changing it requires the current password and a fresh TOTP code, and revokes every other session.
+The account's email address is its identifier and is unique. Changing it requires the current password and a fresh TOTP code, and revokes every other session. The account also stores the operator's interface language, English or Russian; it drives the interface, API messages, and emails addressed to the operator. An invitation or setup email, sent before the account has a preference, is English.
 
 ## Sessions
 
@@ -91,7 +91,7 @@ Events are append-only and retained with the deployment's log retention; they ne
 
 ## What this implies for the model
 
-The model carries an `Operator` with its email, role, credential, TOTP enrollment, and invitation state; a `Session` row with its hash, timestamps, and revocation; and the `Signatory` as a value on the rights holder rather than an actor. The HTTP contract exposes sign-in, TOTP verification, enrollment, invitation, reset, session listing and revocation, and operator administration; it exposes no endpoint that returns a credential, a TOTP secret, or another operator's session token. The TypeSpec model that follows from this lives in the ticket "TypeSpec domain model".
+The model carries an `Operator` with its email, role, preferred interface language, credential, TOTP enrollment, and invitation state; a `Session` row with its hash, timestamps, and revocation; and the `Signatory` as a value on the rights holder rather than an actor. The HTTP contract exposes sign-in, TOTP verification, enrollment, invitation, reset, session listing and revocation, and operator administration; it exposes no endpoint that returns a credential, a TOTP secret, or another operator's session token. The TypeSpec model that follows from this lives in the ticket "TypeSpec domain model".
 
 ## Open risks
 

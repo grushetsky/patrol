@@ -228,6 +228,12 @@ enum GroupPriority {
   Low: "low",
 }
 
+@doc("A language the operator interface ships in.")
+enum InterfaceLanguage {
+  English: "en",
+  Russian: "ru",
+}
+
 @doc("A currency Patrol's acquisition cap supports.")
 enum Currency {
   Usd: "usd",

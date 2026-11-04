@@ -16,8 +16,9 @@ The handoff covers one single-tenant service: a rights holder's tracked titles, 
 | Contract conventions, operations, and emitter constraints | "_contract/HTTP.md_" |
 | Generated OpenAPI, JSON Schema, and client types | "_contract/generated/_", "_contract/verify/src/generated/_" |
 | Codegen configuration to copy | "_contract/package.json_", "_contract/tspconfig.yaml_", "_contract/verify/_" |
-| Screens, review queue, chart definitions | "_docs/design/dashboard-ui.md_", prototype at <https://grushetsky.github.io/patrol/dashboard-spec/> |
+| Screens, review queue, chart definitions, language policy | "_docs/design/dashboard-ui.md_", prototype at <https://grushetsky.github.io/patrol/dashboard-spec/> |
 | Scheduler, quota, matching, and submission rules | "_docs/design/_", compiled in "_docs/plan/implementation-rules.md_" |
+| Statement template texts and versioning | "_docs/design/notice-composition.md_"; research on `research/recipient-statements` at `fb1cc78` |
 | Build slices and dependencies | "_docs/plan/build-slices.md_" |
 | Open risks and which slice de-risks each | "_docs/plan/risks.md_" |
 | Vocabulary audit | "_docs/plan/glossary-audit.md_" |
@@ -28,8 +29,8 @@ The research branches referenced by the design documents (`research/search-engin
 
 The contract is a TypeSpec package with one service over two namespaces. It emits:
 
-- "_contract/generated/openapi/Patrol.openapi.yaml_" — OpenAPI 3.1, 76 paths and 89 operations.
-- "_contract/generated/json-schema/patrol_" — JSON Schema 2020-12, 327 definitions, each under an absolute `$id`.
+- "_contract/generated/openapi/Patrol.openapi.yaml_" — OpenAPI 3.1, 77 paths and 90 operations.
+- "_contract/generated/json-schema/patrol_" — JSON Schema 2020-12, 330 definitions, each under an absolute `$id`.
 - "_contract/verify/src/generated/openapi.d.ts_" — `openapi-typescript` types used by the client.
 
 A build effort copies the package and its configuration, keeps the generated artifacts committed, and wires the server to Ajv 2020 over the same bundle. The verification workspace is a working reference: `openapi-fetch` client, TanStack Start route with `queryOptions`, a Node stub that validates requests and responses, and an end-to-end check.
@@ -93,10 +94,8 @@ The sliced plan is in "_docs/plan/build-slices.md_". The order is driven by depe
 
 These are named so a build effort does not assume them silently:
 
-- **Recipient statement texts.** The contract carries a statement version and resolves fields, but the exact current text per recipient and how versions are tracked is undecided; it blocks notice composition (slice 6), not the slices before it. Tracked in "Recipient statement texts and template versions".
 - **Optimistic concurrency.** No `If-Match` or idempotency key exists; state guards and unique constraints are the boundary. A build effort that needs more records a new decision.
 - **Audit read surface.** Security events are written but no read endpoint is fixed; the session and operator lists cover the administrative views.
-- **UI language and notice language.** Strings externalise, but no product language is chosen. Tracked in "Product and notice language".
 - **Provider prices and caps.** The Google per-file cap and per-day quotas are learned at runtime; list prices are re-quoted before build and reviewed quarterly.
 
 ## Verification before building
@@ -104,7 +103,7 @@ These are named so a build effort does not assume them silently:
 ```bash
 cd contract
 npm install
-npm run check     # 43 Ajv checks over domain and HTTP payloads
+npm run check     # 45 Ajv checks over domain and HTTP payloads
 npm run verify    # client types, TanStack Start build, typecheck, stub end to end
 ```
 

@@ -33,13 +33,14 @@ flowchart LR
 - A Fastify 5 skeleton with the Ajv 2020 validator over the emitted bundle, the shared error handler that emits `ErrorBody`, request-id logging, and `/health`, `/system/version`, `/system/setup`.
 - The Drizzle migration harness with numbered forward-only SQL and a migration check on startup.
 - A TanStack Start shell that uses the generated client against `/api`, with one loader-backed page proving the round trip.
+- Bilingual string catalogues with a key-parity test and English as the fixed test locale.
 
 **Acceptance**
 
 - `docker compose up` serves `/health` with `200` and the SSR page renders.
 - A generated client call reaches a stub route, and an invalid body answers `400` with `fieldErrors`.
 - A fresh database migrates from zero, and the API refuses to start against a schema it does not expect.
-- CI fails when a TypeSpec model changes without regenerating the committed artifacts.
+- CI fails when a TypeSpec model changes without regenerating the committed artifacts, or when a Russian catalogue key is missing.
 
 **De-risks:** contract drift, local-to-cloud parity, generator and validator wiring, migration ordering.
 
@@ -53,7 +54,7 @@ flowchart LR
 - `patrol bootstrap` with a one-time setup token, idempotent and refusing once a rights holder exists; `patrol admin recover` for the last administrator.
 - Password hashing, TOTP enrolment and verification, recovery codes, the sign-in challenge, session rows, rotation, idle and absolute expiry.
 - The CSRF middleware and role guard driven by the contract's `x-patrol-roles` and the session.
-- The authentication, session, operator, and invitation operations from "_contract/HTTP.md_".
+- The authentication, session, operator, and invitation operations from "_contract/HTTP.md_", including the operator's stored interface language and its effect on API messages and emails.
 - Write-only security events for sign-in, invitation, credential change, session revocation, lockout, and recovery-code use.
 
 **Acceptance**
@@ -63,6 +64,7 @@ flowchart LR
 - A mutation without `X-Patrol-CSRF` is refused; a mutation outside the caller's role answers `403`.
 - Password, role, email, and TOTP changes revoke the sessions the design names.
 - Domain endpoints answer `503 setup_required` before bootstrap.
+- The language preference persists on the account and applies to later API messages and emails; an invitation email sent before the preference exists is English.
 
 **De-risks:** setup gating, credential recovery, lockout, CSRF, role enforcement, the bootstrap token's handling.
 
@@ -170,6 +172,8 @@ flowchart LR
 - Withdrawal and supersession with their guards, pending-submission cancellation, and reservation release.
 - The pack generator with `notice.html`, `fields.json`, the upload file, `handoff.md`, capture flags, content addressing, and signed downloads.
 - Notice read models with the derived status.
+- The statement-template registry, its identifier and fixture tests, the notice template summary, and the ninety-day approval gate.
+- The pack checklist in the approving operator's language at approval, recorded as the submission's `packLanguage`.
 
 **Acceptance**
 
@@ -177,6 +181,8 @@ flowchart LR
 - An approved notice cannot be mutated; a later capture never changes its cited captures; the pack hash is stable.
 - A dead newest capture flags the URL in the pack and never drops it silently.
 - Withdrawal after delivery is refused; supersession cancels a pending submission and creates the replacement draft.
+- The pack's checklist language is frozen at approval and exposed on the submission; a later preference change does not rewrite the pack.
+- A notice under a stale template, a newer revision, or no verified template cannot be approved; a fixture hash change fails CI.
 - The profile's first-five second-operator check is recorded where a second operator exists.
 - A rejection raises the threshold counter and a profile over 10% pauses scheduled drafting while on-demand stays available.
 
@@ -231,6 +237,7 @@ flowchart LR
 - Backup and restore runbook and a rehearsed quarterly drill; staging and production infrastructure; secrets provisioning; static egress.
 - Rate limits, the provider balance probe, load testing at the design point, and the launch checklist.
 - The remaining administrator screens: rights holder and signatory, recipient profiles, budget and capacity, operators and invitations, legal holds.
+- Translation completeness review across both catalogues, with English screenshot baselines.
 
 **Acceptance**
 

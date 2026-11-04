@@ -355,6 +355,9 @@ model Submission {
   @doc("The recipient profile used.")
   recipientProfileId: RecipientProfileId;
 
+  @doc("The language of the operator-facing handoff checklist, frozen from the approving operator at approval.")
+  packLanguage: InterfaceLanguage;
+
   @doc("How many delivery attempts the operator has made.")
   @minValue(0)
   attemptCount: int32;

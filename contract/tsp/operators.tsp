@@ -19,6 +19,9 @@ model Operator {
   @doc("The account's state.")
   state: OperatorState;
 
+  @doc("The interface language the operator chose. Absent until the first choice, when the API follows the request's language or English.")
+  preferredLanguage?: InterfaceLanguage;
+
   @doc("When the account was created, by bootstrap or invitation.")
   createdAt: utcDateTime;
 

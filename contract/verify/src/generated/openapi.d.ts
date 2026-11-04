@@ -89,6 +89,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/auth/preferences": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Set the interface language for this operator. The choice persists on the account and applies to emails addressed to the operator. */
+        patch: operations["Sessions_updatePreferences"];
+        trace?: never;
+    };
     "/auth/second-factor": {
         parameters: {
             query?: never;
@@ -1960,6 +1977,11 @@ export interface components {
              */
             version: number;
         };
+        /**
+         * @description A language the operator interface ships in.
+         * @enum {string}
+         */
+        "Domain.InterfaceLanguage": "en" | "ru";
         /** @description A single-use invitation for a new operator account, valid twenty-four hours. */
         "Domain.Invitation": {
             /** @description Patrol's own identifier. */
@@ -2111,6 +2133,8 @@ export interface components {
             role: components["schemas"]["Domain.OperatorRole"];
             /** @description The account's state. */
             state: components["schemas"]["Domain.OperatorState"];
+            /** @description The interface language the operator chose. Absent until the first choice, when the API follows the request's language or English. */
+            preferredLanguage?: components["schemas"]["Domain.InterfaceLanguage"];
             /**
              * Format: date-time
              * @description When the account was created, by bootstrap or invitation.
@@ -2871,6 +2895,8 @@ export interface components {
             channel: components["schemas"]["Domain.RecipientChannel"];
             /** @description The recipient profile used. */
             recipientProfileId: components["schemas"]["Domain.RecipientProfileId"];
+            /** @description The language of the operator-facing handoff checklist, frozen from the approving operator at approval. */
+            packLanguage: components["schemas"]["Domain.InterfaceLanguage"];
             /**
              * Format: int32
              * @description How many delivery attempts the operator has made.
@@ -4089,6 +4115,8 @@ export interface components {
              * @description When the pack was generated.
              */
             generatedAt: string;
+            /** @description The language of the operator-facing checklist, frozen at approval from the approving operator. */
+            packLanguage: components["schemas"]["Domain.InterfaceLanguage"];
             /** @description The recipient's form URL observed at approval. */
             formUrl?: components["schemas"]["Domain.Url"];
             /** @description The pack's artifacts. */
@@ -4282,6 +4310,8 @@ export interface components {
             submission?: components["schemas"]["Domain.Submission"];
             /** @description Whether the frozen handoff pack exists and can be downloaded. */
             packAvailable: boolean;
+            /** @description The statement template the notice was composed under, with the sources an approving operator re-reads. */
+            template: components["schemas"]["Http.NoticeTemplateSummary"];
         };
         /** @description A page of notices, newest first. */
         "Http.NoticePage": {
@@ -4326,6 +4356,27 @@ export interface components {
         "Http.NoticeSupersessionRequest": {
             /** @description The violations the replacement draft cites. It must differ from the superseded notice's set. */
             citedViolationIds: components["schemas"]["Domain.ViolationId"][];
+        };
+        /** @description The statement template a notice was composed under, and the sources an approving operator must re-read. */
+        "Http.NoticeTemplateSummary": {
+            /** @description The template set identifier, such as `bing.en.v1@e36eaf64fd3c`. */
+            version: string;
+            /** @description The recipient's source URLs for the statements, in the order they are checked. */
+            sourceUrls: components["schemas"]["Domain.Url"][];
+            /**
+             * Format: date-time
+             * @description When the registry text was last read from those sources.
+             */
+            accessedAt: string;
+            /** @description The operator who last verified the text. */
+            verifiedBy?: components["schemas"]["Domain.OperatorId"];
+            /**
+             * Format: date-time
+             * @description When the text was last verified.
+             */
+            verifiedAt?: string;
+            /** @description Whether the template was last verified more than ninety days ago, or a newer revision exists. */
+            stale: boolean;
         };
         /** @description The withdrawal of a draft, or of an approved notice whose submission is still pending. */
         "Http.NoticeWithdrawalRequest": {
@@ -5028,6 +5079,11 @@ export interface components {
              */
             titleGroupCount: number;
         };
+        /** @description The interface language an operator chooses. It persists on the account and applies to later emails and handoff checklists. */
+        "Http.UpdatePreferencesRequest": {
+            /** @description The interface language. English and Russian are supported. */
+            language: components["schemas"]["Domain.InterfaceLanguage"];
+        };
         /** @description A change to a recipient profile. Omitted fields keep their value. */
         "Http.UpdateRecipientProfileRequest": {
             /** @description The channel the submission runs through. */
@@ -5518,6 +5574,96 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description The request body is malformed or fails schema validation. */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Http.ErrorBody"];
+                };
+            };
+            /** @description No valid session, or the credentials offered are wrong. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Http.ErrorBody"];
+                };
+            };
+            /** @description The session is valid but the operator's role does not grant the operation. */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Http.ErrorBody"];
+                };
+            };
+            /** @description The request conflicts with the record's current state or with an existing record. */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Http.ConflictBody"];
+                };
+            };
+            /** @description The request is well formed but breaks a domain rule, such as a recipient's URL cap or an exhausted quota. */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Http.ErrorBody"];
+                };
+            };
+            /** @description Too many attempts, such as a locked account or a throttled address. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Http.ErrorBody"];
+                };
+            };
+            /** @description The deployment is not bootstrapped, or its schema version does not match the running image. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Http.ErrorBody"];
+                };
+            };
+        };
+    };
+    Sessions_updatePreferences: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description The token from the session payload, echoed in the header and compared with the cookie server side. */
+                "X-Patrol-CSRF": components["parameters"]["Http.CsrfToken"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["Http.UpdatePreferencesRequest"];
+            };
+        };
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Domain.Operator"];
+                };
             };
             /** @description The request body is malformed or fails schema validation. */
             400: {

@@ -265,6 +265,74 @@ paths:
       x-patrol-roles:
         - operator
         - administrator
+  /auth/preferences:
+    patch:
+      operationId: Sessions_updatePreferences
+      description: Set the interface language for this operator. The choice persists on the account and applies to emails addressed to the operator.
+      parameters:
+        - $ref: '#/components/parameters/Http.CsrfToken'
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Domain.Operator'
+        '400':
+          description: The request body is malformed or fails schema validation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Http.ErrorBody'
+        '401':
+          description: No valid session, or the credentials offered are wrong.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Http.ErrorBody'
+        '403':
+          description: The session is valid but the operator's role does not grant the operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Http.ErrorBody'
+        '409':
+          description: The request conflicts with the record's current state or with an existing record.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Http.ConflictBody'
+        '422':
+          description: The request is well formed but breaks a domain rule, such as a recipient's URL cap or an exhausted quota.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Http.ErrorBody'
+        '429':
+          description: Too many attempts, such as a locked account or a throttled address.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Http.ErrorBody'
+        '503':
+          description: The deployment is not bootstrapped, or its schema version does not match the running image.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Http.ErrorBody'
+      tags:
+        - Authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Http.UpdatePreferencesRequest'
+      security:
+        - ApiKeyAuth: []
+      x-patrol-roles:
+        - operator
+        - administrator
   /auth/second-factor:
     post:
       operationId: Authentication_secondFactor
@@ -6512,6 +6580,12 @@ components:
           minimum: 1
           description: The version of the phrase at issue time.
       description: An intent phrase an operator can edit, carrying the version a search result was issued under.
+    Domain.InterfaceLanguage:
+      type: string
+      enum:
+        - en
+        - ru
+      description: A language the operator interface ships in.
     Domain.Invitation:
       type: object
       required:
@@ -6757,6 +6831,9 @@ components:
         state:
           $ref: '#/components/schemas/Domain.OperatorState'
           description: The account's state.
+        preferredLanguage:
+          $ref: '#/components/schemas/Domain.InterfaceLanguage'
+          description: The interface language the operator chose. Absent until the first choice, when the API follows the request's language or English.
         createdAt:
           type: string
           format: date-time
@@ -7824,6 +7901,7 @@ components:
         - noticeId
         - channel
         - recipientProfileId
+        - packLanguage
         - attemptCount
         - createdAt
         - lifecycle
@@ -7840,6 +7918,9 @@ components:
         recipientProfileId:
           $ref: '#/components/schemas/Domain.RecipientProfileId'
           description: The recipient profile used.
+        packLanguage:
+          $ref: '#/components/schemas/Domain.InterfaceLanguage'
+          description: The language of the operator-facing handoff checklist, frozen from the approving operator at approval.
         attemptCount:
           type: integer
           format: int32
@@ -9727,6 +9808,7 @@ components:
         - packRef
         - packSha256
         - generatedAt
+        - packLanguage
         - artifacts
         - captureFlags
       properties:
@@ -9743,6 +9825,9 @@ components:
           type: string
           format: date-time
           description: When the pack was generated.
+        packLanguage:
+          $ref: '#/components/schemas/Domain.InterfaceLanguage'
+          description: The language of the operator-facing checklist, frozen at approval from the approving operator.
         formUrl:
           $ref: '#/components/schemas/Domain.Url'
           description: The recipient's form URL observed at approval.
@@ -10041,6 +10126,7 @@ components:
         - status
         - citedViolations
         - packAvailable
+        - template
       properties:
         notice:
           $ref: '#/components/schemas/Domain.Notice'
@@ -10059,6 +10145,9 @@ components:
         packAvailable:
           type: boolean
           description: Whether the frozen handoff pack exists and can be downloaded.
+        template:
+          $ref: '#/components/schemas/Http.NoticeTemplateSummary'
+          description: The statement template the notice was composed under, with the sources an approving operator re-reads.
       description: A notice with its cited violations, its submission, and the pack's availability.
     Http.NoticePage:
       type: object
@@ -10131,6 +10220,37 @@ components:
             $ref: '#/components/schemas/Domain.ViolationId'
           description: The violations the replacement draft cites. It must differ from the superseded notice's set.
       description: The corrected citation set of a replacement notice.
+    Http.NoticeTemplateSummary:
+      type: object
+      required:
+        - version
+        - sourceUrls
+        - accessedAt
+        - stale
+      properties:
+        version:
+          type: string
+          description: The template set identifier, such as `bing.en.v1@e36eaf64fd3c`.
+        sourceUrls:
+          type: array
+          items:
+            $ref: '#/components/schemas/Domain.Url'
+          description: The recipient's source URLs for the statements, in the order they are checked.
+        accessedAt:
+          type: string
+          format: date-time
+          description: When the registry text was last read from those sources.
+        verifiedBy:
+          $ref: '#/components/schemas/Domain.OperatorId'
+          description: The operator who last verified the text.
+        verifiedAt:
+          type: string
+          format: date-time
+          description: When the text was last verified.
+        stale:
+          type: boolean
+          description: Whether the template was last verified more than ninety days ago, or a newer revision exists.
+      description: The statement template a notice was composed under, and the sources an approving operator must re-read.
     Http.NoticeWithdrawalRequest:
       type: object
       properties:
@@ -11188,6 +11308,15 @@ components:
           format: int32
           description: How many title groups exist.
       description: The tiles under the tracked-titles chart.
+    Http.UpdatePreferencesRequest:
+      type: object
+      required:
+        - language
+      properties:
+        language:
+          $ref: '#/components/schemas/Domain.InterfaceLanguage'
+          description: The interface language. English and Russian are supported.
+      description: The interface language an operator chooses. It persists on the account and applies to later emails and handoff checklists.
     Http.UpdateRecipientProfileRequest:
       type: object
       properties:

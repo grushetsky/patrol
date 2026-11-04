@@ -77,6 +77,27 @@ model CitedViolationDetail {
   evidence: EvidenceSummary[];
 }
 
+@doc("The statement template a notice was composed under, and the sources an approving operator must re-read.")
+model NoticeTemplateSummary {
+  @doc("The template set identifier, such as `bing.en.v1@e36eaf64fd3c`.")
+  version: string;
+
+  @doc("The recipient's source URLs for the statements, in the order they are checked.")
+  sourceUrls: Url[];
+
+  @doc("When the registry text was last read from those sources.")
+  accessedAt: utcDateTime;
+
+  @doc("The operator who last verified the text.")
+  verifiedBy?: OperatorId;
+
+  @doc("When the text was last verified.")
+  verifiedAt?: utcDateTime;
+
+  @doc("Whether the template was last verified more than ninety days ago, or a newer revision exists.")
+  stale: boolean;
+}
+
 @doc("A notice with its cited violations, its submission, and the pack's availability.")
 model NoticeDetail {
   @doc("The notice record, with its frozen content once approved.")
@@ -93,6 +114,9 @@ model NoticeDetail {
 
   @doc("Whether the frozen handoff pack exists and can be downloaded.")
   packAvailable: boolean;
+
+  @doc("The statement template the notice was composed under, with the sources an approving operator re-reads.")
+  template: NoticeTemplateSummary;
 }
 
 @doc("The notice's draft was created and its violations are now reserved.")
@@ -215,6 +239,9 @@ model HandoffPack {
 
   @doc("When the pack was generated.")
   generatedAt: utcDateTime;
+
+  @doc("The language of the operator-facing checklist, frozen at approval from the approving operator.")
+  packLanguage: InterfaceLanguage;
 
   @doc("The recipient's form URL observed at approval.")
   formUrl?: Url;

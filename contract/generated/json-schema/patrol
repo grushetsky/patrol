@@ -3348,6 +3348,10 @@
                     "$ref": "https://patrol.example/schemas/RecipientProfileId.json",
                     "description": "The recipient profile used."
                 },
+                "packLanguage": {
+                    "$ref": "https://patrol.example/schemas/InterfaceLanguage.json",
+                    "description": "The language of the operator-facing handoff checklist, frozen from the approving operator at approval."
+                },
                 "attemptCount": {
                     "type": "integer",
                     "minimum": 0,
@@ -3382,6 +3386,7 @@
                 "noticeId",
                 "channel",
                 "recipientProfileId",
+                "packLanguage",
                 "attemptCount",
                 "createdAt",
                 "lifecycle"
@@ -3397,6 +3402,16 @@
             "type": "string",
             "format": "uuid",
             "description": "Identifier of a submission, one per notice delivery."
+        },
+        "InterfaceLanguage": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/schemas/InterfaceLanguage.json",
+            "type": "string",
+            "enum": [
+                "en",
+                "ru"
+            ],
+            "description": "A language the operator interface ships in."
         },
         "SubmissionLifecycle": {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -3696,6 +3711,10 @@
                 "state": {
                     "$ref": "https://patrol.example/schemas/OperatorState.json",
                     "description": "The account's state."
+                },
+                "preferredLanguage": {
+                    "$ref": "https://patrol.example/schemas/InterfaceLanguage.json",
+                    "description": "The interface language the operator chose. Absent until the first choice, when the API follows the request's language or English."
                 },
                 "createdAt": {
                     "type": "string",
@@ -5690,6 +5709,24 @@
                 "not": {}
             },
             "description": "An email change. The address is the sign-in identifier, so the current password and a fresh TOTP code are required."
+        },
+        "UpdatePreferencesRequest": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/schemas/UpdatePreferencesRequest.json",
+            "type": "object",
+            "properties": {
+                "language": {
+                    "$ref": "https://patrol.example/schemas/InterfaceLanguage.json",
+                    "description": "The interface language. English and Russian are supported."
+                }
+            },
+            "required": [
+                "language"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            },
+            "description": "The interface language an operator chooses. It persists on the account and applies to later emails and handoff checklists."
         },
         "OperatorSessionPage": {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -8263,6 +8300,52 @@
             },
             "description": "One cited violation with the work it copies and the captures the notice relies on."
         },
+        "NoticeTemplateSummary": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/schemas/NoticeTemplateSummary.json",
+            "type": "object",
+            "properties": {
+                "version": {
+                    "type": "string",
+                    "description": "The template set identifier, such as `bing.en.v1@e36eaf64fd3c`."
+                },
+                "sourceUrls": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "https://patrol.example/schemas/Url.json"
+                    },
+                    "description": "The recipient's source URLs for the statements, in the order they are checked."
+                },
+                "accessedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When the registry text was last read from those sources."
+                },
+                "verifiedBy": {
+                    "$ref": "https://patrol.example/schemas/OperatorId.json",
+                    "description": "The operator who last verified the text."
+                },
+                "verifiedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When the text was last verified."
+                },
+                "stale": {
+                    "type": "boolean",
+                    "description": "Whether the template was last verified more than ninety days ago, or a newer revision exists."
+                }
+            },
+            "required": [
+                "version",
+                "sourceUrls",
+                "accessedAt",
+                "stale"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            },
+            "description": "The statement template a notice was composed under, and the sources an approving operator must re-read."
+        },
         "NoticeDetail": {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "$id": "https://patrol.example/schemas/NoticeDetail.json",
@@ -8290,13 +8373,18 @@
                 "packAvailable": {
                     "type": "boolean",
                     "description": "Whether the frozen handoff pack exists and can be downloaded."
+                },
+                "template": {
+                    "$ref": "https://patrol.example/schemas/NoticeTemplateSummary.json",
+                    "description": "The statement template the notice was composed under, with the sources an approving operator re-reads."
                 }
             },
             "required": [
                 "notice",
                 "status",
                 "citedViolations",
-                "packAvailable"
+                "packAvailable",
+                "template"
             ],
             "unevaluatedProperties": {
                 "not": {}
@@ -8583,6 +8671,10 @@
                     "format": "date-time",
                     "description": "When the pack was generated."
                 },
+                "packLanguage": {
+                    "$ref": "https://patrol.example/schemas/InterfaceLanguage.json",
+                    "description": "The language of the operator-facing checklist, frozen at approval from the approving operator."
+                },
                 "formUrl": {
                     "$ref": "https://patrol.example/schemas/Url.json",
                     "description": "The recipient's form URL observed at approval."
@@ -8607,6 +8699,7 @@
                 "packRef",
                 "packSha256",
                 "generatedAt",
+                "packLanguage",
                 "artifacts",
                 "captureFlags"
             ],
