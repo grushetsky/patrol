@@ -1,0 +1,25 @@
+{
+  "name": "@patrol/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Forward-only migrations and the startup schema check shared by the API and the worker (ADR 0028).",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "@types/pg": "^8.23.1",
+    "typescript": "5.9.3"
+  }
+}

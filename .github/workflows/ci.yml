@@ -73,9 +73,15 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # --if-present keeps the pipeline green until slice 0 fills in the
-      # per-package scripts; a package that has a script still runs it and
-      # propagates its failure.
+      # The typed clients in apps/api and apps/web are generated from the
+      # committed OpenAPI document, and the shared packages' declaration
+      # files from their sources; regenerate both and compare so a contract
+      # or package change shipped without a regen fails the build.
+      - name: Fail when generated artifacts are stale
+        run: node scripts/check-generated-fresh.mjs
+
+      # --if-present keeps the pipeline green for packages without a script;
+      # a package that has a script still runs it and propagates its failure.
       - name: Typecheck
         run: pnpm -r --if-present run typecheck
 
@@ -115,6 +121,10 @@ jobs:
           --health-retries 20
     env:
       DATABASE_URL: postgres://patrol:patrol@localhost:5432/patrol
+      # The postgres service listens on 5432 and creates its patrol database
+      # fresh on every run, so the suite migrates from zero exactly like the
+      # local docker-compose.test.yml stack (127.0.0.1:5433/patrol_test).
+      TEST_DATABASE_URL: postgres://patrol:patrol@localhost:5432/patrol
       PATROL_OBJECT_STORE_ENDPOINT: http://localhost:9000
     steps:
       - name: Check out

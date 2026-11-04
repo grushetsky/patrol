@@ -1,0 +1,8 @@
+{
+  "system.title": "Patrol",
+  "system.greeting": "Patrol is up and watching.",
+  "system.health.label": "API health",
+  "system.health.value.ok": "healthy",
+  "errors.validation_failed": "The request is invalid.",
+  "errors.internal_error": "Patrol hit an unexpected error."
+}

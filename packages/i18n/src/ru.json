@@ -1,0 +1,8 @@
+{
+  "system.title": "Patrol",
+  "system.greeting": "Patrol запущен и ведёт наблюдение.",
+  "system.health.label": "Состояние API",
+  "system.health.value.ok": "исправно",
+  "errors.validation_failed": "Запрос составлен неверно.",
+  "errors.internal_error": "В Patrol произошла непредвиденная ошибка."
+}

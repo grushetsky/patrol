@@ -4,5 +4,20 @@
   "private": true,
   "type": "module",
   "description": "Bilingual string catalogues with a key-parity guarantee.",
-  "scripts": {}
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "typescript": "5.9.3",
+    "vitest": "^5.1.0"
+  }
 }

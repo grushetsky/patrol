@@ -4,5 +4,20 @@
   "private": true,
   "type": "module",
   "description": "Worker process for pg-boss queues and evidence capture.",
-  "scripts": {}
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@patrol/db": "workspace:*",
+    "pg": "^8.23.1",
+    "pino": "^10.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "@types/pg": "^8.23.1",
+    "tsx": "^4.23.15",
+    "typescript": "5.9.3"
+  }
 }

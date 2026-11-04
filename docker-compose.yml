@@ -1,7 +1,7 @@
 # Local development topology: PostgreSQL 18, MinIO, the API, the worker, and
 # the SSR app (docs/adr/0005, docs/adr/0006, docs/adr/0027). Everything binds
-# to loopback only. The api/worker/web images are built from docker/ and get
-# their real payloads in slice 0.
+# to loopback only. The migrate task is a one-shot service from the API image
+# (ADR 0028): the api and the worker start only after it completed.
 name: patrol
 
 services:
@@ -40,6 +40,22 @@ services:
       retries: 12
       start_period: 5s
 
+  # One-shot migration runner from the same image as the API (ADR 0028):
+  # applies every pending forward-only migration, exits 0, and only then do
+  # the api and worker services start.
+  migrate:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://patrol:patrol@db:5432/patrol
+    command: ["node", "apps/api/dist/db/migrate-cli.js"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
+
   api:
     build:
       context: .
@@ -55,6 +71,8 @@ services:
         condition: service_healthy
       minio:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     # node:26-slim ships neither curl nor wget, so the probe is plain Node.
     healthcheck:
       test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:8080/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
@@ -74,6 +92,20 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      minio:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    # Process-alive probe: the worker touches a heartbeat file every 30 s and
+    # the check fails once the file is older than 90 s.
+    # TODO(slice 3): switch to the queue heartbeat (pg-boss) the deployment
+    # topology specifies for the worker.
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"try { const s = require('node:fs').statSync(process.env.PATROL_WORKER_HEARTBEAT_FILE ?? '/tmp/patrol-worker-heartbeat'); process.exit(Date.now() - s.mtimeMs < 90_000 ? 0 : 1) } catch { process.exit(1) }\""]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 15s
 
   web:
     build:
@@ -81,13 +113,20 @@ services:
       dockerfile: docker/Dockerfile.web
     environment:
       NODE_ENV: production
-      # Slice 0 finalises the SSR-to-API wiring name.
-      PATROL_API_BASE_URL: http://api:8080
+      # The SSR loader calls the API through the internal compose network;
+      # the browser goes through the ALB's same-origin /api instead.
+      PATROL_API_INTERNAL_URL: http://api:8080/api
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:
       api:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 15s
 
 volumes:
   patrol-db-data:
