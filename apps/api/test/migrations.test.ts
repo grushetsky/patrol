@@ -101,8 +101,9 @@ describe("committed migrations", () => {
       "0003_scheduling",
       "0004_evidence",
       "0005_matching_review",
+      "0006_notices",
     ]);
-    expect(result.version).toBe("0005_matching_review");
+    expect(result.version).toBe("0006_notices");
   });
 });
 

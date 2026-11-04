@@ -1,6 +1,8 @@
 import { Pool } from "pg";
 import { buildApp } from "./app.js";
 import { loadRuntimeConfig } from "./config.js";
+import { NoticeService } from "./notices/service.js";
+import { storeFromEnvironment } from "./evidence/store.js";
 import { loadContract } from "./contract.js";
 import {
   assertSchemaCompatible,
@@ -23,15 +25,34 @@ try {
 }
 
 const contract = await loadContract(config.schemaPath);
+const notices = new NoticeService(pool, storeFromEnvironment());
 const app = buildApp({
   db: pool,
   contract,
+  notices,
   buildVersion: process.env.BUILD_VERSION ?? "0.1.0",
   expectedMigration,
 });
+let composing = false;
+const noticeTimer = setInterval(() => {
+  if (composing) {
+    return;
+  }
+  composing = true;
+  void notices
+    .composeScheduled()
+    .catch((error) => {
+      app.log.error(error);
+    })
+    .finally(() => {
+      composing = false;
+    });
+}, 60_000);
+noticeTimer.unref();
 
 const shutdown = async (signal: string) => {
   app.log.info({ signal }, "shutting down");
+  clearInterval(noticeTimer);
   await app.close();
   await pool.end();
   process.exit(0);

@@ -20,6 +20,10 @@ import { CandidateService } from "./review/service.js";
 import { registerCandidateRoutes } from "./review/routes.js";
 import { ViolationService } from "./violations/service.js";
 import { registerViolationRoutes } from "./violations/routes.js";
+import { NoticeService } from "./notices/service.js";
+import { registerNoticeRoutes } from "./notices/routes.js";
+import { SubmissionService } from "./submissions/service.js";
+import { registerSubmissionRoutes } from "./submissions/routes.js";
 import {
   storeFromEnvironment,
   type ArtifactStore,
@@ -37,6 +41,8 @@ export interface AppOptions {
   scans?: ScanService;
   candidates?: CandidateService;
   violations?: ViolationService;
+  notices?: NoticeService;
+  submissions?: SubmissionService;
   evidenceStore?: ArtifactStore;
 }
 
@@ -51,10 +57,12 @@ export function buildApp(options: AppOptions): FastifyInstance {
   const scans = options.scans ?? new ScanService(options.db);
   const candidates = options.candidates ?? new CandidateService(options.db);
   const violations = options.violations ?? new ViolationService(options.db);
-  const evidence = new EvidenceService(
-    options.db,
-    options.evidenceStore ?? storeFromEnvironment(),
-  );
+  const artifactStore = options.evidenceStore ?? storeFromEnvironment();
+  const notices =
+    options.notices ?? new NoticeService(options.db, artifactStore);
+  const submissions =
+    options.submissions ?? new SubmissionService(options.db);
+  const evidence = new EvidenceService(options.db, artifactStore);
   const guards = createAuthGuards(auth);
 
   app.setErrorHandler(async (error, request, reply) => {
@@ -117,6 +125,8 @@ export function buildApp(options: AppOptions): FastifyInstance {
       registerScanRoutes(api, scans, options.contract, guards);
       registerCandidateRoutes(api, candidates, options.contract, guards);
       registerViolationRoutes(api, violations, options.contract, guards);
+      registerNoticeRoutes(api, notices, options.contract, guards);
+      registerSubmissionRoutes(api, submissions, options.contract, guards);
       registerEvidenceRoutes(api, evidence, options.contract, guards);
     },
     { prefix: "/api" },
