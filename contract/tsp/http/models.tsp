@@ -62,6 +62,7 @@ enum ErrorCode {
   RateLimited: "rate_limited",
   UpstreamUnavailable: "upstream_unavailable",
   NotSupported: "not_supported",
+  InternalError: "internal_error",
 }
 
 @doc("One invalid field in a rejected request.")

@@ -9674,6 +9674,7 @@ components:
         - rate_limited
         - upstream_unavailable
         - not_supported
+        - internal_error
       description: A stable, machine-readable error code. The UI branches on it; the message is for a human.
     Http.EvidenceDetail:
       type: object
