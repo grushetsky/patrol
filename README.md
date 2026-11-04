@@ -21,9 +21,9 @@ docker compose up --build
 
 - API health: <http://localhost:3000/health>
 - Interface: <http://localhost:8080>
-- MinIO console: <http://localhost:9001>
+- S3 endpoint: <http://localhost:9000>
 
-The API, worker, SSR app, PostgreSQL 18, MinIO, and the migration task run under Compose. The web container proxies browser API calls through its server.
+The API, worker, SSR app, PostgreSQL 18, S3Mock, and the migration task run under Compose. The web container proxies browser API calls through its server.
 
 Host-side checks:
 
@@ -59,7 +59,7 @@ Open the setup flow with that token, set the password, and enroll TOTP. `patrol 
 
 ### Evidence storage
 
-Captures run in the worker through Playwright and Chromium. Artifacts are content-addressed in the S3-compatible bucket named by `S3_BUCKET`, with `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, and `S3_SECRET_ACCESS_KEY` for local MinIO. Compose creates the bucket with versioning and Object Lock; the API answers artifact downloads with short-lived, version-pinned signed URLs.
+Captures run in the worker through Playwright and Chromium. Artifacts are content-addressed in the S3-compatible bucket named by `S3_BUCKET`, with `S3_ENDPOINT`, `S3_ACCESS_KEY_ID`, and `S3_SECRET_ACCESS_KEY` for local S3Mock. Compose creates the bucket with versioning; local Object Lock is disabled because S3Mock does not enforce it, so production keeps the stronger storage guarantee. The API answers artifact downloads with short-lived, version-pinned signed URLs.
 
 ### Acquisition providers
 
