@@ -4,6 +4,10 @@
   "private": true,
   "type": "module",
   "description": "TypeSpec source of truth for Patrol's domain and HTTP contracts.",
+  "exports": {
+    "./openapi.yaml": "./generated/openapi/Patrol.openapi.yaml",
+    "./schemas-bundle": "./generated/json-schema/patrol"
+  },
   "scripts": {
     "compile": "tsp compile tsp/main.tsp && node scripts/format-generated.mjs",
     "check": "npm run compile && node scripts/check-schemas.mjs",

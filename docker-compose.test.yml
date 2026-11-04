@@ -1,0 +1,35 @@
+# Throwaway dependencies for database tests: a second PostgreSQL and a second
+# MinIO on shifted loopback ports so they never collide with docker-compose.yml.
+# Used by `pnpm ci:local:db` and the CI integration job.
+name: patrol-test
+
+services:
+  db-test:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: patrol
+      POSTGRES_PASSWORD: patrol
+      POSTGRES_DB: patrol_test
+    ports:
+      - "127.0.0.1:5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U patrol -d patrol_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+  minio-test:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: patrolminio
+      MINIO_ROOT_PASSWORD: patrolminio
+    ports:
+      - "127.0.0.1:9002:9000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s

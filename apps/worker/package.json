@@ -1,0 +1,8 @@
+{
+  "name": "@patrol/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Worker process for pg-boss queues and evidence capture.",
+  "scripts": {}
+}

@@ -1,0 +1,8 @@
+{
+  "name": "@patrol/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "TanStack Start SSR application calling the API through the generated client.",
+  "scripts": {}
+}

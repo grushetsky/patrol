@@ -1,0 +1,94 @@
+# Local development topology: PostgreSQL 18, MinIO, the API, the worker, and
+# the SSR app (docs/adr/0005, docs/adr/0006, docs/adr/0027). Everything binds
+# to loopback only. The api/worker/web images are built from docker/ and get
+# their real payloads in slice 0.
+name: patrol
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: patrol
+      POSTGRES_PASSWORD: patrol
+      POSTGRES_DB: patrol
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - patrol-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U patrol -d patrol"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+  minio:
+    image: minio/minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: patrolminio
+      MINIO_ROOT_PASSWORD: patrolminio
+    ports:
+      - "127.0.0.1:9000:9000"
+      - "127.0.0.1:9001:9001"
+    volumes:
+      - patrol-minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 5s
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.api
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://patrol:patrol@db:5432/patrol
+      PATROL_OBJECT_STORE_ENDPOINT: http://minio:9000
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    # node:26-slim ships neither curl nor wget, so the probe is plain Node.
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://127.0.0.1:8080/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))\""]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 15s
+
+  worker:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.worker
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgres://patrol:patrol@db:5432/patrol
+      PATROL_OBJECT_STORE_ENDPOINT: http://minio:9000
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.web
+    environment:
+      NODE_ENV: production
+      # Slice 0 finalises the SSR-to-API wiring name.
+      PATROL_API_BASE_URL: http://api:8080
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  patrol-db-data:
+  patrol-minio-data:

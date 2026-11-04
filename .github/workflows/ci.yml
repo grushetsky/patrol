@@ -1,0 +1,136 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  # npm islands: the contract package and its TanStack Start verification app
+  # keep their own npm lockfiles (docs/adr/0007).
+  contract:
+    name: Contract (TypeSpec, Ajv, verification app)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node 26
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: npm
+          cache-dependency-path: |
+            contract/package-lock.json
+            contract/verify/package-lock.json
+
+      - name: Install contract dependencies
+        run: npm ci
+        working-directory: contract
+
+      - name: Compile TypeSpec and check schemas
+        run: npm run check
+        working-directory: contract
+
+      - name: Install verification app dependencies
+        run: npm ci
+        working-directory: contract/verify
+
+      - name: Verify the generated artifacts against TanStack Start
+        run: npm run verify
+        working-directory: contract
+
+      - name: Fail when generated artifacts are stale
+        run: |
+          npm run compile
+          git diff --exit-code -- contract/generated
+        working-directory: contract
+
+  workspace:
+    name: Workspace (typecheck, unit tests)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      # No version: pnpm/action-setup reads packageManager from package.json.
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node 26
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # --if-present keeps the pipeline green until slice 0 fills in the
+      # per-package scripts; a package that has a script still runs it and
+      # propagates its failure.
+      - name: Typecheck
+        run: pnpm -r --if-present run typecheck
+
+      - name: Unit tests
+        run: pnpm -r --if-present run test:unit
+
+  integration:
+    name: Integration (PostgreSQL, MinIO)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: patrol
+          POSTGRES_PASSWORD: patrol
+          POSTGRES_DB: patrol
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U patrol -d patrol"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+      # minio/minio needs an explicit `server /data` command, which service
+      # containers cannot take; the Bitnami image boots the server by default.
+      minio:
+        image: bitnami/minio:latest
+        env:
+          MINIO_ROOT_USER: patrolminio
+          MINIO_ROOT_PASSWORD: patrolminio
+        ports:
+          - 9000:9000
+        options: >-
+          --health-cmd "curl -fsS http://localhost:9000/minio/health/live"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      DATABASE_URL: postgres://patrol:patrol@localhost:5432/patrol
+      PATROL_OBJECT_STORE_ENDPOINT: http://localhost:9000
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node 26
+        uses: actions/setup-node@v4
+        with:
+          node-version: 26
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Database tests
+        run: pnpm -C apps/api run --if-present test:db

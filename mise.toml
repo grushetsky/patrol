@@ -1,5 +1,7 @@
 [tools]
 harper-cli = "3.0.0"
 hk = "2.11.0"
+node = "26.4.0"
+pnpm = "10.34.9"
 shellcheck = "0.11.0"
 taplo = "0.10.0"

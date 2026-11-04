@@ -1,0 +1,23 @@
+{
+  "name": "patrol",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.9",
+  "description": "Patrol — anti-piracy SERP monitoring.",
+  "engines": {
+    "node": ">=26 <27",
+    "pnpm": ">=10"
+  },
+  "scripts": {
+    "check": "pnpm -r --if-present run check",
+    "verify": "pnpm -r --if-present run verify",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "test": "pnpm -r --if-present run test",
+    "test:unit": "pnpm -r --if-present run test:unit",
+    "test:db": "pnpm -r --if-present run test:db",
+    "lint": "hk check",
+    "ci:local": "pnpm install --frozen-lockfile && pnpm -C contract run check && npm --prefix contract/verify ci && pnpm -C contract run verify && pnpm -r --if-present run typecheck && pnpm -r --if-present run test:unit",
+    "ci:local:db": "docker compose -f docker-compose.test.yml up --detach --wait && DATABASE_URL='postgres://patrol:patrol@localhost:5433/patrol' pnpm -r --if-present run test:db; status=$?; docker compose -f docker-compose.test.yml down; exit $status"
+  }
+}

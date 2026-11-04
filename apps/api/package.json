@@ -1,0 +1,8 @@
+{
+  "name": "@patrol/api",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Fastify 5 API serving the contract from @patrol/contract.",
+  "scripts": {}
+}

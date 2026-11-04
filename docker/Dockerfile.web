@@ -1,0 +1,26 @@
+# SSR service image (TanStack Start). Same workspace layout as the other
+# services; served on port 3000 and fronted by the ALB for everything that is
+# not /api (docs/design/deployment-topology.md). No HEALTHCHECK: compose does
+# not define one for the web service.
+
+FROM node:26-slim AS deps
+WORKDIR /app
+RUN npm install --global pnpm@10.34.9
+COPY pnpm-workspace.yaml package.json pnpm-lock.yaml ./
+COPY contract/package.json contract/package.json
+COPY apps/api/package.json apps/api/package.json
+COPY apps/worker/package.json apps/worker/package.json
+COPY apps/web/package.json apps/web/package.json
+COPY packages/i18n/package.json packages/i18n/package.json
+RUN pnpm install --frozen-lockfile --filter '@patrol/web...'
+
+FROM deps AS build
+COPY . .
+RUN pnpm --filter '@patrol/web...' run build
+
+FROM node:26-slim AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY --from=build /app /app
+EXPOSE 3000
+CMD ["node", "apps/web/dist/index.js"]

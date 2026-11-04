@@ -1,0 +1,27 @@
+# Keep image build contexts small and host state out of the images.
+.git
+.github
+.agents
+.claude
+.claude.json
+.env
+.env.*
+!.env.example
+.pnpm-store
+node_modules
+**/node_modules
+dist
+**/dist
+coverage
+dev-report
+logs
+work
+test-results
+playwright-report
+*.log
+.DS_Store
+docker-compose.yml
+docker-compose.test.yml
+mise.toml
+mise.macos-x64.toml
+hk.pkl

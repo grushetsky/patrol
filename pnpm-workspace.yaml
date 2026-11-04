@@ -1,0 +1,6 @@
+packages:
+  - apps/*
+  - packages/*
+  - contract
+# contract/verify stays outside the workspace: it is an npm island that pins
+# its own dependency tree (package-lock.json) for TanStack Start verification.
