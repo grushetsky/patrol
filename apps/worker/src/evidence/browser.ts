@@ -181,6 +181,11 @@ export class PlaywrightCapture implements BrowserCapture {
     }
   }
 
+  /** Launch the browser ahead of the first capture, so a cold start is not charged to the capture budget. */
+  async start(): Promise<void> {
+    await this.browser();
+  }
+
   async close(): Promise<void> {
     const browser = await this.browserPromise?.catch(() => undefined);
     await browser?.close();
