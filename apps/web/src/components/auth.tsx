@@ -130,7 +130,7 @@ export function AuthFlow({
           {mode === "signIn" ? (
             <form className="space-y-5" onSubmit={handleSignIn}>
               <header className="space-y-1">
-                <h1 className="text-2xl font-semibold tracking-tight">{t("authSignInTitle")}</h1>
+                <h1 className="auth-title text-3xl">{t("authSignInTitle")}</h1>
                 <p className="text-sm text-[var(--muted)]">{t("authSignInLead")}</p>
               </header>
               <Field label={t("authEmail")}>
@@ -173,7 +173,7 @@ export function AuthFlow({
           {mode === "secondFactor" ? (
             <form className="space-y-5" onSubmit={handleSecondFactor}>
               <header className="space-y-1">
-                <h1 className="text-2xl font-semibold tracking-tight">{t("authSecondFactorTitle")}</h1>
+                <h1 className="auth-title text-3xl">{t("authSecondFactorTitle")}</h1>
                 <p className="text-sm text-[var(--muted)]">{t("authSecondFactorLead")}</p>
               </header>
               <Field label={method === "totp" ? t("authCode") : t("authRecoveryCode")}>
@@ -209,7 +209,7 @@ export function AuthFlow({
           {mode === "setup" ? (
             <form className="space-y-5" onSubmit={handleSetup}>
               <header className="space-y-1">
-                <h1 className="text-2xl font-semibold tracking-tight">{t("authSetupTitle")}</h1>
+                <h1 className="auth-title text-3xl">{t("authSetupTitle")}</h1>
                 <p className="text-sm text-[var(--muted)]">{t("authSetupLead")}</p>
               </header>
               {!setup.bootstrapped ? (
@@ -259,7 +259,7 @@ export function AuthFlow({
           {mode === "enrollment" && enrollment ? (
             <form className="space-y-5" onSubmit={handleEnrollment}>
               <header className="space-y-1">
-                <h1 className="text-2xl font-semibold tracking-tight">{t("authEnrollmentTitle")}</h1>
+                <h1 className="auth-title text-3xl">{t("authEnrollmentTitle")}</h1>
                 <p className="text-sm text-[var(--muted)]">{t("authEnrollmentLead")}</p>
               </header>
               <div className="space-y-2 rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3 font-mono text-xs">
@@ -296,7 +296,7 @@ export function AuthFlow({
           {mode === "recoveryCodes" ? (
             <div className="space-y-5">
               <header className="space-y-1">
-                <h1 className="text-2xl font-semibold tracking-tight">{t("authRecoveryCodesTitle")}</h1>
+                <h1 className="auth-title text-3xl">{t("authRecoveryCodesTitle")}</h1>
                 <p className="text-sm text-[var(--muted)]">{t("authRecoveryCodesLead")}</p>
               </header>
               <div className="grid grid-cols-2 gap-2 rounded-xl border border-[var(--border)] bg-[var(--bg)] p-4 font-mono text-sm">

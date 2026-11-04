@@ -13,9 +13,9 @@ export function Button({
 }: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }) {
   const variants: Record<ButtonVariant, string> = {
     primary:
-      "bg-[var(--accent)] text-[#08111c] hover:brightness-110 disabled:opacity-50",
+      "border border-[color-mix(in_srgb,var(--accent)_70%,white)] bg-[linear-gradient(180deg,color-mix(in_srgb,var(--accent)_88%,white),var(--accent))] text-[#08111c] shadow-[0_10px_26px_-14px_var(--accent)] hover:brightness-110 disabled:opacity-50",
     secondary:
-      "border border-[var(--border)] bg-[var(--surface-raised)] text-[var(--fg)] hover:border-[var(--accent)]",
+      "border border-[var(--glass-border)] bg-[var(--glass-bg)] text-[var(--fg)] backdrop-blur-xl hover:border-[var(--accent)]",
     ghost: "text-[var(--muted)] hover:bg-[var(--surface-raised)] hover:text-[var(--fg)]",
     danger:
       "border border-[color-mix(in_srgb,var(--error)_55%,var(--border))] text-[var(--error)] hover:bg-[color-mix(in_srgb,var(--error)_12%,transparent)]",
@@ -41,10 +41,7 @@ export function Card({
 }) {
   return (
     <section
-      className={cn(
-        "rounded-2xl border border-[var(--border)] bg-[var(--surface)]/90 shadow-[0_18px_50px_-30px_rgba(0,0,0,0.7)]",
-        className,
-      )}
+      className={cn("glass", className)}
     >
       {children}
     </section>
@@ -112,7 +109,7 @@ export function Input({
     <input
       {...props}
       className={cn(
-        "w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm text-[var(--fg)] outline-none placeholder:text-[var(--muted)] focus:border-[var(--accent)]",
+        "w-full rounded-[14px] border border-[var(--glass-border)] bg-[rgba(255,255,255,0.05)] px-3 py-2 text-sm text-[var(--fg)] outline-none backdrop-blur-xl placeholder:text-[var(--muted)] focus:border-[var(--accent)]",
         className,
       )}
     />

@@ -10,7 +10,7 @@ export function NextSlice({ section }: { section: MessageKey }) {
         <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
           {translate(language, "appTitle")}
         </p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight">
+        <h1 className="page-title mt-1 text-4xl md:text-5xl">
           {translate(language, section)}
         </h1>
       </header>

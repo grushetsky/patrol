@@ -87,8 +87,8 @@ export function AppShell({
 
   return (
     <div className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-[var(--border)] bg-[color-mix(in_srgb,var(--bg)_82%,transparent)] backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-3 px-4 py-3 md:px-6">
+      <header className="topbar-glass">
+        <div className="flex flex-wrap items-center gap-3 px-4 py-3 md:px-5">
           <Link to="/dashboard" className="flex items-center gap-2 text-sm font-semibold tracking-tight">
             <span className="flex h-8 w-8 items-center justify-center rounded-xl border border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[var(--accent)]">
               <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.8">
@@ -99,7 +99,7 @@ export function AppShell({
             {t("appTitle")}
           </Link>
 
-          <nav className="order-3 flex w-full items-center gap-1 overflow-x-auto md:order-none md:w-auto md:flex-1">
+          <nav className="order-3 flex w-full items-center gap-1 overflow-x-auto rounded-[18px] border border-[var(--glass-border)] bg-[rgba(255,255,255,0.045)] p-1 backdrop-blur-xl md:order-none md:w-auto md:flex-1">
             {NAV.map((item) => {
               const value = item.badge ? badgeValue(item.badge) : 0;
               return (
@@ -109,7 +109,7 @@ export function AppShell({
                   className="relative inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm text-[var(--muted)] transition hover:bg-[var(--surface-raised)] hover:text-[var(--fg)]"
                   activeProps={{
                     className:
-                      "relative inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg px-3 py-2 text-sm bg-[var(--surface-raised)] text-[var(--fg)] font-medium",
+                      "relative inline-flex items-center gap-1.5 whitespace-nowrap rounded-[14px] border border-[var(--glass-border)] bg-[var(--glass-bg)] px-3 py-2 text-sm font-medium text-[var(--fg)] shadow-[inset_0_1px_0_rgba(255,255,255,0.16)]",
                   }}
                 >
                   {t(item.key)}
@@ -167,7 +167,7 @@ export function AppShell({
         ) : null}
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6">
+      <main className="stack-page px-4 py-8 md:px-2 md:py-10">
         <LanguageContext.Provider value={language}>
           <Outlet />
         </LanguageContext.Provider>

@@ -106,7 +106,7 @@ function DashboardPage() {
           <p className="text-xs uppercase tracking-[0.2em] text-[var(--muted)]">
             {t("appTitle")} · {t("dashboard")}
           </p>
-          <h1 className="mt-1 text-3xl font-semibold tracking-tight">{t("dashboard")}</h1>
+          <h1 className="page-title mt-1 text-4xl md:text-5xl">{t("dashboard")}</h1>
         </div>
         <Button variant="secondary" onClick={() => void refresh()} disabled={refreshing}>
           {refreshing ? <Spinner label={t("loading")} /> : t("dashRefresh")}
@@ -192,7 +192,7 @@ function DashboardPage() {
                     metric: event.target.value as ChartMetric,
                   }))
                 }
-                className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
+                className="glass-select w-full px-3 py-2 text-sm"
               >
                 {METRICS.map((metric) => (
                   <option key={metric.value} value={metric.value}>
@@ -210,7 +210,7 @@ function DashboardPage() {
                     windowDays: Number(event.target.value) as ChartWindow,
                   }))
                 }
-                className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
+                className="glass-select w-full px-3 py-2 text-sm"
               >
                 {WINDOWS.map((window) => (
                   <option key={window.value} value={window.value}>
@@ -228,7 +228,7 @@ function DashboardPage() {
                     groupBy: event.target.value as ChartGrouping,
                   }))
                 }
-                className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
+                className="glass-select w-full px-3 py-2 text-sm"
               >
                 {GROUPINGS.map((grouping) => (
                   <option key={grouping.value} value={grouping.value}>
@@ -247,7 +247,7 @@ function DashboardPage() {
                       basis: event.target.value as ResolvedBasis,
                     }))
                   }
-                  className="w-full rounded-lg border border-[var(--border)] bg-[var(--bg)] px-3 py-2 text-sm"
+                  className="glass-select w-full px-3 py-2 text-sm"
                 >
                   {BASES.map((basis) => (
                     <option key={basis.value} value={basis.value}>
@@ -294,12 +294,12 @@ function CounterCard({
     error: "var(--error)",
   };
   return (
-    <Card className="p-4">
+    <Card className={cn("p-5", `glass-${tone}`)}>
       <div className="flex items-center justify-between">
-        <span className="text-xs uppercase tracking-wide text-[var(--muted)]">{label}</span>
+        <span className="text-xs uppercase tracking-[0.1em] text-[var(--muted)]">{label}</span>
         <span className="h-2.5 w-2.5 rounded-full" style={{ background: colors[tone] }} />
       </div>
-      <p className="mt-3 text-3xl font-semibold tabular-nums">{value}</p>
+      <p className="mt-4 text-4xl font-semibold tabular-nums">{value}</p>
     </Card>
   );
 }
@@ -319,7 +319,7 @@ function EngineRow({
         : "success";
   const width = Math.min(100, Math.max(0, engine.percentUsed));
   return (
-    <div className="rounded-xl border border-[var(--border)] bg-[var(--bg)] p-3">
+    <div className="glass-inset p-3">
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <span className="text-sm font-medium capitalize">{engine.engine}</span>
@@ -534,7 +534,7 @@ function TileRow({
       {tiles.map((tile) => (
         <div
           key={tile.label}
-          className="rounded-xl border border-[var(--border)] bg-[var(--bg)] px-3 py-2"
+          className="glass-inset px-3 py-2"
         >
           <p className="text-[10px] uppercase tracking-wide text-[var(--muted)]">{tile.label}</p>
           <p className="mt-1 text-xl font-semibold tabular-nums">{tile.value}</p>
