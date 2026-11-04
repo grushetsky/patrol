@@ -28,7 +28,7 @@ async function harness(
     contract,
     auth: service,
     buildVersion: "0.1.0",
-    expectedMigration: "0007_dashboard",
+    expectedMigration: "0008_legal_holds",
     logger: false,
   });
   return { app, service, db };

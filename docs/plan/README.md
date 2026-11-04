@@ -29,8 +29,8 @@ The research branches referenced by the design documents (`research/search-engin
 
 The contract is a TypeSpec package with one service over two namespaces. It emits:
 
-- "_contract/generated/openapi/Patrol.openapi.yaml_" — OpenAPI 3.1, 77 paths and 90 operations.
-- "_contract/generated/json-schema/patrol_" — JSON Schema 2020-12, 330 definitions, each under an absolute `$id`.
+- "_contract/generated/openapi/Patrol.openapi.yaml_" — OpenAPI 3.1, 78 paths and 91 operations.
+- "_contract/generated/json-schema/patrol_" — JSON Schema 2020-12, 332 definitions, each under an absolute `$id`.
 - "_contract/verify/src/generated/openapi.d.ts_" — `openapi-typescript` types used by the client.
 
 A build effort copies the package and its configuration, keeps the generated artifacts committed, and wires the server to Ajv 2020 over the same bundle. The verification workspace is a working reference: `openapi-fetch` client, TanStack Start route with `queryOptions`, a Node stub that validates requests and responses, and an end-to-end check.

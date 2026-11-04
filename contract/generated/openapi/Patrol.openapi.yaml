@@ -3369,6 +3369,62 @@ paths:
       x-patrol-roles:
         - operator
         - administrator
+  /security-events:
+    get:
+      operationId: SecurityEvents_list
+      description: Security events, newest first.
+      parameters:
+        - $ref: '#/components/parameters/Http.PageRequest.page'
+        - $ref: '#/components/parameters/Http.PageRequest.pageSize'
+        - name: kind
+          in: query
+          required: false
+          schema:
+            type: string
+          explode: false
+        - name: operatorId
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/Domain.OperatorId'
+          explode: false
+      responses:
+        '200':
+          description: The request has succeeded.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Http.SecurityEventPage'
+        '401':
+          description: No valid session, or the credentials offered are wrong.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Http.ErrorBody'
+        '403':
+          description: The session is valid but the operator's role does not grant the operation.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Http.ErrorBody'
+        '429':
+          description: Too many attempts, such as a locked account or a throttled address.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Http.ErrorBody'
+        '503':
+          description: The deployment is not bootstrapped, or its schema version does not match the running image.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Http.ErrorBody'
+      tags:
+        - Operators
+      security:
+        - ApiKeyAuth: []
+      x-patrol-roles:
+        - administrator
   /settings/allowlist:
     get:
       operationId: AllowlistEntries_list
@@ -10744,6 +10800,65 @@ components:
           $ref: '#/components/schemas/Http.SecondFactorMethod'
           description: Whether the code is a TOTP code or a recovery code.
       description: The second factor an operator presents for a pending challenge.
+    Http.SecurityEventPage:
+      type: object
+      required:
+        - items
+        - total
+        - page
+        - pageSize
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Http.SecurityEventView'
+          description: The events on this page.
+        total:
+          type: integer
+          format: int32
+          description: How many events match the filter in total.
+        page:
+          type: integer
+          format: int32
+          description: The one-based page number.
+        pageSize:
+          type: integer
+          format: int32
+          description: The page size.
+      description: A page of security events, newest first.
+    Http.SecurityEventView:
+      type: object
+      required:
+        - id
+        - kind
+        - createdAt
+      properties:
+        id:
+          type: string
+          description: The event's identifier.
+        kind:
+          type: string
+          description: The event kind, such as sign_in or password_accepted.
+        operatorId:
+          $ref: '#/components/schemas/Domain.OperatorId'
+          description: The account the event concerns, when one was known.
+        email:
+          $ref: '#/components/schemas/Domain.Email'
+          description: The email the event concerned, when one was known.
+        coarseIp:
+          type: string
+          description: The coarse client IP recorded with the event.
+        userAgent:
+          type: string
+          description: The client user agent recorded with the event.
+        detail:
+          type: string
+          description: The event's supplementary detail, when it has any.
+        createdAt:
+          type: string
+          format: date-time
+          description: When the event happened.
+      description: One authentication security event. Events never carry a password, TOTP secret, session token, or recovery code.
     Http.SessionView:
       type: object
       required:

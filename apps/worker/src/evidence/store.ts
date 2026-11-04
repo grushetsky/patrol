@@ -1,4 +1,5 @@
 import {
+  DeleteObjectCommand,
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
@@ -18,6 +19,8 @@ export interface CaptureStore {
     evidenceId: string;
     retainUntil?: Date;
   }): Promise<StoredObject>;
+  /** Delete one version after its retention lock has lapsed. */
+  delete?(key: string, version: string | null): Promise<void>;
 }
 
 export function artifactKey(kind: string, sha256: string): string {
@@ -94,6 +97,39 @@ export class S3CaptureStore implements CaptureStore {
     return { key, version: result.VersionId ?? null };
   }
 
+  async delete(key: string, version: string | null): Promise<void> {
+    try {
+      await this.client.send(
+        new DeleteObjectCommand({
+          Bucket: this.bucket,
+          Key: key,
+          ...(version ? { VersionId: version } : {}),
+        }),
+      );
+    } catch (error) {
+      if (httpStatus(error) === 404) {
+        return;
+      }
+      throw error;
+    }
+  }
+}
+
+function httpStatus(error: unknown): number | undefined {
+  if (typeof error !== "object" || error === null || !("$metadata" in error)) {
+    return undefined;
+  }
+  const metadata = error.$metadata;
+  if (
+    typeof metadata !== "object" ||
+    metadata === null ||
+    !("httpStatusCode" in metadata)
+  ) {
+    return undefined;
+  }
+  return typeof metadata.httpStatusCode === "number"
+    ? metadata.httpStatusCode
+    : undefined;
 }
 
 export function storeFromEnvironment(

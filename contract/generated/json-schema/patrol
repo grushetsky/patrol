@@ -6030,6 +6030,97 @@
             },
             "description": "The invitation was created and its token emailed."
         },
+        "SecurityEventView": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/schemas/SecurityEventView.json",
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string",
+                    "description": "The event's identifier."
+                },
+                "kind": {
+                    "type": "string",
+                    "description": "The event kind, such as sign_in or password_accepted."
+                },
+                "operatorId": {
+                    "$ref": "https://patrol.example/schemas/OperatorId.json",
+                    "description": "The account the event concerns, when one was known."
+                },
+                "email": {
+                    "$ref": "https://patrol.example/schemas/Email.json",
+                    "description": "The email the event concerned, when one was known."
+                },
+                "coarseIp": {
+                    "type": "string",
+                    "description": "The coarse client IP recorded with the event."
+                },
+                "userAgent": {
+                    "type": "string",
+                    "description": "The client user agent recorded with the event."
+                },
+                "detail": {
+                    "type": "string",
+                    "description": "The event's supplementary detail, when it has any."
+                },
+                "createdAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "description": "When the event happened."
+                }
+            },
+            "required": [
+                "id",
+                "kind",
+                "createdAt"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            },
+            "description": "One authentication security event. Events never carry a password, TOTP secret, session token, or recovery code."
+        },
+        "SecurityEventPage": {
+            "$schema": "https://json-schema.org/draft/2020-12/schema",
+            "$id": "https://patrol.example/schemas/SecurityEventPage.json",
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "https://patrol.example/schemas/SecurityEventView.json"
+                    },
+                    "description": "The events on this page."
+                },
+                "total": {
+                    "type": "integer",
+                    "minimum": -2147483648,
+                    "maximum": 2147483647,
+                    "description": "How many events match the filter in total."
+                },
+                "page": {
+                    "type": "integer",
+                    "minimum": -2147483648,
+                    "maximum": 2147483647,
+                    "description": "The one-based page number."
+                },
+                "pageSize": {
+                    "type": "integer",
+                    "minimum": -2147483648,
+                    "maximum": 2147483647,
+                    "description": "The page size."
+                }
+            },
+            "required": [
+                "items",
+                "total",
+                "page",
+                "pageSize"
+            ],
+            "unevaluatedProperties": {
+                "not": {}
+            },
+            "description": "A page of security events, newest first."
+        },
         "TitleGroupPage": {
             "$schema": "https://json-schema.org/draft/2020-12/schema",
             "$id": "https://patrol.example/schemas/TitleGroupPage.json",

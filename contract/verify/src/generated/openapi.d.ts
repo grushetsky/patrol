@@ -843,6 +843,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/security-events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Security events, newest first. */
+        get: operations["SecurityEvents_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/settings/allowlist": {
         parameters: {
             query?: never;
@@ -4702,6 +4719,48 @@ export interface components {
             code: string;
             /** @description Whether the code is a TOTP code or a recovery code. */
             method: components["schemas"]["Http.SecondFactorMethod"];
+        };
+        /** @description A page of security events, newest first. */
+        "Http.SecurityEventPage": {
+            /** @description The events on this page. */
+            items: components["schemas"]["Http.SecurityEventView"][];
+            /**
+             * Format: int32
+             * @description How many events match the filter in total.
+             */
+            total: number;
+            /**
+             * Format: int32
+             * @description The one-based page number.
+             */
+            page: number;
+            /**
+             * Format: int32
+             * @description The page size.
+             */
+            pageSize: number;
+        };
+        /** @description One authentication security event. Events never carry a password, TOTP secret, session token, or recovery code. */
+        "Http.SecurityEventView": {
+            /** @description The event's identifier. */
+            id: string;
+            /** @description The event kind, such as sign_in or password_accepted. */
+            kind: string;
+            /** @description The account the event concerns, when one was known. */
+            operatorId?: components["schemas"]["Domain.OperatorId"];
+            /** @description The email the event concerned, when one was known. */
+            email?: components["schemas"]["Domain.Email"];
+            /** @description The coarse client IP recorded with the event. */
+            coarseIp?: string;
+            /** @description The client user agent recorded with the event. */
+            userAgent?: string;
+            /** @description The event's supplementary detail, when it has any. */
+            detail?: string;
+            /**
+             * Format: date-time
+             * @description When the event happened.
+             */
+            createdAt: string;
         };
         /** @description One server-side session as an operator sees it. The token itself is never exposed. */
         "Http.SessionView": {
@@ -9507,6 +9566,69 @@ export interface operations {
             };
             /** @description The addressed record does not exist, or the session cannot see it. */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Http.ErrorBody"];
+                };
+            };
+            /** @description Too many attempts, such as a locked account or a throttled address. */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Http.ErrorBody"];
+                };
+            };
+            /** @description The deployment is not bootstrapped, or its schema version does not match the running image. */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Http.ErrorBody"];
+                };
+            };
+        };
+    };
+    SecurityEvents_list: {
+        parameters: {
+            query?: {
+                /** @description The one-based page number. Defaults to one. */
+                page?: components["parameters"]["Http.PageRequest.page"];
+                /** @description Items per page, at most two hundred. Defaults to fifty. */
+                pageSize?: components["parameters"]["Http.PageRequest.pageSize"];
+                kind?: string;
+                operatorId?: components["schemas"]["Domain.OperatorId"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The request has succeeded. */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Http.SecurityEventPage"];
+                };
+            };
+            /** @description No valid session, or the credentials offered are wrong. */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Http.ErrorBody"];
+                };
+            };
+            /** @description The session is valid but the operator's role does not grant the operation. */
+            403: {
                 headers: {
                     [name: string]: unknown;
                 };

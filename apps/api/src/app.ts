@@ -26,6 +26,8 @@ import { SubmissionService } from "./submissions/service.js";
 import { registerSubmissionRoutes } from "./submissions/routes.js";
 import { DashboardService } from "./dashboard/service.js";
 import { registerDashboardRoutes } from "./dashboard/routes.js";
+import { SecurityEventService } from "./security/service.js";
+import { registerSecurityRoutes } from "./security/routes.js";
 import {
   storeFromEnvironment,
   type ArtifactStore,
@@ -69,6 +71,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
     options.submissions ?? new SubmissionService(options.db);
   const dashboard =
     options.dashboard ?? new DashboardService(options.db, settings, options.clock);
+  const securityEvents = new SecurityEventService(options.db);
   const evidence = new EvidenceService(options.db, artifactStore);
   const guards = createAuthGuards(auth);
 
@@ -135,6 +138,7 @@ export function buildApp(options: AppOptions): FastifyInstance {
       registerNoticeRoutes(api, notices, options.contract, guards);
       registerSubmissionRoutes(api, submissions, options.contract, guards);
       registerDashboardRoutes(api, dashboard, guards);
+      registerSecurityRoutes(api, securityEvents, guards);
       registerEvidenceRoutes(api, evidence, options.contract, guards);
     },
     { prefix: "/api" },

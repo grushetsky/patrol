@@ -686,13 +686,17 @@ export const searchResult = pgTable("search_result", {
   candidateId: text("candidate_id"),
 });
 
-export const serpPayload = pgTable("serp_payload", {
-  id: text("id").primaryKey(),
-  scanId: text("scan_id").notNull(),
-  engine: text("engine").notNull(),
-  body: text("body").notNull(),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
-});
+export const serpPayload = pgTable(
+  "serp_payload",
+  {
+    id: text("id").primaryKey(),
+    scanId: text("scan_id").notNull(),
+    engine: text("engine").notNull(),
+    body: text("body").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [index("serp_payload_created_idx").on(table.createdAt)],
+);
 
 export const budgetReservation = pgTable("budget_reservation", {
   id: text("id").primaryKey(),
@@ -785,28 +789,32 @@ export const schedulingSchema = {
   intentPhrase,
 };
 
-export const evidence = pgTable("evidence", {
-  id: text("id").primaryKey(),
-  trackedTitleId: text("tracked_title_id"),
-  titleGroupId: text("title_group_id"),
-  requestedUrl: text("requested_url").notNull(),
-  normalizedRequestedUrl: text("normalized_requested_url").notNull(),
-  redirectChain: text("redirect_chain").notNull(),
-  finalUrl: text("final_url"),
-  host: text("host"),
-  hostSource: text("host_source"),
-  reason: text("reason").notNull(),
-  capturePoint: text("capture_point"),
-  outcome: text("outcome").notNull(),
-  httpStatus: integer("http_status"),
-  failureReason: text("failure_reason"),
-  attemptNumber: integer("attempt_number").notNull(),
-  observedAt: timestamp("observed_at", { withTimezone: true }).notNull(),
-  profile: text("profile").notNull(),
-  purgedAt: timestamp("purged_at", { withTimezone: true }),
-  purgeReason: text("purge_reason"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
-});
+export const evidence = pgTable(
+  "evidence",
+  {
+    id: text("id").primaryKey(),
+    trackedTitleId: text("tracked_title_id"),
+    titleGroupId: text("title_group_id"),
+    requestedUrl: text("requested_url").notNull(),
+    normalizedRequestedUrl: text("normalized_requested_url").notNull(),
+    redirectChain: text("redirect_chain").notNull(),
+    finalUrl: text("final_url"),
+    host: text("host"),
+    hostSource: text("host_source"),
+    reason: text("reason").notNull(),
+    capturePoint: text("capture_point"),
+    outcome: text("outcome").notNull(),
+    httpStatus: integer("http_status"),
+    failureReason: text("failure_reason"),
+    attemptNumber: integer("attempt_number").notNull(),
+    observedAt: timestamp("observed_at", { withTimezone: true }).notNull(),
+    profile: text("profile").notNull(),
+    purgedAt: timestamp("purged_at", { withTimezone: true }),
+    purgeReason: text("purge_reason"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+  },
+  (table) => [index("evidence_purged_idx").on(table.purgedAt)],
+);
 
 export const evidenceArtifact = pgTable(
   "evidence_artifact",
@@ -846,8 +854,31 @@ export const hostObjection = pgTable("host_objection", {
   clearanceReason: text("clearance_reason"),
 });
 
+export const legalHold = pgTable(
+  "legal_hold",
+  {
+    id: text("id").primaryKey(),
+    reason: text("reason").notNull(),
+    createdBy: text("created_by").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    evidenceIds: text("evidence_ids").notNull(),
+    violationIds: text("violation_ids").notNull(),
+    noticeIds: text("notice_ids").notNull(),
+    releasedAt: timestamp("released_at", { withTimezone: true }),
+    releasedBy: text("released_by"),
+    releaseReason: text("release_reason"),
+  },
+  (table) => [
+    index("legal_hold_created_idx").on(table.createdAt),
+    index("legal_hold_active_idx")
+      .on(table.createdAt)
+      .where(sql`released_at IS NULL`),
+  ],
+);
+
 export const evidenceSchema = {
   evidence,
   evidenceArtifact,
   hostObjection,
+  legalHold,
 };

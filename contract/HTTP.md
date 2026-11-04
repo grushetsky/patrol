@@ -6,7 +6,7 @@ The HTTP surface is TypeSpec source in "_contract/tsp/http/_", compiled into the
 
 | Artifact | Path | Contents |
 | --- | --- | --- |
-| OpenAPI 3.1 | "_contract/generated/openapi/Patrol.openapi.yaml_" | One service, 77 paths, 90 operations, domain and HTTP components under `Domain.*` and `Http.*`. |
+| OpenAPI 3.1 | "_contract/generated/openapi/Patrol.openapi.yaml_" | One service, 78 paths, 91 operations, domain and HTTP components under `Domain.*` and `Http.*`. |
 | JSON Schema 2020-12 | "_contract/generated/json-schema/patrol_" | One bundle with every model, each definition under an absolute `$id` of `https://patrol.example/schemas/<Name>.json`. |
 | Generated client types | "_contract/verify/src/generated/openapi.d.ts_" | `openapi-typescript` output over the OpenAPI document. |
 | Verification workspace | "_contract/verify/_" | A TanStack Start stub, the generated client, the Node-side validator, and the end-to-end check. |
@@ -207,6 +207,7 @@ The tables below are generated from the emitted document. `Role` lists the contr
 | POST | `/operators/{operatorId}/credential-reset` | `Operators_resetCredentials` | administrator | 202 |
 | GET | `/operators/{operatorId}/sessions` | `Operators_listSessions` | administrator | 200 |
 | DELETE | `/operators/{operatorId}/sessions/{sessionId}` | `Operators_revokeSession` | administrator | 204 |
+| GET | `/security-events` | `SecurityEvents_list` | administrator | 200 |
 
 ### Review
 
@@ -303,6 +304,6 @@ The recorded results are: the generated client compiles under TanStack Start 1.1
 ## Open constraints for the build effort
 
 - Optimistic concurrency is not specified; the state guards and the unique constraints are the only boundary. Adding `If-Match` is a new decision.
-- The audit stream that feeds sign-in and operator views is not a read model here; the security events are written but their read endpoint is undecided.
+- The security-event read surface is the administrator-only `GET /security-events`, filtered by event kind and operator.
 - The staging environment's disabled delivery is deployment configuration, not a contract field; delivery is an operator action in every environment.
 - Provider prices, the Google per-file cap discovered at runtime, and the per-day quota remain settings the profile records; none is hard-coded in the contract.
