@@ -1,6 +1,7 @@
 import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import type { components } from "../generated/openapi";
+import { resolveLanguage } from "../i18n";
 
 type Schemas = components["schemas"];
 export type DashboardSummary = Schemas["Http.DashboardSummary"];
@@ -79,7 +80,6 @@ export const titleChartFn = createServerFn({ method: "GET" })
 export const requestLanguageFn = createServerFn({ method: "GET" }).handler(
   async (): Promise<"en" | "ru"> => {
     const request = getRequest();
-    const header = request.headers.get("accept-language");
-    return header?.toLowerCase().startsWith("ru") ? "ru" : "en";
+    return resolveLanguage(request.headers.get("accept-language"));
   },
 );

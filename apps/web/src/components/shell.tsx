@@ -3,7 +3,8 @@ import { Link, Outlet, useRouter } from "@tanstack/react-router";
 import type { DashboardSummary, AuthenticatedSession } from "../api/server";
 import { signOut, updateLanguage } from "../api/auth";
 import { setCsrf, ApiError, errorMessage } from "../api/client";
-import { LanguageContext, resolveLanguage, translate, type Language, type MessageKey } from "../i18n";
+import { LanguageContext, translate, type Language, type MessageKey } from "../i18n";
+import { RunScansButton } from "./run-scans";
 import { Badge, Button, cn } from "./ui";
 
 const NAV: Array<{ to: string; key: MessageKey; badge?: "review" | "violations" | "notices" }> = [
@@ -17,19 +18,14 @@ const NAV: Array<{ to: string; key: MessageKey; badge?: "review" | "violations" 
 export function AppShell({
   session,
   summary,
+  language: initialLanguage,
 }: {
   session: AuthenticatedSession;
   summary: DashboardSummary;
+  language: Language;
 }) {
   const router = useRouter();
-  const [language, setLanguage] = useState<Language>(() => {
-    if (session.operator.preferredLanguage) {
-      return session.operator.preferredLanguage as Language;
-    }
-    return typeof navigator === "undefined"
-      ? "en"
-      : resolveLanguage(navigator.language);
-  });
+  const [language, setLanguage] = useState<Language>(initialLanguage);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +41,10 @@ export function AppShell({
     document.documentElement.dataset.theme = theme;
     localStorage.setItem("patrol.theme", theme);
   }, [theme]);
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
 
   const t = (key: MessageKey) => translate(language, key);
   const badgeValue = (badge: "review" | "violations" | "notices") => {
@@ -77,7 +77,9 @@ export function AppShell({
       await signOut(session.csrfToken);
       await router.invalidate();
     } catch (cause) {
-      if (!(cause instanceof ApiError && cause.status === 401)) {
+      if (cause instanceof ApiError && cause.status === 401) {
+        await router.invalidate();
+      } else {
         setError(errorMessage(cause, t("authErrorGeneric")));
       }
     } finally {
@@ -120,6 +122,7 @@ export function AppShell({
           </nav>
 
           <div className="ml-auto flex items-center gap-1.5">
+            <RunScansButton csrfToken={session.csrfToken} language={language} />
             <div className="flex rounded-lg border border-[var(--border)] p-0.5 text-xs">
               {(["en", "ru"] as const).map((code) => (
                 <button

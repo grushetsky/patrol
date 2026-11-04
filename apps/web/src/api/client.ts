@@ -17,7 +17,7 @@ export async function ensureCsrf(): Promise<string> {
   }
   const result = await api.GET("/auth/csrf");
   if (!result.data) {
-    throw new ApiError(0, null);
+    throw new ApiError(result.response.status, null);
   }
   csrfToken = result.data.csrfToken;
   return csrfToken;

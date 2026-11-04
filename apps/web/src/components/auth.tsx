@@ -80,9 +80,10 @@ export function AuthFlow({
     setBusy(true);
     setError(null);
     try {
-      const ceremonyResult = await setupAccount(token.trim(), password);
-      const enrollmentResult = await startEnrollment(ceremonyResult.enrollmentToken);
+      const ceremonyResult =
+        ceremony ?? (await setupAccount(token.trim(), password));
       setCeremony(ceremonyResult);
+      const enrollmentResult = await startEnrollment(ceremonyResult.enrollmentToken);
       setEnrollment(enrollmentResult);
       setCode("");
       setMode("enrollment");
@@ -225,7 +226,7 @@ export function AuthFlow({
                   onChange={(event) => setToken(event.target.value)}
                 />
               </Field>
-              <Field label={t("authChoosePassword")} hint="12+ characters.">
+              <Field label={t("authChoosePassword")} hint={t("authPasswordHint")}>
                 <Input
                   type="password"
                   autoComplete="new-password"

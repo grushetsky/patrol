@@ -107,6 +107,20 @@ export const en = {
   dashNoData: "No data for this window.",
   dashShowSeries: "Select a day",
   dashValues: "{date}: {values}",
+  dashScan: "scan",
+  dashRecheck: "recheck",
+  dashWindowShort: "{n} d",
+  dashNow: "now",
+  dashMinutesAgo: "{n}m",
+  dashHoursAgo: "{n}h",
+  dashDaysShort: "{n}d",
+  dashSelectDay: "Inspect {date}",
+  authPasswordHint: "12+ characters.",
+  runScansChoose: "Choose a title group to scan.",
+  runScansCancel: "Cancel",
+  runScansQueued: "Scan queued.",
+  runScansNone: "No title groups exist yet.",
+  runScansFailed: "Could not queue the scan.",
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -219,6 +233,20 @@ export const ru: Record<MessageKey, string> = {
   dashNoData: "Нет данных за это окно.",
   dashShowSeries: "Выберите день",
   dashValues: "{date}: {values}",
+  dashScan: "сканирование",
+  dashRecheck: "перепроверка",
+  dashWindowShort: "{n} дн.",
+  dashNow: "сейчас",
+  dashMinutesAgo: "{n}м",
+  dashHoursAgo: "{n}ч",
+  dashDaysShort: "{n}д",
+  dashSelectDay: "Проверить {date}",
+  authPasswordHint: "12+ символов.",
+  runScansChoose: "Выберите группу произведений для сканирования.",
+  runScansCancel: "Отмена",
+  runScansQueued: "Сканирование поставлено в очередь.",
+  runScansNone: "Групп произведений пока нет.",
+  runScansFailed: "Не удалось поставить сканирование в очередь.",
 };
 
 const catalogues: Record<Language, Record<MessageKey, string>> = { en, ru };

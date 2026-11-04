@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { createFileRoute, useRouter } from "@tanstack/react-router";
 import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
@@ -63,9 +63,14 @@ const BASES: Array<{ value: ResolvedBasis; key: MessageKey }> = [
 
 function DashboardPage() {
   const data = Route.useLoaderData();
-  if (!data) {
-    return null;
-  }
+  return data ? <DashboardContent data={data} /> : null;
+}
+
+function DashboardContent({
+  data,
+}: {
+  data: { summary: DashboardSummary; chart: TitleChart };
+}) {
   const { summary: initialSummary, chart: initialChart } = data;
   const language = useLanguage();
   const router = useRouter();
@@ -93,7 +98,7 @@ function DashboardPage() {
   async function refresh() {
     setRefreshing(true);
     try {
-      await router.invalidate();
+      await Promise.all([router.invalidate(), chartQuery.refetch()]);
     } finally {
       setRefreshing(false);
     }
@@ -147,7 +152,7 @@ function DashboardPage() {
                   <span className="mt-1 h-2 w-2 shrink-0 rounded-full bg-[var(--accent)]" />
                   <div className="min-w-0 flex-1">
                     <p className="text-sm text-[var(--fg)]">{entry.summary}</p>
-                    <p className="mt-0.5 text-xs text-[var(--muted)]">{relativeTime(entry.occurredAt)}</p>
+                    <p className="mt-0.5 text-xs text-[var(--muted)]">{relativeTime(entry.occurredAt, t)}</p>
                   </div>
                   {entry.noticeId ? (
                     <a
@@ -169,14 +174,16 @@ function DashboardPage() {
           title={t("dashChart")}
           subtitle={
             chart.groupingFallback
-              ? `${t("dashFallback")} ${chart.requestedGrouping} → ${chart.appliedGrouping}`
-              : `${t(`dash${metricKey(chart.metric)}`)} · ${chart.windowDays} d`
+              ? `${t("dashFallback")} ${t(groupingLabel(chart.requestedGrouping))} → ${t(groupingLabel(chart.appliedGrouping))}`
+              : `${t(metricLabel(chart.metric))} · ${t("dashWindowShort", { n: chart.windowDays })}`
           }
           action={
             <div className="flex flex-wrap items-center gap-2">
               {chartQuery.isFetching ? <Spinner /> : null}
               <Badge tone={chart.groupingFallback ? "warning" : "accent"}>
-                {chart.groupingFallback ? t("dashFallbackBadge") : t(`dashGroup${groupKey(chart.appliedGrouping)}`)}
+                {chart.groupingFallback
+                  ? t("dashFallbackBadge")
+                  : t(groupingLabel(chart.appliedGrouping))}
               </Badge>
             </div>
           }
@@ -293,8 +300,14 @@ function CounterCard({
     warning: "var(--warning)",
     error: "var(--error)",
   };
+  const tints = {
+    accent: "glass-blue",
+    success: "glass-green",
+    warning: "glass-amber",
+    error: "glass-red",
+  };
   return (
-    <Card className={cn("p-5", `glass-${tone}`)}>
+    <Card className={cn("p-5", tints[tone])}>
       <div className="flex items-center justify-between">
         <span className="text-xs uppercase tracking-[0.1em] text-[var(--muted)]">{label}</span>
         <span className="h-2.5 w-2.5 rounded-full" style={{ background: colors[tone] }} />
@@ -385,17 +398,22 @@ function ChartPlot({
   const plotHeight = height - pad.top - pad.bottom;
   const days = chart.days;
   const maxValue = Math.max(1, ...chart.series.flatMap((series) => series.values));
-  const step = Math.max(1, Math.ceil(maxValue / 4));
-  const top = step * 4;
   const x = (index: number) =>
     pad.left + (days.length === 1 ? plotWidth / 2 : (index / (days.length - 1)) * plotWidth);
   const y = (value: number) => pad.top + plotHeight - (value / top) * plotHeight;
   const colors = ["var(--c1)", "var(--c2)", "var(--c3)", "var(--c4)", "var(--c5)", "var(--c6)"];
   const labelIndexes = [0, Math.floor((days.length - 1) / 2), days.length - 1];
+  const step = niceStep(maxValue);
+  const top = step * 4;
 
   return (
     <div className="space-y-3">
-      <svg viewBox={`0 0 ${width} ${height}`} className="w-full" role="img">
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="w-full"
+        role="img"
+        aria-label={t("dashChart")}
+      >
         {[0, 1, 2, 3, 4].map((tick) => (
           <g key={tick}>
             <line
@@ -461,7 +479,16 @@ function ChartPlot({
             width={plotWidth / (days.length - 1)}
             height={plotHeight}
             fill="transparent"
+            tabIndex={0}
+            role="button"
+            aria-label={t("dashSelectDay", { date: day })}
             onClick={() => onSelectDay(selectedDay === index ? null : index)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                onSelectDay(selectedDay === index ? null : index);
+              }
+            }}
             className="cursor-pointer"
           />
         ))}
@@ -544,30 +571,41 @@ function TileRow({
   );
 }
 
-function metricKey(metric: ChartMetric): "TrackedTitles" | "TitlesWithViolations" | "ResolvedViolations" {
+function metricLabel(metric: ChartMetric): MessageKey {
   return metric === "tracked_titles"
-    ? "TrackedTitles"
+    ? "dashTrackedTitles"
     : metric === "titles_with_violations"
-      ? "TitlesWithViolations"
-      : "ResolvedViolations";
+      ? "dashTitlesWithViolations"
+      : "dashResolvedViolations";
 }
 
-function groupKey(grouping: ChartGrouping): "None" | "TitleGroup" | "Engine" | "Recipient" {
+function groupingLabel(grouping: ChartGrouping): MessageKey {
   return grouping === "none"
-    ? "None"
+    ? "dashGroupNone"
     : grouping === "title_group"
-      ? "TitleGroup"
+      ? "dashGroupTitleGroup"
       : grouping === "engine"
-        ? "Engine"
-        : "Recipient";
+        ? "dashGroupEngine"
+        : "dashGroupRecipient";
 }
 
-function relativeTime(value: string): string {
+function niceStep(maxValue: number): number {
+  const raw = Math.max(1, maxValue) / 4;
+  const power = 10 ** Math.floor(Math.log10(raw));
+  const fraction = raw / power;
+  const nice = fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 5 ? 5 : 10;
+  return nice * power;
+}
+
+function relativeTime(
+  value: string,
+  t: (key: MessageKey, values?: Record<string, string | number>) => string,
+): string {
   const diff = Date.now() - new Date(value).getTime();
   const minutes = Math.max(0, Math.round(diff / 60_000));
-  if (minutes < 1) return "now";
-  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 1) return t("dashNow");
+  if (minutes < 60) return t("dashMinutesAgo", { n: minutes });
   const hours = Math.round(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.round(hours / 24)}d`;
+  if (hours < 24) return t("dashHoursAgo", { n: hours });
+  return t("dashDaysShort", { n: Math.round(hours / 24) });
 }

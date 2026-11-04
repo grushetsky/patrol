@@ -25,7 +25,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       requestLanguageFn(),
     ]);
     const summary = session ? await dashboardSummaryFn() : null;
-    return { session, setup, language, summary };
+    return {
+      session,
+      setup,
+      language: (session?.operator.preferredLanguage as "en" | "ru" | null) ?? language,
+      summary,
+    };
   },
   head: () => ({
     meta: [
@@ -52,7 +57,7 @@ function RootComponent() {
     <QueryClientProvider client={queryClient}>
       <RootDocument language={language}>
         {session && summary ? (
-          <AppShell session={session} summary={summary} />
+          <AppShell session={session} summary={summary} language={language} />
         ) : (
           <LanguageContext.Provider value={language}>
             <AuthFlow setup={setup} language={language} />
