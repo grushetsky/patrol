@@ -7,6 +7,7 @@ import { PlaywrightCapture } from "./evidence/browser.js";
 import { CaptureRunner, retryDelay } from "./evidence/runner.js";
 import { storeFromEnvironment } from "./evidence/store.js";
 import { pollCaptureRequests } from "./matching/requests.js";
+import { findStalePending } from "./submissions/remind.js";
 import {
   createDueRechecks,
   createDueScans,
@@ -30,6 +31,7 @@ const CONTROL_QUEUES = [
   "budget.rollover",
   "budget.balance",
   "route.probe",
+  "submission.remind",
 ];
 
 export interface WorkerJobs {
@@ -174,15 +176,27 @@ export async function startJobs(connectionString: string): Promise<WorkerJobs> {
     await probeRoutes(pool, adapters, new Date());
   });
 
+  await boss.work("submission.remind", { batchSize: 1 }, async () => {
+    const reminders = await findStalePending(pool, new Date());
+    for (const reminder of reminders) {
+      console.warn(
+        `Submission ${reminder.submissionId} for notice ${reminder.noticeId} ` +
+          `(${reminder.recipient}) has been pending since ${reminder.createdAt.toISOString()}.`,
+      );
+    }
+  });
+
   await boss.schedule("capture.poll", "* * * * *");
   await boss.schedule("scan.schedule", "*/15 * * * *");
   await boss.schedule("recheck.schedule", "*/15 * * * *");
   await boss.schedule("budget.rollover", "0 0 1 * *");
   await boss.schedule("budget.balance", "0 6 * * *");
   await boss.schedule("route.probe", "0 * * * *");
+  await boss.schedule("submission.remind", "0 7 * * *");
   await boss.send("capture.poll", {});
   await boss.send("scan.schedule", {});
   await boss.send("recheck.schedule", {});
+  await boss.send("submission.remind", {});
 
   return {
     boss,

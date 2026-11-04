@@ -2899,7 +2899,7 @@ export interface components {
             packLanguage: components["schemas"]["Domain.InterfaceLanguage"];
             /**
              * Format: int32
-             * @description How many delivery attempts the operator has made.
+             * @description How many delivery attempts the operator has made or is currently making; the first pending submission counts one.
              */
             attemptCount: number;
             /** @description The content-addressed reference to the frozen handoff pack, once the pack is generated. */
@@ -4781,6 +4781,8 @@ export interface components {
             notice: components["schemas"]["Http.NoticeRef"];
             /** @description Whether the frozen handoff pack exists and can be downloaded. */
             packAvailable: boolean;
+            /** @description Whether three delivery attempts have failed and an administrator must review the submission. */
+            flaggedForAdministrator: boolean;
         };
         /** @description The operator's report that filing failed or was refused. */
         "Http.SubmissionFailureRequest": {

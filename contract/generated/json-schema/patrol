@@ -3356,7 +3356,7 @@
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 2147483647,
-                    "description": "How many delivery attempts the operator has made."
+                    "description": "How many delivery attempts the operator has made or is currently making; the first pending submission counts one."
                 },
                 "packRef": {
                     "type": "string",
@@ -8725,12 +8725,17 @@
                 "packAvailable": {
                     "type": "boolean",
                     "description": "Whether the frozen handoff pack exists and can be downloaded."
+                },
+                "flaggedForAdministrator": {
+                    "type": "boolean",
+                    "description": "Whether three delivery attempts have failed and an administrator must review the submission."
                 }
             },
             "required": [
                 "submission",
                 "notice",
-                "packAvailable"
+                "packAvailable",
+                "flaggedForAdministrator"
             ],
             "unevaluatedProperties": {
                 "not": {}
