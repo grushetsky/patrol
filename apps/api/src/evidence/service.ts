@@ -1,12 +1,20 @@
 import { ApiError, unprocessable } from "../errors.js";
 import type { Connectable } from "../db/migrations.js";
 import { pageOf, type Page } from "../http.js";
-import { iso } from "../catalogue/records.js";
+import { newId } from "../auth/tokens.js";
+import { iso, parseArray } from "../catalogue/records.js";
 import type { ArtifactStore } from "./store.js";
 
 export interface HostObjectionFilters {
   host?: string;
   active?: boolean;
+}
+
+export interface LegalHoldInput {
+  reason: string;
+  evidenceIds: string[];
+  violationIds: string[];
+  noticeIds: string[];
 }
 
 /** Evidence metadata, artifact downloads, and host objections. */
@@ -131,6 +139,94 @@ export class EvidenceService {
     ).rows[0];
     return toObjection(updated);
   }
+
+  async listHolds(page: Page) {
+    const rows = (
+      await this.db.query(
+        "SELECT * FROM legal_hold ORDER BY created_at DESC",
+      )
+    ).rows;
+    return pageOf(rows.map(toLegalHold), page);
+  }
+
+  async createHold(input: LegalHoldInput, operatorId: string) {
+    const reason = input.reason.trim();
+    if (reason.length === 0) {
+      throw unprocessable([
+        { path: "/reason", message: "A hold reason is required." },
+      ]);
+    }
+    const evidenceIds = input.evidenceIds ?? [];
+    const violationIds = input.violationIds ?? [];
+    const noticeIds = input.noticeIds ?? [];
+    if (
+      evidenceIds.length === 0 &&
+      violationIds.length === 0 &&
+      noticeIds.length === 0
+    ) {
+      throw unprocessable([
+        {
+          path: "/evidenceIds",
+          message: "A hold must cover at least one capture, violation, or notice.",
+        },
+      ]);
+    }
+    const id = newId();
+    const now = new Date();
+    await this.db.query(
+      `INSERT INTO legal_hold
+        (id, reason, created_by, created_at, evidence_ids, violation_ids,
+         notice_ids, released_at, released_by, release_reason)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NULL, NULL, NULL)`,
+      [
+        id,
+        reason,
+        operatorId,
+        now,
+        JSON.stringify(evidenceIds),
+        JSON.stringify(violationIds),
+        JSON.stringify(noticeIds),
+      ],
+    );
+    const row = (
+      await this.db.query("SELECT * FROM legal_hold WHERE id = $1", [id])
+    ).rows[0];
+    return toLegalHold(row);
+  }
+
+  async releaseHold(id: string, reason: string, operatorId: string) {
+    const row = (
+      await this.db.query("SELECT * FROM legal_hold WHERE id = $1", [id])
+    ).rows[0];
+    if (!row) {
+      throw new ApiError(404, "not_found", "The legal hold does not exist.");
+    }
+    if (row.released_at) {
+      throw new ApiError(
+        409,
+        "state_conflict",
+        "The legal hold is already released.",
+        undefined,
+        { currentState: "released" },
+      );
+    }
+    const trimmed = reason.trim();
+    if (trimmed.length === 0) {
+      throw unprocessable([
+        { path: "/reason", message: "A release reason is required." },
+      ]);
+    }
+    await this.db.query(
+      `UPDATE legal_hold
+          SET released_at = $2, released_by = $3, release_reason = $4
+        WHERE id = $1 AND released_at IS NULL`,
+      [id, new Date(), operatorId, trimmed],
+    );
+    const updated = (
+      await this.db.query("SELECT * FROM legal_hold WHERE id = $1", [id])
+    ).rows[0];
+    return toLegalHold(updated);
+  }
 }
 
 function toEvidence(
@@ -195,5 +291,20 @@ function toObjection(row: Record<string, unknown>) {
         : iso(row.cleared_at),
     clearedBy: (row.cleared_by as string | null) ?? undefined,
     clearanceReason: (row.clearance_reason as string | null) ?? undefined,
+  };
+}
+
+function toLegalHold(row: Record<string, unknown>) {
+  return {
+    id: String(row.id),
+    reason: String(row.reason),
+    createdBy: String(row.created_by),
+    createdAt: iso(row.created_at),
+    evidenceIds: parseArray(row.evidence_ids),
+    violationIds: parseArray(row.violation_ids),
+    noticeIds: parseArray(row.notice_ids),
+    ...(row.released_at
+      ? { releasedAt: iso(row.released_at), releasedBy: String(row.released_by) }
+      : {}),
   };
 }

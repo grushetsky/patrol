@@ -103,8 +103,9 @@ describe("committed migrations", () => {
       "0005_matching_review",
       "0006_notices",
       "0007_dashboard",
+      "0008_legal_holds",
     ]);
-    expect(result.version).toBe("0007_dashboard");
+    expect(result.version).toBe("0008_legal_holds");
   });
 });
 

@@ -17,7 +17,7 @@ TypeSpec is the single source for Patrol's domain and HTTP contracts. One servic
 - "_contract/tsp/http/models.tsp_" holds the shared HTTP vocabulary: the session scheme, the CSRF header, paging, the error taxonomy, and the read-model fragments several resources reuse.
 - "_contract/tsp/http/system.tsp_" holds health, version, and setup state.
 - "_contract/tsp/http/auth.tsp_" holds sign-in, sessions, the enrolment ceremony, and invitation acceptance.
-- "_contract/tsp/http/operators.tsp_" holds operator administration and invitations.
+- "_contract/tsp/http/operators.tsp_" holds operator administration, invitations, and the security-event audit.
 - "_contract/tsp/http/catalogue.tsp_" holds title groups, tracked titles, their variants and identifiers, and the two catalogue search indexes.
 - "_contract/tsp/http/scans.tsp_" holds manual scans, scan history, scan results, and re-check ladders.
 - "_contract/tsp/http/review.tsp_" holds the review queue, the five dispositions, reopening, and capture on demand.
@@ -43,7 +43,7 @@ The verification workspace under "_contract/verify/_" has its own dependencies; 
 
 The generated artifacts are committed:
 
-- "_contract/generated/openapi/Patrol.openapi.yaml_" is the OpenAPI 3.1 document for the single service: 77 paths, 90 operations, and every domain and HTTP component.
+- "_contract/generated/openapi/Patrol.openapi.yaml_" is the OpenAPI 3.1 document for the single service: 78 paths, 91 operations, and every domain and HTTP component.
 - "_contract/generated/json-schema/patrol_" is the JSON Schema 2020-12 bundle. It has no file extension, which is what the emitter produces; read it as JSON explicitly. Every definition keeps an absolute `$id` of `https://patrol.example/schemas/<Name>.json`.
 
 The check script compiles every emitted definition with Ajv and asserts that valid states and payloads validate while impossible ones — an approved notice without its approver, a closed violation without its closer, a failed scan without its reason, a review decision with an unknown action, an approval attestation with a refusal, a chart under the wrong metric — are rejected. It now covers request bodies, attestations, acknowledgements, chart envelopes, and error bodies alongside the domain lifecycles.

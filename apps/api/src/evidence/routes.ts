@@ -2,10 +2,7 @@ import type { FastifyInstance, FastifyRequest } from "fastify";
 import type { Contract } from "../contract.js";
 import type { AuthGuards } from "../auth/guards.js";
 import { queryPage, validatedBody } from "../http.js";
-import type {
-  EvidenceService,
-  HostObjectionFilters,
-} from "./service.js";
+import type { EvidenceService, HostObjectionFilters, LegalHoldInput } from "./service.js";
 
 export function registerEvidenceRoutes(
   app: FastifyInstance,
@@ -14,6 +11,11 @@ export function registerEvidenceRoutes(
   guards: AuthGuards,
 ): void {
   const operator = [guards.requireBootstrapped, guards.authenticate];
+  const administrator = [
+    guards.requireBootstrapped,
+    guards.authenticate,
+    guards.requireAdmin,
+  ];
 
   function body<T>(request: FastifyRequest, name: string): T {
     return validatedBody<T>(contract, request, name);
@@ -58,6 +60,32 @@ export function registerEvidenceRoutes(
       );
       return service.clearObjection(
         hostObjectionId,
+        input.reason,
+        request.auth!.operator.id,
+      );
+    },
+  );
+
+  app.get("/legal-holds", { preHandler: operator }, async (request) =>
+    service.listHolds(queryPage(request)),
+  );
+
+  app.post("/legal-holds", { preHandler: operator }, async (request, reply) => {
+    const hold = await service.createHold(
+      body<LegalHoldInput>(request, "CreateLegalHoldRequest"),
+      request.auth!.operator.id,
+    );
+    return reply.status(201).send(hold);
+  });
+
+  app.post(
+    "/legal-holds/:legalHoldId/release",
+    { preHandler: administrator },
+    async (request) => {
+      const { legalHoldId } = request.params as { legalHoldId: string };
+      const input = body<{ reason: string }>(request, "ReleaseLegalHoldRequest");
+      return service.releaseHold(
+        legalHoldId,
         input.reason,
         request.auth!.operator.id,
       );

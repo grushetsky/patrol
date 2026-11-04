@@ -48,7 +48,7 @@ export async function harness(
     evidenceStore,
     clock,
     buildVersion: "0.1.0",
-    expectedMigration: "0007_dashboard",
+    expectedMigration: "0008_legal_holds",
     logger: process.env.DEBUG_APP === "1",
   });
   return { app, auth, catalogue, settings, contract, db };

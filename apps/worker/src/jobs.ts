@@ -8,6 +8,7 @@ import { CaptureRunner, retryDelay } from "./evidence/runner.js";
 import { storeFromEnvironment } from "./evidence/store.js";
 import { pollCaptureRequests } from "./matching/requests.js";
 import { findStalePending } from "./submissions/remind.js";
+import { purgeExpired } from "./retention/purge.js";
 import {
   createDueRechecks,
   createDueScans,
@@ -32,6 +33,7 @@ const CONTROL_QUEUES = [
   "budget.balance",
   "route.probe",
   "submission.remind",
+  "retention.purge",
 ];
 
 export interface WorkerJobs {
@@ -186,6 +188,15 @@ export async function startJobs(connectionString: string): Promise<WorkerJobs> {
     }
   });
 
+  await boss.work("retention.purge", { batchSize: 1 }, async () => {
+    const report = await purgeExpired(pool, captureStore, new Date());
+    console.log(
+      `Retention purged ${report.evidencePurged} evidence records, ` +
+        `${report.blobsDeleted} blobs, and ${report.payloadsDeleted} payloads; ` +
+        `${report.heldSkipped} evidence records were held.`,
+    );
+  });
+
   await boss.schedule("capture.poll", "* * * * *");
   await boss.schedule("scan.schedule", "*/15 * * * *");
   await boss.schedule("recheck.schedule", "*/15 * * * *");
@@ -193,10 +204,12 @@ export async function startJobs(connectionString: string): Promise<WorkerJobs> {
   await boss.schedule("budget.balance", "0 6 * * *");
   await boss.schedule("route.probe", "0 * * * *");
   await boss.schedule("submission.remind", "0 7 * * *");
+  await boss.schedule("retention.purge", "0 4 * * *");
   await boss.send("capture.poll", {});
   await boss.send("scan.schedule", {});
   await boss.send("recheck.schedule", {});
   await boss.send("submission.remind", {});
+  await boss.send("retention.purge", {});
 
   return {
     boss,

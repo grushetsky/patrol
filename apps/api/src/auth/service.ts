@@ -701,7 +701,15 @@ export class AuthService {
       this.now(),
     );
     if (reason) {
-      await this.record(this.db, "credential_reset_reason", actorId ?? null, reason, this.now());
+      await this.record(
+        this.db,
+        "credential_reset_reason",
+        actorId ?? null,
+        null,
+        this.now(),
+        {},
+        reason,
+      );
     }
     return { setupToken: result.token, expiresAt: result.expiresAt };
   }

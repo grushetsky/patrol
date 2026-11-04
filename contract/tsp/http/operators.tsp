@@ -109,6 +109,48 @@ model InvitationCreated {
   @body body: InvitationView;
 }
 
+@doc("One authentication security event. Events never carry a password, TOTP secret, session token, or recovery code.")
+model SecurityEventView {
+  @doc("The event's identifier.")
+  id: string;
+
+  @doc("The event kind, such as sign_in or password_accepted.")
+  kind: string;
+
+  @doc("The account the event concerns, when one was known.")
+  operatorId?: OperatorId;
+
+  @doc("The email the event concerned, when one was known.")
+  email?: Email;
+
+  @doc("The coarse client IP recorded with the event.")
+  coarseIp?: string;
+
+  @doc("The client user agent recorded with the event.")
+  userAgent?: string;
+
+  @doc("The event's supplementary detail, when it has any.")
+  detail?: string;
+
+  @doc("When the event happened.")
+  createdAt: utcDateTime;
+}
+
+@doc("A page of security events, newest first.")
+model SecurityEventPage {
+  @doc("The events on this page.")
+  items: SecurityEventView[];
+
+  @doc("How many events match the filter in total.")
+  total: int32;
+
+  @doc("The one-based page number.")
+  page: int32;
+
+  @doc("The page size.")
+  pageSize: int32;
+}
+
 @doc("Operator accounts and their credentials. Every operation here requires the administrator role.")
 @tag("Operators")
 @useAuth(SessionCookie)
@@ -164,4 +206,15 @@ interface Invitations {
   @delete
   @route("/{invitationId}")
   op revoke(...CsrfToken, @path invitationId: InvitationId): NoContent | ResourceMutationErrors;
+}
+
+@doc("The append-only authentication audit, readable by administrators.")
+@tag("Operators")
+@useAuth(SessionCookie)
+@route("/security-events")
+interface SecurityEvents {
+  @doc("Security events, newest first.")
+  @extension("x-patrol-roles", #["administrator"])
+  @get
+  op list(...PageRequest, @query kind?: string, @query operatorId?: OperatorId): SecurityEventPage | ReadErrors;
 }
