@@ -14,6 +14,13 @@ import { Route as AuthEnrollmentRouteImport } from './routes/auth/enrollment'
 import { Route as AuthPreferencesRouteImport } from './routes/auth/preferences'
 import { Route as AuthSetupRouteImport } from './routes/auth/setup'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
+import { Route as CatalogueIndexRouteImport } from './routes/catalogue/index'
+import { Route as SettingsIndexRouteImport } from './routes/settings/index'
+import { Route as SettingsAllowlistRouteImport } from './routes/settings/allowlist'
+import { Route as SettingsRecipientProfilesRouteImport } from './routes/settings/recipient-profiles'
+import { Route as CatalogueTitlesIndexRouteImport } from './routes/catalogue/titles/index'
+import { Route as CatalogueTitlesTitleIdRouteImport } from './routes/catalogue/titles/$titleId'
+import { Route as CatalogueTitlesNewRouteImport } from './routes/catalogue/titles/new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +47,42 @@ const AuthSignInRoute = AuthSignInRouteImport.update({
   path: '/auth/sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CatalogueIndexRoute = CatalogueIndexRouteImport.update({
+  id: '/catalogue/',
+  path: '/catalogue/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsIndexRoute = SettingsIndexRouteImport.update({
+  id: '/settings/',
+  path: '/settings/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsAllowlistRoute = SettingsAllowlistRouteImport.update({
+  id: '/settings/allowlist',
+  path: '/settings/allowlist',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRecipientProfilesRoute =
+  SettingsRecipientProfilesRouteImport.update({
+    id: '/settings/recipient-profiles',
+    path: '/settings/recipient-profiles',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const CatalogueTitlesIndexRoute = CatalogueTitlesIndexRouteImport.update({
+  id: '/catalogue/titles/',
+  path: '/catalogue/titles/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CatalogueTitlesTitleIdRoute = CatalogueTitlesTitleIdRouteImport.update({
+  id: '/catalogue/titles/$titleId',
+  path: '/catalogue/titles/$titleId',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CatalogueTitlesNewRoute = CatalogueTitlesNewRouteImport.update({
+  id: '/catalogue/titles/new',
+  path: '/catalogue/titles/new',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +90,13 @@ export interface FileRoutesByFullPath {
   '/auth/preferences': typeof AuthPreferencesRoute
   '/auth/setup': typeof AuthSetupRoute
   '/auth/sign-in': typeof AuthSignInRoute
+  '/settings/allowlist': typeof SettingsAllowlistRoute
+  '/settings/recipient-profiles': typeof SettingsRecipientProfilesRoute
+  '/catalogue/': typeof CatalogueIndexRoute
+  '/settings/': typeof SettingsIndexRoute
+  '/catalogue/titles/$titleId': typeof CatalogueTitlesTitleIdRoute
+  '/catalogue/titles/new': typeof CatalogueTitlesNewRoute
+  '/catalogue/titles/': typeof CatalogueTitlesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +104,13 @@ export interface FileRoutesByTo {
   '/auth/preferences': typeof AuthPreferencesRoute
   '/auth/setup': typeof AuthSetupRoute
   '/auth/sign-in': typeof AuthSignInRoute
+  '/settings/allowlist': typeof SettingsAllowlistRoute
+  '/settings/recipient-profiles': typeof SettingsRecipientProfilesRoute
+  '/catalogue': typeof CatalogueIndexRoute
+  '/settings': typeof SettingsIndexRoute
+  '/catalogue/titles/$titleId': typeof CatalogueTitlesTitleIdRoute
+  '/catalogue/titles/new': typeof CatalogueTitlesNewRoute
+  '/catalogue/titles': typeof CatalogueTitlesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,6 +119,13 @@ export interface FileRoutesById {
   '/auth/preferences': typeof AuthPreferencesRoute
   '/auth/setup': typeof AuthSetupRoute
   '/auth/sign-in': typeof AuthSignInRoute
+  '/settings/allowlist': typeof SettingsAllowlistRoute
+  '/settings/recipient-profiles': typeof SettingsRecipientProfilesRoute
+  '/catalogue/': typeof CatalogueIndexRoute
+  '/settings/': typeof SettingsIndexRoute
+  '/catalogue/titles/$titleId': typeof CatalogueTitlesTitleIdRoute
+  '/catalogue/titles/new': typeof CatalogueTitlesNewRoute
+  '/catalogue/titles/': typeof CatalogueTitlesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -71,6 +135,13 @@ export interface FileRouteTypes {
     | '/auth/preferences'
     | '/auth/setup'
     | '/auth/sign-in'
+    | '/settings/allowlist'
+    | '/settings/recipient-profiles'
+    | '/catalogue/'
+    | '/settings/'
+    | '/catalogue/titles/$titleId'
+    | '/catalogue/titles/new'
+    | '/catalogue/titles/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -78,6 +149,13 @@ export interface FileRouteTypes {
     | '/auth/preferences'
     | '/auth/setup'
     | '/auth/sign-in'
+    | '/settings/allowlist'
+    | '/settings/recipient-profiles'
+    | '/catalogue'
+    | '/settings'
+    | '/catalogue/titles/$titleId'
+    | '/catalogue/titles/new'
+    | '/catalogue/titles'
   id:
     | '__root__'
     | '/'
@@ -85,6 +163,13 @@ export interface FileRouteTypes {
     | '/auth/preferences'
     | '/auth/setup'
     | '/auth/sign-in'
+    | '/settings/allowlist'
+    | '/settings/recipient-profiles'
+    | '/catalogue/'
+    | '/settings/'
+    | '/catalogue/titles/$titleId'
+    | '/catalogue/titles/new'
+    | '/catalogue/titles/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -93,6 +178,13 @@ export interface RootRouteChildren {
   AuthPreferencesRoute: typeof AuthPreferencesRoute
   AuthSetupRoute: typeof AuthSetupRoute
   AuthSignInRoute: typeof AuthSignInRoute
+  SettingsAllowlistRoute: typeof SettingsAllowlistRoute
+  SettingsRecipientProfilesRoute: typeof SettingsRecipientProfilesRoute
+  CatalogueIndexRoute: typeof CatalogueIndexRoute
+  SettingsIndexRoute: typeof SettingsIndexRoute
+  CatalogueTitlesTitleIdRoute: typeof CatalogueTitlesTitleIdRoute
+  CatalogueTitlesNewRoute: typeof CatalogueTitlesNewRoute
+  CatalogueTitlesIndexRoute: typeof CatalogueTitlesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -132,6 +224,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthSignInRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/catalogue/': {
+      id: '/catalogue/'
+      path: '/catalogue'
+      fullPath: '/catalogue/'
+      preLoaderRoute: typeof CatalogueIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/': {
+      id: '/settings/'
+      path: '/settings'
+      fullPath: '/settings/'
+      preLoaderRoute: typeof SettingsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/allowlist': {
+      id: '/settings/allowlist'
+      path: '/settings/allowlist'
+      fullPath: '/settings/allowlist'
+      preLoaderRoute: typeof SettingsAllowlistRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/recipient-profiles': {
+      id: '/settings/recipient-profiles'
+      path: '/settings/recipient-profiles'
+      fullPath: '/settings/recipient-profiles'
+      preLoaderRoute: typeof SettingsRecipientProfilesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/catalogue/titles/': {
+      id: '/catalogue/titles/'
+      path: '/catalogue/titles'
+      fullPath: '/catalogue/titles/'
+      preLoaderRoute: typeof CatalogueTitlesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/catalogue/titles/$titleId': {
+      id: '/catalogue/titles/$titleId'
+      path: '/catalogue/titles/$titleId'
+      fullPath: '/catalogue/titles/$titleId'
+      preLoaderRoute: typeof CatalogueTitlesTitleIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/catalogue/titles/new': {
+      id: '/catalogue/titles/new'
+      path: '/catalogue/titles/new'
+      fullPath: '/catalogue/titles/new'
+      preLoaderRoute: typeof CatalogueTitlesNewRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -141,6 +282,13 @@ const rootRouteChildren: RootRouteChildren = {
   AuthPreferencesRoute: AuthPreferencesRoute,
   AuthSetupRoute: AuthSetupRoute,
   AuthSignInRoute: AuthSignInRoute,
+  SettingsAllowlistRoute: SettingsAllowlistRoute,
+  SettingsRecipientProfilesRoute: SettingsRecipientProfilesRoute,
+  CatalogueIndexRoute: CatalogueIndexRoute,
+  SettingsIndexRoute: SettingsIndexRoute,
+  CatalogueTitlesTitleIdRoute: CatalogueTitlesTitleIdRoute,
+  CatalogueTitlesNewRoute: CatalogueTitlesNewRoute,
+  CatalogueTitlesIndexRoute: CatalogueTitlesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

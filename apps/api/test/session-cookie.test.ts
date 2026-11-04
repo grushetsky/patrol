@@ -56,6 +56,7 @@ describe("session tokens", () => {
       DATABASE_URL: "postgres://x",
       PATROL_ENV: "production",
       PATROL_RECOVERY_PEPPER: "test-only pepper",
+      PATROL_CONTACT_EMAIL: "ops@example.test",
     });
     const cookie = sessionCookie(production, TEST_TOKEN);
     expect(cookie.startsWith("__Host-patrol_session=")).toBe(true);

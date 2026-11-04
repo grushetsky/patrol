@@ -43,7 +43,7 @@ describe("system routes against the test database", () => {
     expect(response.statusCode).toBe(200);
     const body = response.json();
     expect(body.buildVersion).toBe("test-build");
-    expect(body.migrationVersion).toBe("1");
+    expect(body.migrationVersion).toBe("2");
     expect(body.schemaCompatible).toBe(true);
     expect(getValidator("VersionReport")(body)).toBe(true);
   });
@@ -59,7 +59,7 @@ describe("system routes against the test database", () => {
       expect(typeof body.message).toBe("string");
       expect(getValidator("ErrorBody")(body)).toBe(true);
     } finally {
-      await pool.query("update patrol_meta set schema_version = 1");
+      await pool.query("update patrol_meta set schema_version = 2");
     }
   });
 
@@ -72,7 +72,7 @@ describe("system routes against the test database", () => {
       expect(response.json().code).toBe("schema_mismatch");
     } finally {
       await pool.query(
-        "insert into patrol_meta (singleton, schema_version, applied_at, name) values (true, 1, now(), '0001_identity')",
+        "insert into patrol_meta (singleton, schema_version, applied_at, name) values (true, 2, now(), '0002_catalogue')",
       );
     }
   });

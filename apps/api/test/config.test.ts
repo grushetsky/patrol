@@ -22,6 +22,7 @@ describe("recovery pepper configuration", () => {
       DATABASE_URL: "postgres://x",
       PATROL_ENV: "production",
       PATROL_RECOVERY_PEPPER: "a real deployment secret",
+      PATROL_CONTACT_EMAIL: "ops@example.test",
     });
     expect(config.recoveryPepper).toBe("a real deployment secret");
     expect(config.env).toBe("production");
@@ -33,5 +34,33 @@ describe("recovery pepper configuration", () => {
       PATROL_ENV: "dev",
     });
     expect(config.recoveryPepper).toBe("patrol-development-recovery-pepper");
+  });
+});
+
+/**
+ * The Wikidata contact address's environment rule, cut to the pepper's
+ * pattern: the design requires a contactable User-Agent, so production
+ * boots only with PATROL_CONTACT_EMAIL set, while every other environment
+ * warns and names its unconfigured state in the agent string.
+ */
+describe("wikidata contact configuration", () => {
+  it("refuses to boot in production without PATROL_CONTACT_EMAIL", () => {
+    expect(() =>
+      loadConfig({
+        DATABASE_URL: "postgres://x",
+        PATROL_ENV: "production",
+        PATROL_RECOVERY_PEPPER: "a real deployment secret",
+      }),
+    ).toThrow(/PATROL_CONTACT_EMAIL/);
+  });
+
+  it("carries the address in the User-Agent and states its absence otherwise", () => {
+    const configured = loadConfig({
+      DATABASE_URL: "postgres://x",
+      PATROL_CONTACT_EMAIL: "ops@example.test",
+    });
+    expect(configured.wikidataUserAgent).toContain("contact: ops@example.test");
+    const unconfigured = loadConfig({ DATABASE_URL: "postgres://x" });
+    expect(unconfigured.wikidataUserAgent).toContain("contact unset");
   });
 });

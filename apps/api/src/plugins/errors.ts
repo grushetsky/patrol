@@ -48,6 +48,12 @@ export const errorsPlugin: FastifyPluginAsync = fp(async (app) => {
         ...(error.fieldErrors !== undefined
           ? { fieldErrors: error.fieldErrors }
           : {}),
+        ...(error.existingTitleId !== undefined
+          ? { existingTitleId: error.existingTitleId }
+          : {}),
+        ...(error.blockingTitleId !== undefined
+          ? { blockingTitleId: error.blockingTitleId }
+          : {}),
       });
       return;
     }

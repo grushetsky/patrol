@@ -38,11 +38,14 @@ export type ApiErrorCode =
   | "forbidden"
   | "not_found"
   | "state_conflict"
+  | "unprocessable"
+  | "duplicate_title"
   | "duplicate_entity"
   | "last_administrator"
   | "setup_required"
   | "schema_mismatch"
   | "rate_limited"
+  | "upstream_unavailable"
   | "internal_error";
 
 /** The catalogue key each code renders through. */
@@ -58,29 +61,42 @@ const MESSAGE_KEYS: Record<ApiErrorCode, MessageKey> = {
   forbidden: "errors.forbidden",
   not_found: "errors.not_found",
   state_conflict: "errors.state_conflict",
+  unprocessable: "errors.unprocessable",
+  duplicate_title: "errors.duplicate_title",
   duplicate_entity: "errors.duplicate_entity",
   last_administrator: "errors.last_administrator",
   setup_required: "errors.setup_required",
   schema_mismatch: "errors.schema_mismatch",
   rate_limited: "errors.rate_limited",
+  upstream_unavailable: "errors.upstream_unavailable",
   internal_error: "errors.internal_error",
 };
 
 /**
- * A domain rejection the error handler maps onto the contract's ErrorBody:
- * the status, the stable code, the localized display message, and the
- * optional retryAfterSeconds and fieldErrors the body carries.
+ * A domain rejection the error handler maps onto the contract's ErrorBody
+ * (ConflictBody where the code is a conflict): the status, the stable code,
+ * the localized display message, and the optional retryAfterSeconds,
+ * fieldErrors, and conflict pointers the body carries.
  */
 export class ApiError extends Error {
   readonly statusCode: number;
   readonly code: ApiErrorCode;
   readonly retryAfterSeconds?: number;
   readonly fieldErrors?: FieldError[];
+  /** The tracked title that already exists, on a blocked create. */
+  readonly existingTitleId?: string;
+  /** The title a merge was blocked on, when a guard refused it. */
+  readonly blockingTitleId?: string;
 
   constructor(
     statusCode: number,
     code: ApiErrorCode,
-    options: { retryAfterSeconds?: number; fieldErrors?: FieldError[] } = {},
+    options: {
+      retryAfterSeconds?: number;
+      fieldErrors?: FieldError[];
+      existingTitleId?: string;
+      blockingTitleId?: string;
+    } = {},
   ) {
     super(`${statusCode} ${code}`);
     this.name = "ApiError";
@@ -88,6 +104,8 @@ export class ApiError extends Error {
     this.code = code;
     this.retryAfterSeconds = options.retryAfterSeconds;
     this.fieldErrors = options.fieldErrors;
+    this.existingTitleId = options.existingTitleId;
+    this.blockingTitleId = options.blockingTitleId;
   }
 
   /** The catalogue key the display message resolves through. */

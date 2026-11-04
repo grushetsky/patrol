@@ -9,6 +9,8 @@ import { authPlugin } from "./plugins/auth.js";
 import { systemRoutes, type SystemDeps } from "./routes/system.js";
 import { authRoutes } from "./routes/auth.js";
 import { operatorRoutes } from "./routes/operators.js";
+import { catalogueRoutes } from "./routes/catalogue.js";
+import { settingsRoutes } from "./routes/settings.js";
 import { readSetupState } from "./domain/bootstrap.js";
 import type { MailTransport } from "./mail/transport.js";
 
@@ -71,6 +73,14 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   );
   await app.register(
     operatorRoutes({ config: deps.config, pool: deps.pool, mail: deps.mail }),
+    { prefix: "/api" },
+  );
+  await app.register(
+    catalogueRoutes({ config: deps.config, pool: deps.pool }),
+    { prefix: "/api" },
+  );
+  await app.register(
+    settingsRoutes({ config: deps.config, pool: deps.pool }),
     { prefix: "/api" },
   );
 
