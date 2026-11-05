@@ -20,6 +20,8 @@ import { Route as NoticesNoticeIdRouteImport } from './routes/notices/$noticeId'
 import { Route as ReviewIndexRouteImport } from './routes/review/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SettingsAllowlistRouteImport } from './routes/settings/allowlist'
+import { Route as SettingsLegalHoldsRouteImport } from './routes/settings/legal-holds'
+import { Route as SettingsOperatorsRouteImport } from './routes/settings/operators'
 import { Route as SettingsRecipientProfilesRouteImport } from './routes/settings/recipient-profiles'
 import { Route as SubmissionsIndexRouteImport } from './routes/submissions/index'
 import { Route as ViolationsIndexRouteImport } from './routes/violations/index'
@@ -82,6 +84,16 @@ const SettingsAllowlistRoute = SettingsAllowlistRouteImport.update({
   path: '/settings/allowlist',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SettingsLegalHoldsRoute = SettingsLegalHoldsRouteImport.update({
+  id: '/settings/legal-holds',
+  path: '/settings/legal-holds',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsOperatorsRoute = SettingsOperatorsRouteImport.update({
+  id: '/settings/operators',
+  path: '/settings/operators',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SettingsRecipientProfilesRoute =
   SettingsRecipientProfilesRouteImport.update({
     id: '/settings/recipient-profiles',
@@ -122,6 +134,8 @@ export interface FileRoutesByFullPath {
   '/auth/sign-in': typeof AuthSignInRoute
   '/notices/$noticeId': typeof NoticesNoticeIdRoute
   '/settings/allowlist': typeof SettingsAllowlistRoute
+  '/settings/legal-holds': typeof SettingsLegalHoldsRoute
+  '/settings/operators': typeof SettingsOperatorsRoute
   '/settings/recipient-profiles': typeof SettingsRecipientProfilesRoute
   '/catalogue/': typeof CatalogueIndexRoute
   '/notices/': typeof NoticesIndexRoute
@@ -141,6 +155,8 @@ export interface FileRoutesByTo {
   '/auth/sign-in': typeof AuthSignInRoute
   '/notices/$noticeId': typeof NoticesNoticeIdRoute
   '/settings/allowlist': typeof SettingsAllowlistRoute
+  '/settings/legal-holds': typeof SettingsLegalHoldsRoute
+  '/settings/operators': typeof SettingsOperatorsRoute
   '/settings/recipient-profiles': typeof SettingsRecipientProfilesRoute
   '/catalogue': typeof CatalogueIndexRoute
   '/notices': typeof NoticesIndexRoute
@@ -161,6 +177,8 @@ export interface FileRoutesById {
   '/auth/sign-in': typeof AuthSignInRoute
   '/notices/$noticeId': typeof NoticesNoticeIdRoute
   '/settings/allowlist': typeof SettingsAllowlistRoute
+  '/settings/legal-holds': typeof SettingsLegalHoldsRoute
+  '/settings/operators': typeof SettingsOperatorsRoute
   '/settings/recipient-profiles': typeof SettingsRecipientProfilesRoute
   '/catalogue/': typeof CatalogueIndexRoute
   '/notices/': typeof NoticesIndexRoute
@@ -182,6 +200,8 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/notices/$noticeId'
     | '/settings/allowlist'
+    | '/settings/legal-holds'
+    | '/settings/operators'
     | '/settings/recipient-profiles'
     | '/catalogue/'
     | '/notices/'
@@ -201,6 +221,8 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/notices/$noticeId'
     | '/settings/allowlist'
+    | '/settings/legal-holds'
+    | '/settings/operators'
     | '/settings/recipient-profiles'
     | '/catalogue'
     | '/notices'
@@ -220,6 +242,8 @@ export interface FileRouteTypes {
     | '/auth/sign-in'
     | '/notices/$noticeId'
     | '/settings/allowlist'
+    | '/settings/legal-holds'
+    | '/settings/operators'
     | '/settings/recipient-profiles'
     | '/catalogue/'
     | '/notices/'
@@ -240,6 +264,8 @@ export interface RootRouteChildren {
   AuthSignInRoute: typeof AuthSignInRoute
   NoticesNoticeIdRoute: typeof NoticesNoticeIdRoute
   SettingsAllowlistRoute: typeof SettingsAllowlistRoute
+  SettingsLegalHoldsRoute: typeof SettingsLegalHoldsRoute
+  SettingsOperatorsRoute: typeof SettingsOperatorsRoute
   SettingsRecipientProfilesRoute: typeof SettingsRecipientProfilesRoute
   CatalogueIndexRoute: typeof CatalogueIndexRoute
   NoticesIndexRoute: typeof NoticesIndexRoute
@@ -331,6 +357,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsAllowlistRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/settings/legal-holds': {
+      id: '/settings/legal-holds'
+      path: '/settings/legal-holds'
+      fullPath: '/settings/legal-holds'
+      preLoaderRoute: typeof SettingsLegalHoldsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings/operators': {
+      id: '/settings/operators'
+      path: '/settings/operators'
+      fullPath: '/settings/operators'
+      preLoaderRoute: typeof SettingsOperatorsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/settings/recipient-profiles': {
       id: '/settings/recipient-profiles'
       path: '/settings/recipient-profiles'
@@ -384,6 +424,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthSignInRoute: AuthSignInRoute,
   NoticesNoticeIdRoute: NoticesNoticeIdRoute,
   SettingsAllowlistRoute: SettingsAllowlistRoute,
+  SettingsLegalHoldsRoute: SettingsLegalHoldsRoute,
+  SettingsOperatorsRoute: SettingsOperatorsRoute,
   SettingsRecipientProfilesRoute: SettingsRecipientProfilesRoute,
   CatalogueIndexRoute: CatalogueIndexRoute,
   NoticesIndexRoute: NoticesIndexRoute,

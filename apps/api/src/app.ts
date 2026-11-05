@@ -6,6 +6,7 @@ import { errorsPlugin } from "./plugins/errors.js";
 import { requestIdPlugin } from "./plugins/request-id.js";
 import { validatorPlugin } from "./plugins/validator.js";
 import { authPlugin } from "./plugins/auth.js";
+import { rateLimitPlugin } from "./plugins/rate-limit.js";
 import { systemRoutes, type SystemDeps } from "./routes/system.js";
 import { authRoutes } from "./routes/auth.js";
 import { operatorRoutes } from "./routes/operators.js";
@@ -94,6 +95,12 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
 
   await app.register(requestIdPlugin);
   await app.register(validatorPlugin);
+  // Registered before the auth plugin, so its preHandler (the ceilings)
+  // runs ahead of the setup gate, CSRF, and the role guard: every request
+  // spends its sender's window whatever the guards then decide. The
+  // session itself resolves in the auth plugin's onRequest hook, which
+  // runs before every preHandler — the limiter sees it.
+  await app.register(rateLimitPlugin(deps.config.rateLimit));
   // Before the error handler: session and locale resolve on every request,
   // including the ones that fail.
   await app.register(authPlugin, { config: deps.config, pool: deps.pool });

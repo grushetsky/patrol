@@ -4,6 +4,7 @@ import pino from "pino";
 import PgBoss from "pg-boss";
 import { assertSchema, expectedSchemaStamp } from "@patrol/db";
 import { S3EvidenceStore, enqueueCapture, s3ConfigFromEnv } from "@patrol/evidence";
+import { mailTransportFromEnv } from "@patrol/mail";
 import { violationBackedLadderPredicates } from "@patrol/scans";
 import { loadWorkerConfig, packageVersion } from "./config.js";
 import { FakeSerpAcquisitor } from "./acquisition/fake.js";
@@ -22,6 +23,7 @@ import {
   CRON_JOBS,
   ENGINE_QUEUES,
   recheckScheduleJob,
+  retentionPurgeJob,
   routeProbeJob,
   scanRunJob,
   scanScheduleJob,
@@ -181,9 +183,33 @@ async function boot(): Promise<void> {
     retentionMinutes: 60 * 24,
   });
 
+  // The evidence store comes up before the job workers register: the
+  // capture runner writes through it and the daily retention purge deletes
+  // through it, so both close over one ready store.
+  const evidenceStore = new S3EvidenceStore(s3ConfigFromEnv());
+  try {
+    await evidenceStore.ensureReady();
+  } catch (error) {
+    log.error({ err: error }, "worker cannot ready the evidence bucket; refusing to start");
+    await boss.stop({ close: false, graceful: true, timeout: 5_000 }).catch(() => undefined);
+    await pool.end().catch(() => undefined);
+    process.exit(1);
+  }
+
   const adapters = buildAdapters();
   const dispatch = bossDispatcher(boss);
   const dispatchCapture = captureDispatcher(boss);
+  // The operator-mailbox transport the alert jobs deliver through
+  // (scan-scheduling.md "Alerts"): SMTP where the deployment configured a
+  // relay, the console transport otherwise. Delivery is best-effort beside
+  // the durable alert rows — a failed send is a log line, never a retry
+  // that re-fires an alert.
+  const mail = mailTransportFromEnv(process.env);
+  if (config.alertEmail === null) {
+    log.warn(
+      "PATROL_ALERT_EMAIL (or PATROL_CONTACT_EMAIL) is not set; alert emails are skipped — the alert rows and the UI surfacing still stand",
+    );
+  }
   const executor: ExecutorDeps = {
     pool,
     now: config.now,
@@ -253,13 +279,25 @@ async function boot(): Promise<void> {
           await submissionDraftJob({ pool, now: config.now }, jobLog);
           break;
         case "submission.remind":
-          await submissionRemindJob({ pool, now: config.now }, jobLog);
+          await submissionRemindJob(
+            { pool, now: config.now, mail, alertEmail: config.alertEmail },
+            jobLog,
+          );
           break;
         case "budget.rollover":
           await budgetRolloverJob({ pool, now: config.now }, jobLog);
           break;
         case "budget.balance":
-          await budgetBalanceJob({ pool, now: config.now, adapters }, jobLog);
+          await budgetBalanceJob(
+            { pool, now: config.now, adapters, mail, alertEmail: config.alertEmail },
+            jobLog,
+          );
+          break;
+        case "retention.purge":
+          await retentionPurgeJob(
+            { pool, now: config.now, store: evidenceStore },
+            jobLog,
+          );
           break;
         case "route.probe":
           await routeProbeJob({ pool, now: config.now, adapters, dispatch }, jobLog);
@@ -273,15 +311,6 @@ async function boot(): Promise<void> {
   // limiter — one capture per host at a time, spacing between same-host
   // captures, a handful overall — is what politeness means here, and the
   // N registered workers are only the concurrency the limiter then bounds.
-  const evidenceStore = new S3EvidenceStore(s3ConfigFromEnv());
-  try {
-    await evidenceStore.ensureReady();
-  } catch (error) {
-    log.error({ err: error }, "worker cannot ready the evidence bucket; refusing to start");
-    await boss.stop({ close: false, graceful: true, timeout: 5_000 }).catch(() => undefined);
-    await pool.end().catch(() => undefined);
-    process.exit(1);
-  }
   const browser = await launchCaptureBrowser();
   const limiter = new CaptureLimiter({
     overallConcurrency: config.captureConcurrency,

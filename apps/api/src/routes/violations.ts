@@ -8,16 +8,22 @@ import {
 } from "../domain/review/violations.js";
 import { capturePort, captureViolationUrl } from "../domain/review/captures.js";
 import { violationJson } from "../domain/review/serialize.js";
+import {
+  createLegalHoldRoute,
+  listLegalHoldsPage,
+  releaseLegalHoldRoute,
+} from "../domain/legal-holds.js";
 import { ApiError } from "../errors.js";
 import { sendCaptureAnswer } from "./support.js";
 
 /**
- * The Violations interface (Patrol.Http): the list with its filters
- * (tracked title, state, notice), the detail with its citations and
- * confirming decision, the operator closure (terminal, `state_conflict`
- * on a closed or removed row), and capture on demand for review or
- * handoff. A violation is never reopened: a reappearing URL is a new row
- * with a predecessor, which the confirm path builds.
+ * The Violations, and the LegalHolds interfaces (Patrol.Http): the list
+ * with its filters (tracked title, state, notice), the detail with its
+ * citations and confirming decision, the operator closure (terminal,
+ * `state_conflict` on a closed or removed row), capture on demand for
+ * review or handoff, and the legal holds that outrank every purge rule
+ * until released. A violation is never reopened: a reappearing URL is a
+ * new row with a predecessor, which the confirm path builds.
  */
 
 export interface ViolationsRoutesDeps {
@@ -78,6 +84,41 @@ export function violationsRoutes(deps: ViolationsRoutesDeps): FastifyPluginAsync
         body.reason === "detection" ? "review" : body.reason,
       );
       return sendCaptureAnswer(reply, config.now, answer);
+    });
+
+    app.get("/legal-holds", async (request) =>
+      listLegalHoldsPage(pool, request.query as Record<string, unknown>),
+    );
+
+    app.post("/legal-holds", async (request, reply) => {
+      const actor = request.session!;
+      const body = app.validate(request.body, "CreateLegalHoldRequest") as {
+        reason: string;
+        evidenceIds?: string[];
+        violationIds?: string[];
+        noticeIds?: string[];
+      };
+      const hold = await createLegalHoldRoute(
+        { pool, now: config.now },
+        actor.operator.id,
+        body,
+      );
+      reply.status(201);
+      return hold;
+    });
+
+    app.post("/legal-holds/:legalHoldId/release", async (request) => {
+      const actor = request.session!;
+      const { legalHoldId } = request.params as { legalHoldId: string };
+      const body = app.validate(request.body, "ReleaseLegalHoldRequest") as {
+        reason: string;
+      };
+      return releaseLegalHoldRoute(
+        { pool, now: config.now },
+        actor.operator.id,
+        legalHoldId,
+        body.reason,
+      );
     });
   };
 }

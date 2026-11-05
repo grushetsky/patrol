@@ -1,0 +1,28 @@
+{
+  "name": "@patrol/mail",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The outbound mail port shared by the API and the worker: the transport implementations (memory, console, SMTP) and the operator-mailbox alert delivery the scheduling jobs drive.",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run"
+  },
+  "dependencies": {
+    "@patrol/i18n": "workspace:*",
+    "nodemailer": "^7.0.10"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "@types/nodemailer": "^7.0.4",
+    "typescript": "5.9.3",
+    "vitest": "^5.1.0"
+  }
+}

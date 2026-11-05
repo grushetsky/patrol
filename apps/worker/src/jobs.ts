@@ -6,8 +6,15 @@ import {
   rollOverMonth,
 } from "@patrol/budget";
 import {
+  deliverBudgetAlertEmail,
+  deliverSubmissionReminderEmail,
+  type MailTransport,
+} from "@patrol/mail";
+import {
   duePendingCaptureIds,
   reapStaleRunningCaptures,
+  runRetentionPurge,
+  type RetentionStore,
 } from "@patrol/evidence";
 import {
   raiseSubmissionAlerts,
@@ -33,8 +40,8 @@ import { runCapture, type CaptureRunnerDeps } from "./capture/runner.js";
  * one PostgreSQL for jobs). One queue per engine holds concurrency at one
  * so a provider never sees a burst from Patrol, and the cron jobs drive
  * the schedule, the re-checks, the capture sweep, the submission-draft
- * windows, the rollover, the balance probe, and the route probe. Retention
- * purging arrives with its slice and is deliberately absent.
+ * windows, the rollover, the balance probe, the route probe, and the
+ * daily retention purge.
  *
  * pg-boss keeps its tables in its own schema (PATROL_BOSS_SCHEMA,
  * `pgboss` by default), created and versioned by `boss.start()` — the
@@ -64,6 +71,10 @@ export const CRON_JOBS = {
   "budget.rollover": "0 0 1 * *",
   "budget.balance": "0 6 * * *",
   "route.probe": "0 * * * *",
+  // Retention purging (evidence-capture.md "Retention"): daily, in the
+  // quiet window after the balance probe and before the day's scans, so a
+  // large backlog of object deletes never races the morning's captures.
+  "retention.purge": "20 4 * * *",
 } as const;
 
 export type CronJobName = keyof typeof CRON_JOBS;
@@ -259,16 +270,46 @@ export async function submissionDraftJob(
  * is retried by it (the contact rule: every submission names an operator).
  */
 export async function submissionRemindJob(
-  deps: { pool: Pool; now: () => Date },
+  deps: {
+    pool: Pool;
+    now: () => Date;
+    /** The operator-mailbox delivery; absent skips it (the rows still stand). */
+    mail?: MailTransport;
+    /** The configured operator mailbox the digest lands in. */
+    alertEmail?: string | null;
+  },
   log: (message: string, extra?: Record<string, unknown>) => void,
 ): Promise<void> {
-  const { backlog, raised } = await raiseSubmissionAlerts(deps.pool, deps.now, REMINDER_DAYS);
+  const { pool, now } = deps;
+  const { backlog, raised } = await raiseSubmissionAlerts(pool, now, REMINDER_DAYS);
   if (backlog.length > 0) {
     log("submission.remind surfaced pending submissions older than seven days", {
       count: backlog.length,
       ids: backlog.map((item) => item.submissionId),
       raised: raised.length,
     });
+  }
+  // The mailbox half follows the rows' own fire-once: one digest, and only
+  // for a run that raised at least one new alert row — an unchanged
+  // backlog never re-emails. A delivery failure is logged, not thrown:
+  // the durable half already stands and tomorrow's run re-sends nothing,
+  // so the operator's recovery is the dashboard badge the rows feed.
+  if (deps.mail !== undefined && deps.alertEmail && raised.length > 0) {
+    try {
+      await deliverSubmissionReminderEmail(deps.mail, {
+        to: deps.alertEmail,
+        items: backlog,
+      });
+      log("submission.remind delivered the backlog digest", {
+        to: deps.alertEmail,
+        count: backlog.length,
+      });
+    } catch (error) {
+      log("submission.remind could not deliver the backlog digest", {
+        to: deps.alertEmail,
+        err: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 }
 
@@ -300,6 +341,10 @@ export async function budgetBalanceJob(
     pool: Pool;
     now: () => Date;
     adapters: ReadonlyMap<string, SerpAcquisitor>;
+    /** The operator-mailbox delivery; absent skips it (the rows still stand). */
+    mail?: MailTransport;
+    /** The configured operator mailbox the alerts land in. */
+    alertEmail?: string | null;
   },
   log: (message: string, extra?: Record<string, unknown>) => void,
 ): Promise<void> {
@@ -318,6 +363,58 @@ export async function budgetBalanceJob(
       outcome: reading.outcome,
       fired: fired.length,
     });
+    // Mailbox delivery follows the evaluator's fire-once exactly: only the
+    // rows this evaluation newly fired are emailed, so the database's
+    // unique key — not the mailer — decides what a mailbox sees once. A
+    // delivery failure is logged and left: the durable half stands, the
+    // dashboard reads it, and the alert never re-fires to retry a send.
+    if (deps.mail !== undefined && deps.alertEmail) {
+      for (const alert of fired) {
+        try {
+          await deliverBudgetAlertEmail(deps.mail, {
+            to: deps.alertEmail,
+            alert: {
+              engine: alert.engine,
+              threshold: alert.threshold,
+              bucket: alert.bucket,
+              level: alert.level,
+              percentUsed: alert.percentUsed,
+              groupsNotScanned: alert.groupsNotScanned,
+            },
+          });
+        } catch (error) {
+          log("budget.balance could not deliver an alert email", {
+            to: deps.alertEmail,
+            engine: alert.engine,
+            threshold: alert.threshold,
+            err: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+    }
+  }
+}
+
+/**
+ * `retention.purge` (daily): one pass of the retention job — the three
+ * windows, the legal-hold precedence, and the marker-before-bytes ordering
+ * (evidence-capture.md "Retention"). The summary the log names is the
+ * monitoring surface the operations runbook reads: `marked` rows whose
+ * bytes are on their way out, `versionsDeleted` the deletes that landed,
+ * and the gap between a row's purge marker and its completion marker is
+ * the backlog a repeated failure would grow.
+ */
+export async function retentionPurgeJob(
+  deps: {
+    pool: Pool;
+    now: () => Date;
+    store: RetentionStore;
+  },
+  log: (message: string, extra?: Record<string, unknown>) => void,
+): Promise<void> {
+  const summary = await runRetentionPurge({ ...deps, log });
+  if (summary.due > 0 || summary.versionsDeleted > 0 || summary.rawSerpKeysDeleted > 0) {
+    log("retention.purge ran", { ...summary });
   }
 }
 

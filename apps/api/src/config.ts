@@ -65,6 +65,17 @@ export interface AppConfig {
    * reference is minted per request and carries nothing but the read.
    */
   evidenceDownloadTtlSeconds: number;
+  /**
+   * The general API rate limits (slice 9): per-session and per-IP
+   * ceilings over every route but the health probe, complementing the
+   * sign-in throttle. Environment-configurable with operator-comfortable
+   * defaults (see .env.example).
+   */
+  rateLimit: {
+    windowMs: number;
+    sessionMax: number;
+    anonymousMax: number;
+  };
 }
 
 function packageVersion(): string {
@@ -137,6 +148,21 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       env.PATROL_EVIDENCE_DOWNLOAD_TTL_SECONDS ?? "300",
       "PATROL_EVIDENCE_DOWNLOAD_TTL_SECONDS",
     ),
+    rateLimit: {
+      windowMs:
+        parsePositiveInteger(
+          env.PATROL_RATE_LIMIT_WINDOW_SECONDS ?? "60",
+          "PATROL_RATE_LIMIT_WINDOW_SECONDS",
+        ) * 1000,
+      sessionMax: parsePositiveInteger(
+        env.PATROL_RATE_LIMIT_SESSION_MAX ?? "600",
+        "PATROL_RATE_LIMIT_SESSION_MAX",
+      ),
+      anonymousMax: parsePositiveInteger(
+        env.PATROL_RATE_LIMIT_ANONYMOUS_MAX ?? "120",
+        "PATROL_RATE_LIMIT_ANONYMOUS_MAX",
+      ),
+    },
   };
 }
 

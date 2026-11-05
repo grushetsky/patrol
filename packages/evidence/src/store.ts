@@ -1,9 +1,11 @@
 import { createHash } from "node:crypto";
 import {
   CreateBucketCommand,
+  DeleteObjectCommand,
   GetObjectCommand,
   HeadBucketCommand,
   HeadObjectCommand,
+  ListObjectVersionsCommand,
   PutBucketVersioningCommand,
   PutObjectCommand,
   S3Client,
@@ -111,10 +113,26 @@ export interface PresignedDownload {
   expiresAt: Date;
 }
 
+/** One version-pinned delete the retention job issues. */
+export interface ArtifactVersionDelete {
+  kind: EvidenceArtifactKind | PackArtifactKind;
+  sha256: string;
+  /**
+   * The version the write observed and the artifact row pins; null on
+   * unversioned stores, where the delete removes the only version.
+   */
+  objectVersion: string | null;
+}
+
+/** The prefix the raw SERP payload objects Patrol owns live under. */
+export const RAW_SERP_PREFIX = "serp/";
+
 /**
  * The store's port. The worker writes through it; the API presigns through
- * it; tests inject fakes that record the calls. Deletes exist on no
- * implementation — the retention job (slice 9) owns the only purge path.
+ * it; tests inject fakes that record the calls. The retention job (slice 9)
+ * owns the only purge path: no other component deletes, and its deletes name
+ * the version the write observed so a shared blob's surviving version is
+ * never hidden behind a delete marker.
  */
 export interface EvidenceStore {
   /** Creates the bucket when absent and enables versioning. */
@@ -129,6 +147,23 @@ export interface EvidenceStore {
   putArtifact(upload: ArtifactUpload): Promise<StoredObject>;
   /** Presigns a GET for one artifact's bytes, pinned to a version. */
   presignDownload(request: PresignRequest): Promise<PresignedDownload>;
+  /**
+   * Deletes one artifact's version — the retention job's purge path alone.
+   * The caller has already set the evidence row's purge marker (metadata
+   * first, bytes second), and has checked no unpurged artifact row still
+   * references the hash, because one blob serves many records.
+   */
+  deleteArtifactVersion(request: ArtifactVersionDelete): Promise<void>;
+  /**
+   * Deletes the raw SERP payload object VERSIONS under `serp/` whose last
+   * modification precedes the cutoff — the ninety-day window for the raw
+   * payloads Patrol owns (a Yandex response stored for parser audits; the
+   * result ROWS stay in PostgreSQL permanently as provenance). Returns the
+   * keys whose versions it deleted, once per key however many versions
+   * went. When no adapter stores raw payloads the call lists an empty
+   * prefix and deletes nothing.
+   */
+  purgeRawSerpPayloadsOlderThan(cutoff: Date): Promise<string[]>;
 }
 
 /** The S3-compatible store's configuration. */
@@ -261,6 +296,68 @@ export class S3EvidenceStore implements EvidenceStore {
       expiresIn: request.expiresInSeconds,
     });
     return { url, expiresAt };
+  }
+
+  async deleteArtifactVersion(request: ArtifactVersionDelete): Promise<void> {
+    // A version-pinned delete, never an unversioned one: a delete marker
+    // would hide a key every surviving citation reads while the version
+    // stayed in storage (docs/design/evidence-capture.md "Immutability" #3).
+    await this.client.send(
+      new DeleteObjectCommand({
+        Bucket: this.bucket,
+        Key: artifactKey(request.kind, request.sha256),
+        ...(request.objectVersion === null
+          ? {}
+          : { VersionId: request.objectVersion }),
+      }),
+    );
+  }
+
+  async purgeRawSerpPayloadsOlderThan(cutoff: Date): Promise<string[]> {
+    // A versioned bucket reclaims bytes only through version-addressed
+    // deletes: an unversioned DeleteObject lays a delete marker that hides
+    // the key while every version's bytes stay in storage — the same
+    // anti-pattern the store forbids everywhere else (docs/design/
+    // evidence-capture.md "Immutability" #3). The window therefore walks
+    // object VERSIONS under the prefix and names each past-cutoff
+    // VersionId it deletes (the restore rehearsal's destroy phase uses the
+    // same pattern); delete markers carry no bytes and are left alone.
+    const deleted = new Set<string>();
+    let keyMarker: string | undefined;
+    let versionMarker: string | undefined;
+    do {
+      const listing = await this.client.send(
+        new ListObjectVersionsCommand({
+          Bucket: this.bucket,
+          Prefix: RAW_SERP_PREFIX,
+          ...(keyMarker === undefined ? {} : { KeyMarker: keyMarker }),
+          ...(versionMarker === undefined ? {} : { VersionIdMarker: versionMarker }),
+        }),
+      );
+      for (const version of listing.Versions ?? []) {
+        if (
+          version.Key === undefined ||
+          version.VersionId === undefined ||
+          version.LastModified === undefined
+        ) {
+          continue;
+        }
+        if (version.LastModified >= cutoff) {
+          continue;
+        }
+        await this.client.send(
+          new DeleteObjectCommand({
+            Bucket: this.bucket,
+            Key: version.Key,
+            VersionId: version.VersionId,
+          }),
+        );
+        deleted.add(version.Key);
+      }
+      keyMarker = listing.IsTruncated ? listing.NextKeyMarker : undefined;
+      versionMarker = listing.IsTruncated ? listing.NextVersionIdMarker : undefined;
+    } while (keyMarker !== undefined);
+    return [...deleted];
   }
 }
 

@@ -59,10 +59,24 @@ export interface PresignedDownload {
     url: string;
     expiresAt: Date;
 }
+/** One version-pinned delete the retention job issues. */
+export interface ArtifactVersionDelete {
+    kind: EvidenceArtifactKind | PackArtifactKind;
+    sha256: string;
+    /**
+     * The version the write observed and the artifact row pins; null on
+     * unversioned stores, where the delete removes the only version.
+     */
+    objectVersion: string | null;
+}
+/** The prefix the raw SERP payload objects Patrol owns live under. */
+export declare const RAW_SERP_PREFIX = "serp/";
 /**
  * The store's port. The worker writes through it; the API presigns through
- * it; tests inject fakes that record the calls. Deletes exist on no
- * implementation — the retention job (slice 9) owns the only purge path.
+ * it; tests inject fakes that record the calls. The retention job (slice 9)
+ * owns the only purge path: no other component deletes, and its deletes name
+ * the version the write observed so a shared blob's surviving version is
+ * never hidden behind a delete marker.
  */
 export interface EvidenceStore {
     /** Creates the bucket when absent and enables versioning. */
@@ -77,6 +91,23 @@ export interface EvidenceStore {
     putArtifact(upload: ArtifactUpload): Promise<StoredObject>;
     /** Presigns a GET for one artifact's bytes, pinned to a version. */
     presignDownload(request: PresignRequest): Promise<PresignedDownload>;
+    /**
+     * Deletes one artifact's version — the retention job's purge path alone.
+     * The caller has already set the evidence row's purge marker (metadata
+     * first, bytes second), and has checked no unpurged artifact row still
+     * references the hash, because one blob serves many records.
+     */
+    deleteArtifactVersion(request: ArtifactVersionDelete): Promise<void>;
+    /**
+     * Deletes the raw SERP payload object VERSIONS under `serp/` whose last
+     * modification precedes the cutoff — the ninety-day window for the raw
+     * payloads Patrol owns (a Yandex response stored for parser audits; the
+     * result ROWS stay in PostgreSQL permanently as provenance). Returns the
+     * keys whose versions it deleted, once per key however many versions
+     * went. When no adapter stores raw payloads the call lists an empty
+     * prefix and deletes nothing.
+     */
+    purgeRawSerpPayloadsOlderThan(cutoff: Date): Promise<string[]>;
 }
 /** The S3-compatible store's configuration. */
 export interface S3StoreConfig {
@@ -105,6 +136,8 @@ export declare class S3EvidenceStore implements EvidenceStore {
     putArtifact(upload: ArtifactUpload): Promise<StoredObject>;
     private readAll;
     presignDownload(request: PresignRequest): Promise<PresignedDownload>;
+    deleteArtifactVersion(request: ArtifactVersionDelete): Promise<void>;
+    purgeRawSerpPayloadsOlderThan(cutoff: Date): Promise<string[]>;
 }
 /**
  * Reads the PATROL_OBJECT_STORE_* environment into a store configuration —

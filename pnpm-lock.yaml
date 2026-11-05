@@ -31,6 +31,9 @@ importers:
       '@patrol/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@patrol/mail':
+        specifier: workspace:*
+        version: link:../../packages/mail
       '@patrol/notices':
         specifier: workspace:*
         version: link:../../packages/notices
@@ -159,6 +162,9 @@ importers:
       '@patrol/evidence':
         specifier: workspace:*
         version: link:../../packages/evidence
+      '@patrol/mail':
+        specifier: workspace:*
+        version: link:../../packages/mail
       '@patrol/notices':
         specifier: workspace:*
         version: link:../../packages/notices
@@ -301,6 +307,28 @@ importers:
       '@types/node':
         specifier: 26.6.6
         version: 26.6.6
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+      vitest:
+        specifier: ^5.1.0
+        version: 5.1.0(@types/node@26.6.6)(vite@8.3.5(@types/node@26.6.6)(esbuild@0.28.2)(jiti@2.7.0)(tsx@4.23.15)(yaml@2.9.1))
+
+  packages/mail:
+    dependencies:
+      '@patrol/i18n':
+        specifier: workspace:*
+        version: link:../i18n
+      nodemailer:
+        specifier: ^7.0.10
+        version: 7.0.13
+    devDependencies:
+      '@types/node':
+        specifier: 26.6.6
+        version: 26.6.6
+      '@types/nodemailer':
+        specifier: ^7.0.4
+        version: 7.0.12
       typescript:
         specifier: 5.9.3
         version: 5.9.3
@@ -1214,6 +1242,9 @@ packages:
   '@types/node@26.6.6':
     resolution: {integrity: sha512-MzQj+8Kx3XI40OmUAE6Qoh58ZMNstNNMwn2nfd3qWsfe7nDNSqJNzes4njhz6AHwrSHOffSLwXU6yb474Q4aog==}
 
+  '@types/nodemailer@7.0.12':
+    resolution: {integrity: sha512-80vKwiIsVSyFA1rRovH59jNPLBOuc6dRZIHEu40gXTkBkZnQv8vog1xSGEb9j5q/tdMAs5ivvDR2pLTU0hGHXA==}
+
   '@types/pg@8.23.1':
     resolution: {integrity: sha512-fKVHpikPdg4GKks3JuLEhvwSyvwzF23hnabPy6DD8ljVbC7+6J5dQzdv4arV6jqq57djnMgs1HKBxX4P8aBI3A==}
 
@@ -1868,6 +1899,10 @@ packages:
   node-releases@2.0.63:
     resolution: {integrity: sha512-6li2QanLsAXpIH2R6j77MzRyvOyrvdTqlKtO4CgBdHGNvN99ZZfyxszHc5o5+IZBWD5u6Hzwg83JoGXmqZNG9Q==}
     engines: {node: '>=18'}
+
+  nodemailer@7.0.13:
+    resolution: {integrity: sha512-PNDFSJdP+KFgdsG3ZzMXCgquO7I6McjY2vlqILjtJd0hy8wEvtugS9xKRF2NWlPNGxvLCXlTNIae4serI7dinw==}
+    engines: {node: '>=6.0.0'}
 
   obug@3.0.0:
     resolution: {integrity: sha512-5vvB5+W7ePv+p3uqxi+RcW1XAzLW0/hxt3/4X4Lc4qHudzOhmBiBwOY6DRob4WnanAEGvNcLjF+KNOufrUoEQw==}
@@ -3367,6 +3402,10 @@ snapshots:
     dependencies:
       undici-types: 8.9.0
 
+  '@types/nodemailer@7.0.12':
+    dependencies:
+      '@types/node': 26.6.6
+
   '@types/pg@8.23.1':
     dependencies:
       '@types/node': 26.6.6
@@ -3843,6 +3882,8 @@ snapshots:
   nanoid@5.1.16: {}
 
   node-releases@2.0.63: {}
+
+  nodemailer@7.0.13: {}
 
   obug@3.0.0: {}
 

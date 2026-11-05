@@ -183,6 +183,17 @@ export class MemoryStore {
       expiresAt: new Date(Date.now() + request.expiresInSeconds * 1000),
     };
   }
+
+  /** The retention purge path, present so the class satisfies the store port. */
+  async deleteArtifactVersion(
+    request: import("@patrol/evidence").ArtifactVersionDelete,
+  ): Promise<void> {
+    this.objects.delete(artifactKey(request.kind, request.sha256));
+  }
+
+  async purgeRawSerpPayloadsOlderThan(_cutoff: Date): Promise<string[]> {
+    return [];
+  }
 }
 
 /** A store whose puts fail once a designated kind arrives — the mid-write rejection. */
@@ -207,5 +218,15 @@ export class FailingStore {
     request: import("@patrol/evidence").PresignRequest,
   ): Promise<import("@patrol/evidence").PresignedDownload> {
     return this.inner.presignDownload(request);
+  }
+
+  async deleteArtifactVersion(
+    request: import("@patrol/evidence").ArtifactVersionDelete,
+  ): Promise<void> {
+    return this.inner.deleteArtifactVersion(request);
+  }
+
+  async purgeRawSerpPayloadsOlderThan(cutoff: Date): Promise<string[]> {
+    return this.inner.purgeRawSerpPayloadsOlderThan(cutoff);
   }
 }

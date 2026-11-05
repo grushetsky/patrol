@@ -32,10 +32,10 @@ describe("catalogue key parity", () => {
   });
 
   it("resolves a known key through t() in the fixed test locale", () => {
-    expect(t(TEST_LOCALE, "system.greeting")).toBe(en["system.greeting"]);
+    expect(t(TEST_LOCALE, "errors.not_found")).toBe(en["errors.not_found"]);
   });
 
   it("resolves a known key in Russian too", () => {
-    expect(t("ru", "system.greeting")).toBe(ru["system.greeting"]);
+    expect(t("ru", "errors.not_found")).toBe(ru["errors.not_found"]);
   });
 });

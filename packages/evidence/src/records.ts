@@ -332,6 +332,8 @@ export interface EvidenceRow {
   profile: CaptureProfileJson;
   purgedAt: Date | null;
   purgeReason: string | null;
+  /** When the retention job finished the row's owed object-version deletes. */
+  bytesPurgedAt: Date | null;
 }
 
 function evidenceRow(row: Record<string, unknown>): EvidenceRow {
@@ -353,6 +355,7 @@ function evidenceRow(row: Record<string, unknown>): EvidenceRow {
     profile: row.capture_profile as CaptureProfileJson,
     purgedAt: (row.purged_at ?? null) as Date | null,
     purgeReason: (row.purge_reason ?? null) as string | null,
+    bytesPurgedAt: (row.bytes_purged_at ?? null) as Date | null,
   };
 }
 

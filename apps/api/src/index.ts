@@ -2,14 +2,15 @@ import { assertSchema, readSchemaStamp } from "@patrol/db";
 import { buildApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { createDb } from "./db/client.js";
-import { ConsoleMailTransport } from "./mail/transport.js";
+import { mailTransportFromEnv } from "@patrol/mail";
 import { startScanDispatcher } from "./queue/dispatch.js";
 
 /**
  * Boot order (ADR 0028): the migrate task has already run, so the process
  * only checks the stamp and refuses to start when the database and the image
  * disagree, then listens on 0.0.0.0 for the load balancer. Mail goes through
- * the console transport until slice 9 wires the deployment's SMTP relay.
+ * the deployment's SMTP relay when one is configured (PATROL_SMTP_*), the
+ * console transport otherwise.
  *
  * The pg-boss producer starts after the stamp check: manual scan requests
  * send scan.run picker jobs into the worker's engine queues through it.
@@ -39,7 +40,10 @@ async function boot(): Promise<void> {
   const app = await buildApp({
     config,
     pool,
-    mail: new ConsoleMailTransport(),
+    // SMTP where the deployment configured a relay (PATROL_SMTP_*), the
+    // console transport otherwise — the same factory the worker's alert
+    // delivery reads, so one environment drives both processes.
+    mail: mailTransportFromEnv(process.env),
     schemaStamp: () => readSchemaStamp(pool),
     dispatcher: producer.dispatcher,
     captureDispatch: producer.captureDispatch,

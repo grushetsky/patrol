@@ -1,4 +1,5 @@
 export {
+  RAW_SERP_PREFIX,
   S3EvidenceStore,
   artifactKey,
   isThumbnailKind,
@@ -8,6 +9,7 @@ export {
 } from "./store.js";
 export type {
   ArtifactUpload,
+  ArtifactVersionDelete,
   EvidenceArtifactKind,
   EvidenceStore,
   PackArtifactKind,
@@ -53,3 +55,25 @@ export type {
   RedirectHopRow,
   SqlExecutor,
 } from "./records.js";
+export {
+  ACTIVE_HOLD_COVERS_EVIDENCE,
+  listLegalHolds,
+  placeLegalHold,
+  releaseLegalHold,
+} from "./holds.js";
+export type { LegalHoldRow, ReleaseHoldResult } from "./holds.js";
+export {
+  RAW_SERP_RETENTION_MS,
+  markBytesPurged,
+  markEvidencePurged,
+  runRetentionPurge,
+  selectDueEvidence,
+  selectOrphanArtifactVersions,
+} from "./retention.js";
+export type {
+  DueEvidence,
+  OrphanArtifactVersion,
+  PurgeReason,
+  RetentionPurgeSummary,
+  RetentionStore,
+} from "./retention.js";

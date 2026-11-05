@@ -166,6 +166,8 @@ export interface EvidenceRow {
     profile: CaptureProfileJson;
     purgedAt: Date | null;
     purgeReason: string | null;
+    /** When the retention job finished the row's owed object-version deletes. */
+    bytesPurgedAt: Date | null;
 }
 /** One artifact row (the contract's EvidenceArtifact plus the pinned version). */
 export interface EvidenceArtifactRow {

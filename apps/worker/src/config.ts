@@ -37,6 +37,14 @@ export interface WorkerConfig {
    * deployment's unconfigured state rather than a placeholder.
    */
   contactEmail: string | null;
+  /**
+   * The configured operator mailbox the alert emails land in
+   * (scan-scheduling.md "Alerts"): PATROL_ALERT_EMAIL, falling back to
+   * PATROL_CONTACT_EMAIL for deployments that run one address for both.
+   * Null disables mailbox delivery — the alert rows still stand and the
+   * UI still surfaces them.
+   */
+  alertEmail: string | null;
   /** Whether the fixture-driven fake adapter replaces the real routes. */
   fakeAdapter: boolean;
   /**
@@ -151,6 +159,10 @@ export function loadWorkerConfig(env: NodeJS.ProcessEnv = process.env): WorkerCo
     env.PATROL_CONTACT_EMAIL === undefined || env.PATROL_CONTACT_EMAIL === ""
       ? null
       : env.PATROL_CONTACT_EMAIL;
+  const alertEmail =
+    env.PATROL_ALERT_EMAIL === undefined || env.PATROL_ALERT_EMAIL === ""
+      ? contactEmail
+      : env.PATROL_ALERT_EMAIL;
   if (contactEmail === null) {
     console.warn(
       "PATROL_CONTACT_EMAIL is not set; the acquisition User-Agent will state that no contact is configured. Set it before the real routes run outside a throwaway deployment.",
@@ -183,6 +195,7 @@ export function loadWorkerConfig(env: NodeJS.ProcessEnv = process.env): WorkerCo
         ? { apiKey: yandexKey, folderId: yandexFolder }
         : null,
     contactEmail,
+    alertEmail,
     fakeAdapter: env.PATROL_FAKE_ADAPTER === "1",
     captureProfile: captureProfile(env, contactEmail, packageVersion()),
     captureRetryDelaysMs: parseDelays(

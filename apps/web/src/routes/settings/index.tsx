@@ -169,6 +169,12 @@ function SettingsIndex() {
         title={t(locale, "web.settings.title")}
         actions={
           <div className="toolbar-links">
+            <Link className="btn btn-ghost btn-sm" to="/settings/operators">
+              {t(locale, "web.settings.operators.title")}
+            </Link>
+            <Link className="btn btn-ghost btn-sm" to="/settings/legal-holds">
+              {t(locale, "web.holds.title")}
+            </Link>
             <Link className="btn btn-ghost btn-sm" to="/settings/allowlist">
               {t(locale, "web.settings.allowlist.title")}
             </Link>

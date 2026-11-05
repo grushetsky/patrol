@@ -60,15 +60,16 @@ describe("forward-only migrations", () => {
       "0008_notices",
       "0009_approval_packs",
       "0010_dashboard",
+      "0011_legal_holds",
     ]);
-    expect(highestMigrationNumber()).toBe(10);
+    expect(highestMigrationNumber()).toBe(11);
   });
 
   it("expects the carried migrations as the schema stamp", () => {
-    expect(expectedSchemaStamp()).toBe(10);
+    expect(expectedSchemaStamp()).toBe(11);
     expect(expectedSchemaStamp("11")).toBe(11);
     expect(() => expectedSchemaStamp("nope")).toThrow(/PATROL_SCHEMA_STAMP/i);
-    expect(expectedSchemaStamp(undefined)).toBe(10);
+    expect(expectedSchemaStamp(undefined)).toBe(11);
   });
 
   it("refuses duplicate migration numbers", () => {
@@ -94,15 +95,16 @@ describe("forward-only migrations", () => {
       "0008_notices",
       "0009_approval_packs",
       "0010_dashboard",
+      "0011_legal_holds",
     ]);
-    expect(schemaStamp).toBe(10);
+    expect(schemaStamp).toBe(11);
 
     const recorded = await pool.query<{ schema_version: number; name: string }>(
       "select schema_version, name from patrol_meta",
     );
     expect(recorded.rows).toHaveLength(1);
-    expect(Number(recorded.rows[0].schema_version)).toBe(10);
-    expect(recorded.rows[0].name).toBe("0010_dashboard");
+    expect(Number(recorded.rows[0].schema_version)).toBe(11);
+    expect(recorded.rows[0].name).toBe("0011_legal_holds");
 
     const meta = await pool.query(
       "select column_name from information_schema.columns where table_name = 'patrol_meta' order by column_name",
@@ -116,18 +118,18 @@ describe("forward-only migrations", () => {
   it("skips files whose number is at or below the current stamp", async () => {
     const again = await runMigrations(pool);
     expect(again.applied).toEqual([]);
-    expect(again.schemaStamp).toBe(10);
+    expect(again.schemaStamp).toBe(11);
   });
 
   it("applies only newer files and records each stamp", async () => {
     const dir = migrationDir({
       "0000_meta.sql": "select 1;",
-      "0011_probe.sql": "create table migration_probe (id integer primary key);",
+      "0012_probe.sql": "create table migration_probe (id integer primary key);",
     });
 
     const first = await runMigrations(pool, dir);
-    expect(first.applied).toEqual(["0011_probe"]);
-    expect(first.schemaStamp).toBe(11);
+    expect(first.applied).toEqual(["0012_probe"]);
+    expect(first.schemaStamp).toBe(12);
 
     const probe = await pool.query(
       "select column_name from information_schema.columns where table_name = 'migration_probe'",
@@ -141,7 +143,7 @@ describe("forward-only migrations", () => {
     });
     const second = await runMigrations(pool, lateDir);
     expect(second.applied).toEqual([]);
-    expect(second.schemaStamp).toBe(11);
+    expect(second.schemaStamp).toBe(12);
 
     const never = await pool.query<{ t: string | null }>(
       "select to_regclass('public.never_applied') as t",
@@ -151,35 +153,35 @@ describe("forward-only migrations", () => {
     // Rewind to the shipped baseline for the tests that follow.
     await pool.query("drop table migration_probe");
     await pool.query(
-      "update patrol_meta set schema_version = 10, name = '0010_dashboard'",
+      "update patrol_meta set schema_version = 11, name = '0011_legal_holds'",
     );
   });
 
   it("asserts the schema and refuses a stamp ahead of the expected version", async () => {
     await pool.query("update patrol_meta set schema_version = 99");
     try {
-      await expect(assertSchema(pool, 10)).rejects.toBeInstanceOf(
+      await expect(assertSchema(pool, 11)).rejects.toBeInstanceOf(
         SchemaMismatchError,
       );
     } finally {
-      await pool.query("update patrol_meta set schema_version = 10");
+      await pool.query("update patrol_meta set schema_version = 11");
     }
   });
 
   it("refuses a stamp behind the expected version", async () => {
-    await expect(assertSchema(pool, 11)).rejects.toThrow(/schema stamp 10/i);
+    await expect(assertSchema(pool, 12)).rejects.toThrow(/schema stamp 11/i);
   });
 
   it("refuses to boot without any stamp at all", async () => {
     await pool.query("delete from patrol_meta");
-    await expect(assertSchema(pool, 10)).rejects.toThrow(/no.*stamp/i);
+    await expect(assertSchema(pool, 11)).rejects.toThrow(/no.*stamp/i);
     // Restore the baseline this file started from.
     await dropPublicSchema(pool);
     await runMigrations(pool);
   });
 
   it("accepts a matching stamp", async () => {
-    await expect(assertSchema(pool, 10)).resolves.toBe(10);
-    expect(await readSchemaStamp(pool)).toBe(10);
+    await expect(assertSchema(pool, 11)).resolves.toBe(11);
+    expect(await readSchemaStamp(pool)).toBe(11);
   });
 });
