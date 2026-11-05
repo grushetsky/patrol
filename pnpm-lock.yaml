@@ -98,6 +98,9 @@ importers:
       '@patrol/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
+      '@patrol/notices':
+        specifier: workspace:*
+        version: link:../../packages/notices
       '@tanstack/react-query':
         specifier: 5.105.3
         version: 5.105.3(@types/react@19.3.0)(react@19.3.1)
