@@ -40,5 +40,20 @@ export type {
   QueueEntry,
   ScanTriggerName,
 } from "./scheduling.js";
-export { ENGINE_QUEUE_NAMES } from "./queues.js";
+export { CAPTURE_QUEUE_NAME, ENGINE_QUEUE_NAMES } from "./queues.js";
 export type { EngineQueueName } from "./queues.js";
+export {
+  ALLOWLIST_TIER_ORDER,
+  allowlistTier,
+  entryMatchesUrl,
+  findAllowlistHit,
+  normalizeAllowlistValue,
+} from "./allowlist.js";
+export type {
+  AllowlistHit,
+  AllowlistKind,
+  AllowlistMatchKind,
+  AllowlistOrigin,
+  AllowlistScope,
+  AllowlistTier,
+} from "./allowlist.js";

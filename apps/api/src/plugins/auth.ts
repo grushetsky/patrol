@@ -49,6 +49,7 @@ const SETUP_GATED_PREFIXES = [
   "review",
   "violations",
   "evidence",
+  "host-objections",
   "notices",
   "dashboard",
 ] as const;

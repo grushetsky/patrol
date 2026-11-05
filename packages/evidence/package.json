@@ -1,0 +1,30 @@
+{
+  "name": "@patrol/evidence",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The evidence record shared by the worker (captures) and the API (read models): the content-addressed object store, the capture enqueue port, and the host-objection lifecycle.",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test:unit": "vitest run"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1162.0",
+    "@aws-sdk/s3-request-presigner": "^3.1162.0",
+    "@patrol/domain": "workspace:*",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "@types/pg": "^8.23.1",
+    "typescript": "5.9.3",
+    "vitest": "^5.1.0"
+  }
+}

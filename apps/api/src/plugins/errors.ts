@@ -64,6 +64,9 @@ export const errorsPlugin: FastifyPluginAsync = fp(async (app) => {
         ...(error.blockingTitleId !== undefined
           ? { blockingTitleId: error.blockingTitleId }
           : {}),
+        ...(error.hostObjectionId !== undefined
+          ? { hostObjectionId: error.hostObjectionId }
+          : {}),
       });
       return;
     }

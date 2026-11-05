@@ -1,5 +1,17 @@
 import type { Pool, PoolClient } from "pg";
-import { hostForUrl, normalizeUrlKey } from "@patrol/domain";
+import {
+  ALLOWLIST_TIER_ORDER,
+  allowlistTier,
+  entryMatchesUrl,
+  findAllowlistHit as pureFindAllowlistHit,
+  normalizeAllowlistValue as pureNormalizeAllowlistValue,
+  type AllowlistHit,
+  type AllowlistKind,
+  type AllowlistMatchKind,
+  type AllowlistOrigin,
+  type AllowlistScope,
+  type AllowlistTier,
+} from "@patrol/domain";
 import { ApiError } from "../../errors.js";
 import { pageParams } from "../../routes/support.js";
 import { allowlistEntryJson, type AllowlistEntryRow } from "./serialize.js";
@@ -14,16 +26,10 @@ import { allowlistEntryJson, type AllowlistEntryRow } from "./serialize.js";
  * official domains, then global neutral sources, then learned entries,
  * then reputation blocklists — the blocklist tier arrives with slice 5 and
  * is structured here already, because blocklists never veto a per-URL
- * match.
+ * match. The vocabulary itself (kinds, match kinds, scopes, origins,
+ * tiers) is shared with the capture worker and lives in @patrol/domain;
+ * this module re-exports it so the API's import surface stays one door.
  */
-
-export type AllowlistKind =
-  | "official_domain"
-  | "licensed_destination"
-  | "neutral_source";
-export type AllowlistMatchKind = "host" | "url_prefix";
-export type AllowlistScope = "rights_holder" | "title_group" | "tracked_title";
-export type AllowlistOrigin = "operator" | "review_decision";
 
 export interface CreateAllowlistInput {
   kind: AllowlistKind;
@@ -35,72 +41,35 @@ export interface CreateAllowlistInput {
   territory?: string;
 }
 
-/** The precedence tiers, most specific and authoritative first. */
-export type AllowlistTier = "official" | "neutral" | "learned" | "blocklist";
+export { ALLOWLIST_TIER_ORDER, allowlistTier, entryMatchesUrl };
+export type {
+  AllowlistKind,
+  AllowlistMatchKind,
+  AllowlistOrigin,
+  AllowlistScope,
+  AllowlistTier,
+};
 
 /**
- * The tier an entry matches in, decided by its kind alone. Slice 5's
- * reputation blocklist extends this with an origin (a blocklist source is
- * not an allowlist entry), which is when a second parameter arrives.
- */
-export function allowlistTier(kind: AllowlistKind): AllowlistTier {
-  if (kind === "official_domain") {
-    return "official";
-  }
-  if (kind === "neutral_source") {
-    return "neutral";
-  }
-  // A licensed destination is a learned fact whichever way it was
-  // confirmed.
-  return "learned";
-}
-
-/** The tier order, for tests and the slice-5 matcher. */
-export const ALLOWLIST_TIER_ORDER: readonly AllowlistTier[] = [
-  "official",
-  "neutral",
-  "learned",
-  "blocklist",
-];
-
-/**
- * Normalizes an entry value into its matching form: a host is lowercased
- * (its leading www dropped, the way URL keys are), and a URL prefix becomes
- * the prefix of a normalized URL key, so matching compares like with like.
+ * Normalizes an entry value into its matching form through the shared pure
+ * rule, mapping a refusal onto the request's field error.
  */
 export function normalizeAllowlistValue(
   matchKind: AllowlistMatchKind,
   value: string,
 ): string {
-  if (matchKind === "host") {
-    const trimmed = value.trim().toLowerCase();
-    try {
-      return hostForUrl(`https://${trimmed}`);
-    } catch {
-      throw new ApiError(422, "unprocessable", {
-        fieldErrors: [{ path: "/value", message: "not a host" }],
-      });
-    }
-  }
   try {
-    return normalizeUrlKey(value);
+    return pureNormalizeAllowlistValue(matchKind, value);
   } catch {
     throw new ApiError(422, "unprocessable", {
-      fieldErrors: [{ path: "/value", message: "not a URL prefix" }],
+      fieldErrors: [
+        {
+          path: "/value",
+          message: matchKind === "host" ? "not a host" : "not a URL prefix",
+        },
+      ],
     });
   }
-}
-
-/** True when one entry matches a URL under its match kind. */
-export function entryMatchesUrl(
-  entry: { matchKind: AllowlistMatchKind; value: string },
-  rawUrl: string,
-): boolean {
-  const key = normalizeUrlKey(rawUrl);
-  if (entry.matchKind === "host") {
-    return hostForUrl(rawUrl) === entry.value;
-  }
-  return key === entry.value || key.startsWith(`${entry.value}/`);
 }
 
 /**
@@ -114,17 +83,8 @@ export function findAllowlistHit(
   }>,
   rawUrl: string,
 ): { matchKind: AllowlistMatchKind; value: string } | null {
-  const matches = entries.filter((entry) => entryMatchesUrl(entry, rawUrl));
-  if (matches.length === 0) {
-    return null;
-  }
-  const ranked = [...matches].sort(
-    (left, right) =>
-      ALLOWLIST_TIER_ORDER.indexOf(allowlistTier(left.kind)) -
-      ALLOWLIST_TIER_ORDER.indexOf(allowlistTier(right.kind)),
-  );
-  const best = ranked[0];
-  return { matchKind: best.matchKind, value: best.value };
+  const hit: AllowlistHit | null = pureFindAllowlistHit(entries, rawUrl);
+  return hit === null ? null : { matchKind: hit.matchKind, value: hit.value };
 }
 
 async function assertScopeTargets(

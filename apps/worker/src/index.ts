@@ -3,6 +3,7 @@ import { Pool } from "pg";
 import pino from "pino";
 import PgBoss from "pg-boss";
 import { assertSchema, expectedSchemaStamp } from "@patrol/db";
+import { S3EvidenceStore, s3ConfigFromEnv } from "@patrol/evidence";
 import { loadWorkerConfig, packageVersion } from "./config.js";
 import { FakeSerpAcquisitor } from "./acquisition/fake.js";
 import { DataForSeoAdapter } from "./acquisition/dataforseo.js";
@@ -12,6 +13,11 @@ import {
   budgetBalanceJob,
   budgetRolloverJob,
   bossDispatcher,
+  captureDispatcher,
+  captureRunJob,
+  CAPTURE_QUEUE,
+  captureRetryScheduler,
+  captureSweepJob,
   CRON_JOBS,
   ENGINE_QUEUES,
   recheckScheduleJob,
@@ -20,12 +26,17 @@ import {
   scanScheduleJob,
 } from "./jobs.js";
 import type { ExecutorDeps } from "./scans/executor.js";
+import { capturePage, launchCaptureBrowser } from "./capture/browser.js";
+import { CaptureLimiter } from "./capture/limiter.js";
+import type { CaptureRunnerDeps } from "./capture/runner.js";
 
 /**
  * The worker process (docs/design/scan-scheduling.md "Jobs"; ADR 0005):
  * pg-boss queues per engine at concurrency one, the cron jobs that drive
  * discovery and the budget, and the graceful drain a deploy relies on
- * (a scan in flight finishes rather than dying with the container). Boot
+ * (a scan in flight finishes rather than dying with the container). The
+ * cron set also carries the capture sweeper, the backstop that re-dispatches
+ * due capture retries and reaps the rows a dead worker left running. Boot
  * order: database reachability, the domain schema stamp (the migrate task
  * ran first), then `boss.start()` — pg-boss creates and versions its own
  * schema and is deliberately absent from the drizzle migrations.
@@ -155,8 +166,21 @@ async function boot(): Promise<void> {
     await boss.schedule(name, cron, {});
   }
 
+  // The capture queue (slice 4): one queue for every evidentiary fetch,
+  // with no queue-level retries — the runner owns the retry matrix and
+  // schedules its own delayed wake-ups, so a job that completes without a
+  // captured outcome is a recorded decision, not a lost one. Expiry covers
+  // the 45-second total budget with margin for the store and the record.
+  await boss.createQueue(CAPTURE_QUEUE, {
+    name: CAPTURE_QUEUE,
+    expireInSeconds: 300,
+    retryLimit: 0,
+    retentionMinutes: 60 * 24,
+  });
+
   const adapters = buildAdapters();
   const dispatch = bossDispatcher(boss);
+  const dispatchCapture = captureDispatcher(boss);
   const executor: ExecutorDeps = {
     pool,
     now: config.now,
@@ -202,6 +226,12 @@ async function boot(): Promise<void> {
         case "recheck.schedule":
           await recheckScheduleJob({ pool, now: config.now, dispatch }, jobLog);
           break;
+        case "capture.sweep":
+          await captureSweepJob(
+            { pool, now: config.now, dispatch: dispatchCapture },
+            jobLog,
+          );
+          break;
         case "budget.rollover":
           await budgetRolloverJob({ pool, now: config.now }, jobLog);
           break;
@@ -211,6 +241,49 @@ async function boot(): Promise<void> {
         case "route.probe":
           await routeProbeJob({ pool, now: config.now, adapters, dispatch }, jobLog);
           break;
+      }
+    });
+  }
+
+  // Evidence capture (slice 4): the store and the browser come up before
+  // the workers do, so the first capture never races its own plumbing. The
+  // limiter — one capture per host at a time, spacing between same-host
+  // captures, a handful overall — is what politeness means here, and the
+  // N registered workers are only the concurrency the limiter then bounds.
+  const evidenceStore = new S3EvidenceStore(s3ConfigFromEnv());
+  try {
+    await evidenceStore.ensureReady();
+  } catch (error) {
+    log.error({ err: error }, "worker cannot ready the evidence bucket; refusing to start");
+    await boss.stop({ close: false, graceful: true, timeout: 5_000 }).catch(() => undefined);
+    await pool.end().catch(() => undefined);
+    process.exit(1);
+  }
+  const browser = await launchCaptureBrowser();
+  const limiter = new CaptureLimiter({
+    overallConcurrency: config.captureConcurrency,
+    sameHostSpacingMs: config.captureSameHostSpacingMs,
+    now: () => Date.now(),
+    sleep: (ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
+  });
+  const captureRunner: CaptureRunnerDeps = {
+    pool,
+    now: config.now,
+    store: evidenceStore,
+    fetchPage: (url) => capturePage(browser, url, config.captureProfile),
+    limiter,
+    scheduleRetry: captureRetryScheduler(boss, config.now),
+    profile: config.captureProfile,
+    retryDelaysMs: config.captureRetryDelaysMs,
+  };
+  for (let worker = 0; worker < config.captureConcurrency; worker += 1) {
+    await boss.work<{ captureId: string }>(CAPTURE_QUEUE, { batchSize: 1 }, async (jobs) => {
+      for (const job of jobs) {
+        await captureRunJob(
+          captureRunner,
+          job.data.captureId,
+          (message, extra) => log.info({ ...extra, queue: CAPTURE_QUEUE, jobId: job.id }, message),
+        );
       }
     });
   }
@@ -231,10 +304,15 @@ async function boot(): Promise<void> {
 
   const shutdown = async (signal: string) => {
     clearInterval(heartbeat);
-    // Drain, don't die: a scan in flight finishes inside the timeout, and
-    // the deploy's worker replacement waits for it (ADR 0028 deploy order).
+    // Drain, don't die: a scan or a capture in flight finishes inside the
+    // timeout, and the deploy's worker replacement waits for it (ADR 0028
+    // deploy order). A capture's total budget is 45 seconds, so a drain
+    // timeout of a minute covers the slowest possible in-flight attempt.
     await boss.stop({ close: false, graceful: true, timeout: 60_000 }).catch(
       (error) => log.warn({ err: error }, "pg-boss stop reported an error"),
+    );
+    await browser.close().catch((error: unknown) =>
+      log.warn({ err: error }, "browser close reported an error"),
     );
     await pool.end().catch(() => undefined);
     log.info(`worker stopped on ${signal}`);

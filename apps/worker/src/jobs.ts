@@ -5,7 +5,11 @@ import {
   expireReservations,
   rollOverMonth,
 } from "@patrol/budget";
-import { ENGINE_QUEUE_NAMES } from "@patrol/domain";
+import {
+  duePendingCaptureIds,
+  reapStaleRunningCaptures,
+} from "@patrol/evidence";
+import { CAPTURE_QUEUE_NAME, ENGINE_QUEUE_NAMES } from "@patrol/domain";
 import type PgBoss from "pg-boss";
 import type { SerpAcquisitor } from "./acquisition/port.js";
 import { runNextScan, type ExecutorDeps } from "./scans/executor.js";
@@ -17,13 +21,15 @@ import {
 } from "./scans/store.js";
 import { probeRoutes } from "./scans/route-state.js";
 import { readRouteState } from "./scans/route-state.js";
+import { runCapture, type CaptureRunnerDeps } from "./capture/runner.js";
 
 /**
  * The pg-boss wiring (docs/design/scan-scheduling.md "Jobs"; ADR 0005:
  * one PostgreSQL for jobs). One queue per engine holds concurrency at one
  * so a provider never sees a burst from Patrol, and the cron jobs drive
- * the schedule, the re-checks, the rollover, the balance probe, and the
- * route probe. Submission drafting and retention purging arrive with
+ * the schedule, the re-checks, the capture sweep, the rollover, the
+ * balance probe, and the route probe. Submission drafting and retention
+ * purging arrive with
  * their slices and are deliberately absent.
  *
  * pg-boss keeps its tables in its own schema (PATROL_BOSS_SCHEMA,
@@ -46,12 +52,98 @@ export type EngineQueueName = (typeof ENGINE_QUEUES)[keyof typeof ENGINE_QUEUES]
 export const CRON_JOBS = {
   "scan.schedule": "*/15 * * * *",
   "recheck.schedule": "*/15 * * * *",
+  "capture.sweep": "*/15 * * * *",
   "budget.rollover": "0 0 1 * *",
   "budget.balance": "0 6 * * *",
   "route.probe": "0 * * * *",
 } as const;
 
 export type CronJobName = keyof typeof CRON_JOBS;
+
+/** The capture queue's name, single-sourced in @patrol/domain. */
+export const CAPTURE_QUEUE = CAPTURE_QUEUE_NAME;
+
+/**
+ * Sends one capture wake-up. The enqueue port (packages/evidence) calls
+ * this after its guards admit a URL; slice 5's HTTP surface reaches the
+ * same port through the API's own producer.
+ */
+export function captureDispatcher(boss: PgBoss): (captureId: string) => Promise<void> {
+  return async (captureId) => {
+    await boss.send(CAPTURE_QUEUE, { captureId });
+  };
+}
+
+/**
+ * Schedules a retry attempt's wake-up after the backoff — a delayed send,
+ * so the retry matrix lives in one place (the runner's schedule) and the
+ * queue holds nothing in memory.
+ */
+export function captureRetryScheduler(
+  boss: PgBoss,
+  now: () => Date,
+): (captureId: string, delayMs: number) => Promise<void> {
+  return async (captureId, delayMs) => {
+    await boss.send(CAPTURE_QUEUE, { captureId }, {
+      startAfter: new Date(now().getTime() + delayMs),
+    });
+  };
+}
+
+/**
+ * `capture.run`: one attempt of one queued capture. The job carries no
+ * retry of its own — the runner decides per the retry matrix (dead and
+ * captured never retry; blocked and error retry up to three attempts with
+ * backoff inside 24 hours) and schedules its own wake-up, so an exhausted
+ * job is a decision, not a loss.
+ */
+export async function captureRunJob(
+  deps: CaptureRunnerDeps,
+  captureId: string,
+  log: (message: string, extra?: Record<string, unknown>) => void,
+): Promise<void> {
+  await runCapture(deps, captureId, log);
+}
+
+/**
+ * `capture.sweep` (every 15 minutes): the capture sweeper, the backstop
+ * for rows a dead process would strand — the capture queue carries no
+ * retry of its own. A pending capture whose next attempt has come due gets
+ * its wake-up re-sent (a crash between the record and the schedule loses
+ * the original), and a running attempt older than the stale threshold —
+ * the 45-second budget with the queue's expiry and margin — is a dead
+ * worker's row, reaped back to pending for the next dispatch. Duplicate
+ * wake-ups are safe by construction: the claim is atomic and the runner
+ * stands down any wake-up ahead of its scheduled attempt.
+ */
+export async function captureSweepJob(
+  deps: {
+    pool: Pool;
+    now: () => Date;
+    dispatch: (captureId: string) => Promise<void>;
+    staleRunningMs?: number;
+  },
+  log: (message: string, extra?: Record<string, unknown>) => void,
+): Promise<void> {
+  const reaped = await reapStaleRunningCaptures(
+    deps.pool,
+    deps.now,
+    deps.staleRunningMs,
+  );
+  for (const captureId of reaped) {
+    log("capture.sweep reaped a stale running capture", { captureId });
+  }
+  const due = await duePendingCaptureIds(deps.pool, deps.now);
+  for (const captureId of due) {
+    await deps.dispatch(captureId);
+  }
+  if (reaped.length > 0 || due.length > 0) {
+    log("capture.sweep re-dispatched due captures", {
+      reaped: reaped.length,
+      dispatched: due.length,
+    });
+  }
+}
 
 /** Sends one scan.run picker job into an engine's queue. */
 export type DispatchScanRun = (engine: "google" | "yandex") => Promise<void>;

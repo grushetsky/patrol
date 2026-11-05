@@ -78,7 +78,7 @@ describe("the scans API", () => {
       config: testConfig({ now: world.clock.now }),
       pool: world.pool,
       mail: world.mail,
-      schemaStamp: () => Promise.resolve(4),
+      schemaStamp: () => Promise.resolve(5),
       dispatcher,
     });
     world.app = app;

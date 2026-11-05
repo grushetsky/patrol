@@ -61,6 +61,14 @@ describe("bootstrap, setup gating, and the last administrator", () => {
     expect(gatedMutation.statusCode).toBe(503);
     expect(gatedMutation.json().code).toBe("setup_required");
 
+    // The objection surface gates with the rest of the domain operations.
+    const gatedObjections = await world.app.inject({
+      method: "GET",
+      url: "/api/host-objections",
+    });
+    expect(gatedObjections.statusCode).toBe(503);
+    expect(gatedObjections.json().code).toBe("setup_required");
+
     // Health, version, setup, and the auth ceremony are never gated.
     const health = await world.app.inject({ method: "GET", url: "/api/health" });
     expect(health.statusCode).toBe(200);

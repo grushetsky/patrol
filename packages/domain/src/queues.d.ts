@@ -17,3 +17,11 @@ export declare const ENGINE_QUEUE_NAMES: {
     readonly bing: "scan.run.bing";
 };
 export type EngineQueueName = (typeof ENGINE_QUEUE_NAMES)[keyof typeof ENGINE_QUEUE_NAMES];
+/**
+ * The capture queue (slice 4, docs/design/evidence-capture.md): one queue
+ * for every evidentiary fetch whatever the reason, so the worker's limiter
+ * — not queue placement — owns politeness. The API's producer (slice 5's
+ * capture requests) and the worker's consumer share the name the way the
+ * engine queues do.
+ */
+export declare const CAPTURE_QUEUE_NAME: "capture.run";

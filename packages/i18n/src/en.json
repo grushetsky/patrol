@@ -19,6 +19,8 @@
   "errors.duplicate_entity": "A record with this value already exists.",
   "errors.upstream_unavailable": "The external service is unreachable; local suggestions and free-text creation still work.",
   "errors.last_administrator": "The last administrator cannot be demoted or disabled.",
+  "errors.host_objection": "The host has an active objection; its captures are suspended until an operator clears it.",
+  "errors.bytes_purged": "The artifact's bytes were purged under retention; the record survives without them.",
   "errors.setup_required": "The deployment is not bootstrapped yet; run patrol bootstrap.",
   "errors.invitation_invalid": "This invitation is no longer valid.",
   "errors.invitation_expired": "This invitation has expired.",

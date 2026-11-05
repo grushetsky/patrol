@@ -42,6 +42,8 @@ export type ApiErrorCode =
   | "duplicate_title"
   | "duplicate_entity"
   | "last_administrator"
+  | "host_objection"
+  | "bytes_purged"
   | "setup_required"
   | "schema_mismatch"
   | "rate_limited"
@@ -65,6 +67,8 @@ const MESSAGE_KEYS: Record<ApiErrorCode, MessageKey> = {
   duplicate_title: "errors.duplicate_title",
   duplicate_entity: "errors.duplicate_entity",
   last_administrator: "errors.last_administrator",
+  host_objection: "errors.host_objection",
+  bytes_purged: "errors.bytes_purged",
   setup_required: "errors.setup_required",
   schema_mismatch: "errors.schema_mismatch",
   rate_limited: "errors.rate_limited",
@@ -87,6 +91,11 @@ export class ApiError extends Error {
   readonly existingTitleId?: string;
   /** The title a merge was blocked on, when a guard refused it. */
   readonly blockingTitleId?: string;
+  /**
+   * The objection suspending the host, on a capture refused with 409
+   * host_objection (the contract's ConflictBody pointer).
+   */
+  readonly hostObjectionId?: string;
 
   constructor(
     statusCode: number,
@@ -96,6 +105,7 @@ export class ApiError extends Error {
       fieldErrors?: FieldError[];
       existingTitleId?: string;
       blockingTitleId?: string;
+      hostObjectionId?: string;
     } = {},
   ) {
     super(`${statusCode} ${code}`);
@@ -106,6 +116,7 @@ export class ApiError extends Error {
     this.fieldErrors = options.fieldErrors;
     this.existingTitleId = options.existingTitleId;
     this.blockingTitleId = options.blockingTitleId;
+    this.hostObjectionId = options.hostObjectionId;
   }
 
   /** The catalogue key the display message resolves through. */

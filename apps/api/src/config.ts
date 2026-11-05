@@ -1,5 +1,6 @@
 import { readFileSync } from "node:fs";
 import { expectedSchemaStamp } from "@patrol/db";
+import { s3ConfigFromEnv } from "@patrol/evidence";
 
 /** Runtime configuration, parsed once at boot and injected everywhere. */
 export interface AppConfig {
@@ -46,6 +47,24 @@ export interface AppConfig {
    * `new Date()` in domain code.
    */
   now: () => Date;
+  /**
+   * The S3-compatible evidence store's addressing (ADR 0006): the endpoint
+   * override selects MinIO or another provider, the bucket holds the
+   * content-addressed bytes the download route presigns against.
+   */
+  s3: {
+    endpoint?: string;
+    region: string;
+    bucket: string;
+    accessKeyId?: string;
+    secretAccessKey?: string;
+    forcePathStyle?: boolean;
+  };
+  /**
+   * How long a signed artifact download stays valid. Short by design: the
+   * reference is minted per request and carries nothing but the read.
+   */
+  evidenceDownloadTtlSeconds: number;
 }
 
 function packageVersion(): string {
@@ -113,6 +132,11 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
       "PATROL_UPSTREAM_TIMEOUT_MS",
     ),
     now: () => new Date(),
+    s3: s3ConfigFromEnv(env),
+    evidenceDownloadTtlSeconds: parsePositiveInteger(
+      env.PATROL_EVIDENCE_DOWNLOAD_TTL_SECONDS ?? "300",
+      "PATROL_EVIDENCE_DOWNLOAD_TTL_SECONDS",
+    ),
   };
 }
 

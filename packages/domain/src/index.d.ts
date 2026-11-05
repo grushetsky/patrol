@@ -4,5 +4,7 @@ export { DEFAULT_INTENT_PHRASES, GOOGLE_DEPTH, QUERY_LENGTH_CAPS, UNITS_PER_QUER
 export type { BuiltPlan, IntentPhraseConfig, PlanEngine, PlanTitle, PlanVariant, PlannableVariantKind, PlannedQuery, PlannedQueryKind, LocaleRequestParams, } from "./plan.js";
 export { LADDER_RUNG_DAYS, degradationPolicy, orderQueue, rungDueAt, utcDate, } from "./scheduling.js";
 export type { DegradationPolicy, GroupPriorityName, QueueEntry, ScanTriggerName, } from "./scheduling.js";
-export { ENGINE_QUEUE_NAMES } from "./queues.js";
+export { CAPTURE_QUEUE_NAME, ENGINE_QUEUE_NAMES } from "./queues.js";
 export type { EngineQueueName } from "./queues.js";
+export { ALLOWLIST_TIER_ORDER, allowlistTier, entryMatchesUrl, findAllowlistHit, normalizeAllowlistValue, } from "./allowlist.js";
+export type { AllowlistHit, AllowlistKind, AllowlistMatchKind, AllowlistOrigin, AllowlistScope, AllowlistTier, } from "./allowlist.js";

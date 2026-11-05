@@ -15,6 +15,9 @@ import { scansRoutes } from "./routes/scans.js";
 import { readSetupState } from "./domain/bootstrap.js";
 import type { MailTransport } from "./mail/transport.js";
 import { noopScanDispatcher, type ScanDispatcher } from "./queue/dispatch.js";
+import { S3EvidenceStore, s3ConfigFromEnv } from "@patrol/evidence";
+import { evidenceRoutes } from "./routes/evidence.js";
+import type { EvidencePresigner } from "./domain/evidence.js";
 
 export interface AppDeps {
   config: AppConfig;
@@ -29,6 +32,12 @@ export interface AppDeps {
    * entry wires the pg-boss producer; tests inject a recorder or the no-op.
    */
   dispatcher?: ScanDispatcher;
+  /**
+   * The presigner behind evidence downloads: the S3-compatible store in
+   * production, a recording fake in tests. Absent builds the store from
+   * the environment.
+   */
+  evidencePresigner?: EvidencePresigner;
 }
 
 /**
@@ -95,6 +104,15 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
       config: deps.config,
       pool: deps.pool,
       dispatcher: deps.dispatcher ?? noopScanDispatcher(),
+    }),
+    { prefix: "/api" },
+  );
+  await app.register(
+    evidenceRoutes({
+      config: deps.config,
+      pool: deps.pool,
+      presigner:
+        deps.evidencePresigner ?? new S3EvidenceStore(s3ConfigFromEnv(process.env)),
     }),
     { prefix: "/api" },
   );

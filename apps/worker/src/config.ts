@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import type { CaptureProfileJson } from "@patrol/evidence";
 
 /** Runtime configuration for the worker, parsed once at boot. */
 export interface WorkerConfig {
@@ -38,6 +39,21 @@ export interface WorkerConfig {
   contactEmail: string | null;
   /** Whether the fixture-driven fake adapter replaces the real routes. */
   fakeAdapter: boolean;
+  /**
+   * The capture profile every evidentiary fetch of this worker runs under
+   * (docs/design/evidence-capture.md "What a capture records"): without it
+   * a capture cannot be explained or repeated.
+   */
+  captureProfile: CaptureProfileJson;
+  /**
+   * The capture retry schedule — the delays between the up-to-three
+   * attempts a blocked or error capture makes inside 24 hours.
+   */
+  captureRetryDelaysMs: readonly number[];
+  /** Allowed concurrent captures overall ("a handful"; default 3). */
+  captureConcurrency: number;
+  /** The quiet gap between two captures of the same host. */
+  captureSameHostSpacingMs: number;
 }
 
 function packageVersion(): string {
@@ -65,6 +81,55 @@ function parsePositiveInteger(value: string | undefined, label: string): number 
     throw new Error(`${label} must be a positive integer, got ${value}`);
   }
   return parsed;
+}
+
+function parseNonNegativeInteger(value: string | undefined, label: string): number {
+  const parsed = Number.parseInt(value ?? "", 10);
+  if (!Number.isInteger(parsed) || parsed < 0) {
+    throw new Error(`${label} must be a non-negative integer, got ${value}`);
+  }
+  return parsed;
+}
+
+/**
+ * The capture profile from the environment: the identifiable user agent
+ * (ADR 0018 — it names Patrol and the contactable address, never a generic
+ * browser), the viewport and locale the screenshot and DOM record, and the
+ * navigation policy string the ceilings fix. The extractor version is
+ * code, not configuration: it changes only when the sidecar's shape does.
+ */
+export const EXTRACTOR_VERSION = "sidecar-minimal/1";
+
+function captureProfile(
+  env: NodeJS.ProcessEnv,
+  contactEmail: string | null,
+  version: string,
+): CaptureProfileJson {
+  return {
+    userAgent: `Patrol/${version} (evidentiary page capture; contact: ${
+      contactEmail ?? "no contact configured"
+    })`,
+    viewportWidth: parsePositiveInteger(
+      env.PATROL_CAPTURE_VIEWPORT_WIDTH ?? "1280",
+      "PATROL_CAPTURE_VIEWPORT_WIDTH",
+    ),
+    viewportHeight: parsePositiveInteger(
+      env.PATROL_CAPTURE_VIEWPORT_HEIGHT ?? "800",
+      "PATROL_CAPTURE_VIEWPORT_HEIGHT",
+    ),
+    locale: env.PATROL_CAPTURE_LOCALE ?? "en-US",
+    timezone: env.PATROL_CAPTURE_TIMEZONE ?? "UTC",
+    javascriptEnabled: true,
+    blockedResourceKinds: [
+      "media",
+      "websocket",
+      "service_worker",
+      "advertising",
+      "third_party_analytics",
+    ],
+    navigationPolicy: "load+2000ms settle; 25s navigation; 45s total",
+    extractorVersion: EXTRACTOR_VERSION,
+  };
 }
 
 /**
@@ -119,5 +184,18 @@ export function loadWorkerConfig(env: NodeJS.ProcessEnv = process.env): WorkerCo
         : null,
     contactEmail,
     fakeAdapter: env.PATROL_FAKE_ADAPTER === "1",
+    captureProfile: captureProfile(env, contactEmail, packageVersion()),
+    captureRetryDelaysMs: parseDelays(
+      env.PATROL_CAPTURE_RETRY_DELAYS_MS ?? "900000,7200000",
+      "PATROL_CAPTURE_RETRY_DELAYS_MS",
+    ),
+    captureConcurrency: parsePositiveInteger(
+      env.PATROL_CAPTURE_CONCURRENCY ?? "3",
+      "PATROL_CAPTURE_CONCURRENCY",
+    ),
+    captureSameHostSpacingMs: parseNonNegativeInteger(
+      env.PATROL_CAPTURE_HOST_SPACING_MS ?? "2000",
+      "PATROL_CAPTURE_HOST_SPACING_MS",
+    ),
   };
 }
