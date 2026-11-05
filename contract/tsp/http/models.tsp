@@ -41,6 +41,7 @@ enum ErrorCode {
   DuplicateTitle: "duplicate_title",
   DuplicateEntity: "duplicate_entity",
   ViolationReserved: "violation_reserved",
+  ViolationNeedsReview: "violation_needs_review",
   NoticeNotWithdrawable: "notice_not_withdrawable",
   SubmissionNotPending: "submission_not_pending",
   LastAdministrator: "last_administrator",

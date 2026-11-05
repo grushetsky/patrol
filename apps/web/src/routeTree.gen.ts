@@ -21,6 +21,7 @@ import { Route as ReviewIndexRouteImport } from './routes/review/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SettingsAllowlistRouteImport } from './routes/settings/allowlist'
 import { Route as SettingsRecipientProfilesRouteImport } from './routes/settings/recipient-profiles'
+import { Route as SubmissionsIndexRouteImport } from './routes/submissions/index'
 import { Route as ViolationsIndexRouteImport } from './routes/violations/index'
 import { Route as CatalogueTitlesIndexRouteImport } from './routes/catalogue/titles/index'
 import { Route as CatalogueTitlesTitleIdRouteImport } from './routes/catalogue/titles/$titleId'
@@ -87,6 +88,11 @@ const SettingsRecipientProfilesRoute =
     path: '/settings/recipient-profiles',
     getParentRoute: () => rootRouteImport,
   } as any)
+const SubmissionsIndexRoute = SubmissionsIndexRouteImport.update({
+  id: '/submissions/',
+  path: '/submissions/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ViolationsIndexRoute = ViolationsIndexRouteImport.update({
   id: '/violations/',
   path: '/violations/',
@@ -121,6 +127,7 @@ export interface FileRoutesByFullPath {
   '/notices/': typeof NoticesIndexRoute
   '/review/': typeof ReviewIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/submissions/': typeof SubmissionsIndexRoute
   '/violations/': typeof ViolationsIndexRoute
   '/catalogue/titles/$titleId': typeof CatalogueTitlesTitleIdRoute
   '/catalogue/titles/new': typeof CatalogueTitlesNewRoute
@@ -139,6 +146,7 @@ export interface FileRoutesByTo {
   '/notices': typeof NoticesIndexRoute
   '/review': typeof ReviewIndexRoute
   '/settings': typeof SettingsIndexRoute
+  '/submissions': typeof SubmissionsIndexRoute
   '/violations': typeof ViolationsIndexRoute
   '/catalogue/titles/$titleId': typeof CatalogueTitlesTitleIdRoute
   '/catalogue/titles/new': typeof CatalogueTitlesNewRoute
@@ -158,6 +166,7 @@ export interface FileRoutesById {
   '/notices/': typeof NoticesIndexRoute
   '/review/': typeof ReviewIndexRoute
   '/settings/': typeof SettingsIndexRoute
+  '/submissions/': typeof SubmissionsIndexRoute
   '/violations/': typeof ViolationsIndexRoute
   '/catalogue/titles/$titleId': typeof CatalogueTitlesTitleIdRoute
   '/catalogue/titles/new': typeof CatalogueTitlesNewRoute
@@ -178,6 +187,7 @@ export interface FileRouteTypes {
     | '/notices/'
     | '/review/'
     | '/settings/'
+    | '/submissions/'
     | '/violations/'
     | '/catalogue/titles/$titleId'
     | '/catalogue/titles/new'
@@ -196,6 +206,7 @@ export interface FileRouteTypes {
     | '/notices'
     | '/review'
     | '/settings'
+    | '/submissions'
     | '/violations'
     | '/catalogue/titles/$titleId'
     | '/catalogue/titles/new'
@@ -214,6 +225,7 @@ export interface FileRouteTypes {
     | '/notices/'
     | '/review/'
     | '/settings/'
+    | '/submissions/'
     | '/violations/'
     | '/catalogue/titles/$titleId'
     | '/catalogue/titles/new'
@@ -233,6 +245,7 @@ export interface RootRouteChildren {
   NoticesIndexRoute: typeof NoticesIndexRoute
   ReviewIndexRoute: typeof ReviewIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
+  SubmissionsIndexRoute: typeof SubmissionsIndexRoute
   ViolationsIndexRoute: typeof ViolationsIndexRoute
   CatalogueTitlesTitleIdRoute: typeof CatalogueTitlesTitleIdRoute
   CatalogueTitlesNewRoute: typeof CatalogueTitlesNewRoute
@@ -325,6 +338,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SettingsRecipientProfilesRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/submissions/': {
+      id: '/submissions/'
+      path: '/submissions'
+      fullPath: '/submissions/'
+      preLoaderRoute: typeof SubmissionsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/violations/': {
       id: '/violations/'
       path: '/violations'
@@ -369,6 +389,7 @@ const rootRouteChildren: RootRouteChildren = {
   NoticesIndexRoute: NoticesIndexRoute,
   ReviewIndexRoute: ReviewIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
+  SubmissionsIndexRoute: SubmissionsIndexRoute,
   ViolationsIndexRoute: ViolationsIndexRoute,
   CatalogueTitlesTitleIdRoute: CatalogueTitlesTitleIdRoute,
   CatalogueTitlesNewRoute: CatalogueTitlesNewRoute,

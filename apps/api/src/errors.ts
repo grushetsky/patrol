@@ -42,7 +42,9 @@ export type ApiErrorCode =
   | "duplicate_title"
   | "duplicate_entity"
   | "violation_reserved"
+  | "violation_needs_review"
   | "notice_not_withdrawable"
+  | "submission_not_pending"
   | "recipient_ineligible"
   | "grouping_limit_exceeded"
   | "last_administrator"
@@ -75,7 +77,9 @@ const MESSAGE_KEYS: Record<ApiErrorCode, MessageKey> = {
   duplicate_title: "errors.duplicate_title",
   duplicate_entity: "errors.duplicate_entity",
   violation_reserved: "errors.violation_reserved",
+  violation_needs_review: "errors.violation_needs_review",
   notice_not_withdrawable: "errors.notice_not_withdrawable",
+  submission_not_pending: "errors.submission_not_pending",
   recipient_ineligible: "errors.recipient_ineligible",
   grouping_limit_exceeded: "errors.grouping_limit_exceeded",
   last_administrator: "errors.last_administrator",

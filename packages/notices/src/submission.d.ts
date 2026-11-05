@@ -35,10 +35,15 @@ export interface PackBuildDeps {
 export declare const TERMINAL_CAPTURE_STATES: readonly string[];
 /**
  * The pack-level capture flags for every cited URL, in one batched query —
- * the ONE loader the pack builder and the pack read share. Null-handling,
- * fixed and documented: a cited URL with no capture at all produces NO
- * flag — the contract's CaptureFlag requires the newest capture's id and
- * outcome, and a URL nothing ever observed cannot fill them.
+ * the newest capture per URL and, when that newest is not itself a live
+ * capture, the newest capture that is. This is the ONE loader the pack
+ * builder and the pack read share, so the two can never drift.
+ *
+ * Null-handling, fixed and documented: a cited URL with no capture at all
+ * produces NO flag — the contract's CaptureFlag requires the newest
+ * capture's id and outcome, and a URL nothing ever observed cannot fill
+ * them. (In practice every cited URL carries at least the composition-time
+ * capture; the guard is for the vacuum case.)
  */
 export declare function loadCaptureFlagsForCitations(pool: Pool, noticeId: string): Promise<PackCaptureFlag[]>;
 /**
@@ -84,9 +89,11 @@ export interface PackBuildOutcome {
  * never duplicated (only its pack reference is filled); and the bytes go
  * into the content-addressed store FIRST, so a failure between the bytes
  * and the rows leaves orphaned objects a retry re-covers, never a pack
- * reference pointing at nothing. Refused (built: false) for a notice that
- * is not approved and before the settle has created the submission row;
- * the read route answers not found for both.
+ * reference pointing at nothing.
+ *
+ * Refused (built: false) for a notice that is not approved — a withdrawn or
+ * superseded notice never gets a pack — and before the settle has created
+ * the submission row; the read route answers not found for both.
  */
 export declare function buildHandoffPackIfMissing(deps: PackBuildDeps, noticeId: string, builtBy: string): Promise<PackBuildOutcome>;
 /**

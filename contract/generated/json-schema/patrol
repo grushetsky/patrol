@@ -3356,7 +3356,7 @@
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 2147483647,
-                    "description": "How many delivery attempts the operator has made."
+                    "description": "Retries re-filed by the operator: the count rises at each retry, never at a failure, so a row standing after its third failed attempt carries two."
                 },
                 "packRef": {
                     "type": "string",
@@ -4326,6 +4326,7 @@
                 "duplicate_title",
                 "duplicate_entity",
                 "violation_reserved",
+                "violation_needs_review",
                 "notice_not_withdrawable",
                 "submission_not_pending",
                 "last_administrator",

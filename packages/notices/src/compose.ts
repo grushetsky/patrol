@@ -1,6 +1,7 @@
 import type { Pool, PoolClient } from "pg";
 import type { Recipient } from "./statements.js";
 import { fitsSingleNotice, groupViolations, type GroupingCaps } from "./grouping.js";
+import { rejectionBlockedViolations } from "./submissions.js";
 
 /**
  * The draft composer (docs/design/notice-composition.md "What a notice
@@ -55,6 +56,11 @@ export type ComposeRefusal =
   | { status: "grouping_limit_exceeded"; batches: number }
   | {
       status: "violation_reserved";
+      conflictingViolationIds: string[];
+      existingNoticeId: string;
+    }
+  | {
+      status: "violation_needs_review";
       conflictingViolationIds: string[];
       existingNoticeId: string;
     }
@@ -781,10 +787,31 @@ export async function composeInTransaction(
     }
   }
 
+  // The rejection gate (notice-composition.md "Volume and accuracy
+  // safeguards"): a violation a REJECTED submission cited needs a review
+  // decision before it is cited again — the reservation ENDED with the
+  // rejection, but a new draft may not repeat an unexamined refusal. On
+  // demand this is a refusal; the scheduled path drops the blocked
+  // violations the same way it drops reserved ones.
+  const blockedByRejection = await rejectionBlockedViolations(
+    client,
+    loaded.map((violation) => violation.violationId),
+  );
+  if (selection.trigger === "on_demand" && blockedByRejection.size > 0) {
+    const [violationId, noticeId] = [...blockedByRejection.entries()][0];
+    return refused({
+      status: "violation_needs_review",
+      conflictingViolationIds: [...blockedByRejection.keys()],
+      existingNoticeId: noticeId,
+    });
+  }
+
   // The reservation and dedup pre-checks. Scheduled drops the conflicts
   // (a window that lost a race to a manual draft still covers the rest);
   // on demand they are refusals carrying the conflicting evidence.
-  let candidates = loaded;
+  let candidates = loaded.filter(
+    (violation) => !blockedByRejection.has(violation.violationId),
+  );
   for (let attempt = 0; ; attempt += 1) {
     const reserved = await reservedViolations(
       client,

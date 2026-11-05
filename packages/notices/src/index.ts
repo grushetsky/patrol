@@ -108,3 +108,33 @@ export {
   recomputeProfilePause,
 } from "./pause.js";
 export type { PauseComputation } from "./pause.js";
+export {
+  ATTEMPT_COUNT_BEFORE_FLAG,
+  FLAGGED_FAILED_ATTEMPTS,
+  REMINDER_DAYS,
+  clearSubmissionAlert,
+  clearSubmissionAlertByNotice,
+  flaggedSubmissions,
+  pendingBacklogCondition,
+  pendingBacklogCutoff,
+  pendingSubmissionBacklog,
+  raiseSubmissionAlerts,
+  recordAcknowledgement,
+  recordDelivery,
+  recordSubmissionFailure,
+  rejectionBlockedViolations,
+  retrySubmission,
+  validateAcknowledgement,
+} from "./submissions.js";
+export type {
+  AcknowledgementBody,
+  FlaggedSubmissionItem,
+  PendingBacklogItem,
+  StoredAcknowledgement,
+  SubmissionAttestationInput,
+  SubmissionDeps,
+  SubmissionFailureReason,
+  SubmissionOutcome,
+  SubmissionRefusal,
+  SubmissionState,
+} from "./submissions.js";

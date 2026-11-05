@@ -7,7 +7,9 @@ import { ApiError } from "../../errors.js";
  * composer's refusals mapped onto the contract's error bodies. The
  * composer (packages/notices) owns the transaction and the grouping; this
  * module owns the HTTP vocabulary — `violation_reserved` carries the
- * conflicting violations and the notice that reserves them, a duplicate
+ * conflicting violations and the notice that reserves them, a rejection
+ * block answers `violation_needs_review` in the same conflict shape (the
+ * remedy is a review decision, not waiting out a reservation), a duplicate
  * pair answers `duplicate_entity`, an over-cap or wrong-cardinality batch
  * answers `grouping_limit_exceeded`, and an ineligible recipient answers
  * `recipient_ineligible`.
@@ -60,6 +62,16 @@ export function refusalError(refusal: ComposeRefusal): ApiError {
       return new ApiError(422, "grouping_limit_exceeded");
     case "violation_reserved":
       return new ApiError(409, "violation_reserved", {
+        conflictingViolationIds: refusal.conflictingViolationIds,
+        existingNoticeId: refusal.existingNoticeId,
+      });
+    case "violation_needs_review":
+      // A rejection ended the reservation, but the offending violation
+      // needs a review decision before it is cited again — the conflict
+      // names the rejected notice in the same shape the reservation
+      // refusal carries, and its own code tells the operator the remedy
+      // is a review decision, not waiting out a reservation.
+      return new ApiError(409, "violation_needs_review", {
         conflictingViolationIds: refusal.conflictingViolationIds,
         existingNoticeId: refusal.existingNoticeId,
       });

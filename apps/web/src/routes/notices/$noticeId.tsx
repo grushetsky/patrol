@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { t } from "@patrol/i18n";
+import { ATTEMPT_COUNT_BEFORE_FLAG } from "@patrol/notices";
 import { api } from "../../lib/api/client";
 import { fetchSessionCsrfToken } from "../../lib/api/auth";
 import { useSession } from "../../lib/session";
@@ -19,11 +20,29 @@ interface Lifecycle {
 }
 
 interface Submission {
+  id: string;
   packLanguage: string;
   attemptCount: number;
   createdAt: string;
   cancelledAt?: string;
-  lifecycle: { state: "pending" | "delivered" | "acknowledged" | "rejected" | "failed" };
+  lifecycle: {
+    state: "pending" | "delivered" | "acknowledged" | "rejected" | "failed";
+    operatorId?: string;
+    deliveredAt?: string;
+    decidedAt?: string;
+    failedAt?: string;
+    attestation?: { attestedAt: string; statementVersion: string };
+    acknowledgement?: {
+      recipient: string;
+      referenceNumber?: string;
+      dashboardUrl?: string;
+      ticketId?: string;
+      ticketDetailsUrl?: string;
+      messageId?: string;
+      replyDate?: string;
+    };
+    failure?: { reason: string; note: string; recordedAt: string };
+  };
 }
 
 interface Detail {
@@ -159,6 +178,18 @@ function NoticeDetail() {
   const [kept, setKept] = useState<Set<string> | null>(null);
   const [addable, setAddable] = useState<OpenViolation[] | null>(null);
 
+  // The submission panel's own state: the delivery attestation, the
+  // per-recipient acknowledgement fields, and the failure report.
+  const [filedAsPresented, setFiledAsPresented] = useState(false);
+  const [referenceNumber, setReferenceNumber] = useState("");
+  const [dashboardUrl, setDashboardUrl] = useState("");
+  const [ticketId, setTicketId] = useState("");
+  const [ticketDetailsUrl, setTicketDetailsUrl] = useState("");
+  const [messageId, setMessageId] = useState("");
+  const [replyDate, setReplyDate] = useState("");
+  const [failureReason, setFailureReason] = useState<"recipient_error" | "recipient_rejection" | "operator_report">("recipient_error");
+  const [failureNote, setFailureNote] = useState("");
+
   const load = useCallback(async () => {
     const { data, response } = await api.GET("/notices/{noticeId}", {
       params: { path: { noticeId } },
@@ -243,6 +274,106 @@ function NoticeDetail() {
       const { data, response } = await api.POST("/notices/{noticeId}/withdrawal", {
         params: { path: { noticeId }, header: { "X-Patrol-CSRF": csrfToken } },
         body: withdrawalReason.trim() === "" ? {} : { reason: withdrawalReason.trim() },
+      });
+      if (response.ok) {
+        return true;
+      }
+      setActionError(actionMessage(locale, (data as { code?: string } | undefined)?.code));
+      return false;
+    });
+
+  const submissionId = detail?.submission?.id;
+
+  const submissionAct = async (run: (csrfToken: string) => Promise<boolean>) => {
+    setBusy(true);
+    setActionError(null);
+    try {
+      const csrfToken = await fetchSessionCsrfToken();
+      if (csrfToken === null) {
+        setActionError(t(locale, "errors.unauthenticated"));
+        return;
+      }
+      await run(csrfToken);
+      await load();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const recordDelivery = () =>
+    submissionAct(async (csrfToken) => {
+      const { data, response } = await api.POST("/submissions/{submissionId}/delivery", {
+        params: {
+          path: { submissionId: submissionId! },
+          header: { "X-Patrol-CSRF": csrfToken },
+        },
+        body: {
+          attestation: {
+            filedAsPresented: true,
+            statementVersion: detail!.template.version,
+          },
+        },
+      });
+      if (response.ok) {
+        return true;
+      }
+      setActionError(actionMessage(locale, (data as { code?: string } | undefined)?.code));
+      return false;
+    });
+
+  const recordAcknowledgement = () =>
+    submissionAct(async (csrfToken) => {
+      const recipient = detail!.notice.content.recipient;
+      const acknowledgement =
+        recipient === "google"
+          ? { recipient, referenceNumber: referenceNumber.trim(), dashboardUrl: dashboardUrl.trim() }
+          : recipient === "bing"
+            ? { recipient, ticketId: ticketId.trim(), ticketDetailsUrl: ticketDetailsUrl.trim() }
+            : { recipient, messageId: messageId.trim(), replyDate: replyDate.trim() };
+      const { data, response } = await api.POST("/submissions/{submissionId}/acknowledgement", {
+        params: {
+          path: { submissionId: submissionId! },
+          header: { "X-Patrol-CSRF": csrfToken },
+        },
+        body: {
+          attestation: {
+            filedAsPresented: true,
+            statementVersion: detail!.template.version,
+          },
+          acknowledgement: acknowledgement as never,
+        },
+      });
+      if (response.ok) {
+        return true;
+      }
+      setActionError(actionMessage(locale, (data as { code?: string } | undefined)?.code));
+      return false;
+    });
+
+  const reportFailure = () =>
+    submissionAct(async (csrfToken) => {
+      const { data, response } = await api.POST("/submissions/{submissionId}/failure", {
+        params: {
+          path: { submissionId: submissionId! },
+          header: { "X-Patrol-CSRF": csrfToken },
+        },
+        body: { reason: failureReason, note: failureNote.trim() },
+      });
+      if (response.ok) {
+        setFailureNote("");
+        return true;
+      }
+      setActionError(actionMessage(locale, (data as { code?: string } | undefined)?.code));
+      return false;
+    });
+
+  const retry = () =>
+    submissionAct(async (csrfToken) => {
+      const { data, response } = await api.POST("/submissions/{submissionId}/retry", {
+        params: {
+          path: { submissionId: submissionId! },
+          header: { "X-Patrol-CSRF": csrfToken },
+        },
       });
       if (response.ok) {
         return true;
@@ -428,10 +559,180 @@ function NoticeDetail() {
               "{language}",
               submission.packLanguage,
             )}
+            {" · "}
+            {t(locale, "web.notices.detail.submission.attempts").replace(
+              "{count}",
+              String(submission.attemptCount),
+            )}
             {submission.cancelledAt !== undefined
               ? ` · ${t(locale, "web.notices.detail.submission.cancelled")}`
               : ""}
+            {/* The administrators' flag, derived where the UI stands: the
+                contract's Submission carries no flaggedAt (its shape is
+                closed), so the badge mirrors the server's flagged read
+                model — a failure that landed with the row already carrying
+                ATTEMPT_COUNT_BEFORE_FLAG re-files raised the durable flag,
+                which slice 8's dashboard badge surfaces through its own
+                read. */}
+            {submission.lifecycle.state === "failed" &&
+            submission.attemptCount >= ATTEMPT_COUNT_BEFORE_FLAG
+              ? ` · ${t(locale, "web.submissions.flagged")}`
+              : ""}
           </p>
+          {submission.lifecycle.acknowledgement !== undefined && (
+            <p>
+              {t(locale, "web.notices.detail.submission.acknowledged")}
+              {submission.lifecycle.acknowledgement.referenceNumber !== undefined
+                ? ` ${submission.lifecycle.acknowledgement.referenceNumber}`
+                : ""}
+              {submission.lifecycle.acknowledgement.ticketId !== undefined
+                ? ` ${submission.lifecycle.acknowledgement.ticketId}`
+                : ""}
+              {submission.lifecycle.acknowledgement.messageId !== undefined
+                ? ` ${submission.lifecycle.acknowledgement.messageId} (${submission.lifecycle.acknowledgement.replyDate ?? ""})`
+                : ""}
+            </p>
+          )}
+          {submission.lifecycle.failure !== undefined && (
+            <p>
+              {t(locale, `web.notices.detail.submission.failure.${submission.lifecycle.failure.reason}` as never)}
+              {": "}
+              {submission.lifecycle.failure.note}
+            </p>
+          )}
+
+          {/* The operator's acts, in the states that admit them. A
+              cancelled row is dead: its notice was withdrawn or superseded
+              and re-drafts. */}
+          {submission.cancelledAt === undefined && submission.lifecycle.state === "pending" && (
+            <div>
+              <h3>{t(locale, "web.notices.detail.submission.deliver.title")}</h3>
+              <label style={{ display: "block" }}>
+                <input
+                  type="checkbox"
+                  checked={filedAsPresented}
+                  onChange={(event) => setFiledAsPresented(event.target.checked)}
+                />{" "}
+                {t(locale, "web.notices.detail.submission.deliver.attestation")}
+              </label>
+              <button
+                type="button"
+                disabled={busy || !filedAsPresented}
+                onClick={() => void recordDelivery()}
+              >
+                {t(locale, "web.notices.detail.submission.deliver.submit")}
+              </button>
+              <h3>{t(locale, "web.notices.detail.submission.fail.title")}</h3>
+              <label style={{ display: "block" }}>
+                {t(locale, "web.notices.detail.submission.fail.reason")}
+                <select
+                  value={failureReason}
+                  onChange={(event) =>
+                    setFailureReason(event.target.value as typeof failureReason)
+                  }
+                >
+                  <option value="recipient_error">
+                    {t(locale, "web.notices.detail.submission.failure.recipient_error")}
+                  </option>
+                  <option value="recipient_rejection">
+                    {t(locale, "web.notices.detail.submission.failure.recipient_rejection")}
+                  </option>
+                  <option value="operator_report">
+                    {t(locale, "web.notices.detail.submission.failure.operator_report")}
+                  </option>
+                </select>
+              </label>
+              <label style={{ display: "block" }}>
+                {t(locale, "web.notices.detail.submission.fail.note")}
+                <input
+                  value={failureNote}
+                  onChange={(event) => setFailureNote(event.target.value)}
+                />
+              </label>
+              <button
+                type="button"
+                disabled={busy || failureNote.trim() === ""}
+                onClick={() => void reportFailure()}
+              >
+                {t(locale, "web.notices.detail.submission.fail.submit")}
+              </button>
+            </div>
+          )}
+
+          {submission.cancelledAt === undefined && submission.lifecycle.state === "delivered" && (
+            <div>
+              <h3>{t(locale, "web.notices.detail.submission.acknowledge.title")}</h3>
+              {detail.notice.content.recipient === "google" && (
+                <>
+                  <label style={{ display: "block" }}>
+                    {t(locale, "web.notices.detail.submission.acknowledge.referenceNumber")}
+                    <input
+                      value={referenceNumber}
+                      onChange={(event) => setReferenceNumber(event.target.value)}
+                    />
+                  </label>
+                  <label style={{ display: "block" }}>
+                    {t(locale, "web.notices.detail.submission.acknowledge.dashboardUrl")}
+                    <input
+                      value={dashboardUrl}
+                      onChange={(event) => setDashboardUrl(event.target.value)}
+                    />
+                  </label>
+                </>
+              )}
+              {detail.notice.content.recipient === "bing" && (
+                <>
+                  <label style={{ display: "block" }}>
+                    {t(locale, "web.notices.detail.submission.acknowledge.ticketId")}
+                    <input value={ticketId} onChange={(event) => setTicketId(event.target.value)} />
+                  </label>
+                  <label style={{ display: "block" }}>
+                    {t(locale, "web.notices.detail.submission.acknowledge.ticketDetailsUrl")}
+                    <input
+                      value={ticketDetailsUrl}
+                      onChange={(event) => setTicketDetailsUrl(event.target.value)}
+                    />
+                  </label>
+                </>
+              )}
+              {detail.notice.content.recipient === "yandex" && (
+                <>
+                  <label style={{ display: "block" }}>
+                    {t(locale, "web.notices.detail.submission.acknowledge.messageId")}
+                    <input value={messageId} onChange={(event) => setMessageId(event.target.value)} />
+                  </label>
+                  <label style={{ display: "block" }}>
+                    {t(locale, "web.notices.detail.submission.acknowledge.replyDate")}
+                    <input
+                      placeholder="YYYY-MM-DD"
+                      value={replyDate}
+                      onChange={(event) => setReplyDate(event.target.value)}
+                    />
+                  </label>
+                </>
+              )}
+              <label style={{ display: "block" }}>
+                <input
+                  type="checkbox"
+                  checked={filedAsPresented}
+                  onChange={(event) => setFiledAsPresented(event.target.checked)}
+                />{" "}
+                {t(locale, "web.notices.detail.submission.deliver.attestation")}
+              </label>
+              <button type="button" disabled={busy || !filedAsPresented} onClick={() => void recordAcknowledgement()}>
+                {t(locale, "web.notices.detail.submission.acknowledge.submit")}
+              </button>
+            </div>
+          )}
+
+          {submission.cancelledAt === undefined && submission.lifecycle.state === "failed" && (
+            <div>
+              <button type="button" disabled={busy} onClick={() => void retry()}>
+                {t(locale, "web.notices.detail.submission.retry")}
+              </button>{" "}
+              <small>{t(locale, "web.notices.detail.submission.retry.hint")}</small>
+            </div>
+          )}
         </section>
       )}
 
@@ -658,9 +959,14 @@ function actionMessage(locale: "en" | "ru", code: string | undefined): string {
     case "state_conflict":
     case "notice_not_withdrawable":
     case "violation_reserved":
+    case "violation_needs_review":
     case "duplicate_entity":
     case "validation_failed":
+    case "submission_not_pending":
+    case "note_required":
       return t(locale, `errors.${code}` as never);
+    case "unprocessable":
+      return t(locale, "errors.unprocessable");
     default:
       return t(locale, "web.common.error");
   }

@@ -152,7 +152,11 @@ function ViolationsIndex() {
           ? t(locale, "errors.recipient_ineligible")
           : code !== undefined && code === "grouping_limit_exceeded"
             ? t(locale, "errors.grouping_limit_exceeded")
-            : t(locale, "web.violations.cart.draftFailed"),
+            : code === "violation_needs_review"
+              ? // The remedy is a review decision, not a re-draft: the
+                // catalogue line names it.
+                t(locale, "errors.violation_needs_review")
+              : t(locale, "web.violations.cart.draftFailed"),
       );
     } finally {
       setDrafting(false);

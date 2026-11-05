@@ -225,6 +225,16 @@ describe("the notices surface (slice 6a)", () => {
       pool = testPool();
     }
     await truncateDomainTables(pool);
+    // The registry is reference data the truncate keeps; restore the seeded
+    // baseline (as the approval suite does) so another file's verification
+    // stamp or synthetic revision never leaks into this file's staleness
+    // assertions — the suites share one database and run in a size-based
+    // order, not a guaranteed one.
+    await pool.query("delete from notice_templates where major > 1");
+    await pool.query(
+      "update notice_templates set accessed_at = $1, verified_at = null, verified_by = null, active = true",
+      ["2026-11-04T00:00:00Z"],
+    );
     clock = controlledClock(FROZEN_NOW);
     world = {
       app: await buildApp({

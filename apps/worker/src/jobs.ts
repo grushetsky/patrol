@@ -9,7 +9,11 @@ import {
   duePendingCaptureIds,
   reapStaleRunningCaptures,
 } from "@patrol/evidence";
-import { runScheduledComposition } from "@patrol/notices";
+import {
+  raiseSubmissionAlerts,
+  REMINDER_DAYS,
+  runScheduledComposition,
+} from "@patrol/notices";
 import { CAPTURE_QUEUE_NAME, ENGINE_QUEUE_NAMES } from "@patrol/domain";
 import type PgBoss from "pg-boss";
 import type { SerpAcquisitor } from "./acquisition/port.js";
@@ -54,6 +58,9 @@ export const CRON_JOBS = {
   "recheck.schedule": "*/15 * * * *",
   "capture.sweep": "*/15 * * * *",
   "submission.draft": "0 7 * * *",
+  // The seven-day reminder (scan-scheduling.md "Jobs"): daily, after the
+  // morning composition window so the backlog it names is the day's own.
+  "submission.remind": "0 8 * * *",
   "budget.rollover": "0 0 1 * *",
   "budget.balance": "0 6 * * *",
   "route.probe": "0 * * * *",
@@ -237,6 +244,30 @@ export async function submissionDraftJob(
     log("submission.draft composed scheduled drafts", {
       profiles: outcomes.length,
       composed,
+    });
+  }
+}
+
+/**
+ * `submission.remind` (daily): surfaces the Pending submissions older than
+ * seven days to the operators. The reminder's durable act is the deduped
+ * `submission_alerts` row it raises per backlog submission (one row per
+ * submission, ever, until the submission leaves pending — the budget
+ * alerts' fire-once pattern), which slice 8/9's dashboard badge and
+ * reminder surfacing read beside the `olderThanDays` filter; the log line
+ * names the same ids the rows do. Nothing contacts a recipient and nothing
+ * is retried by it (the contact rule: every submission names an operator).
+ */
+export async function submissionRemindJob(
+  deps: { pool: Pool; now: () => Date },
+  log: (message: string, extra?: Record<string, unknown>) => void,
+): Promise<void> {
+  const { backlog, raised } = await raiseSubmissionAlerts(deps.pool, deps.now, REMINDER_DAYS);
+  if (backlog.length > 0) {
+    log("submission.remind surfaced pending submissions older than seven days", {
+      count: backlog.length,
+      ids: backlog.map((item) => item.submissionId),
+      raised: raised.length,
     });
   }
 }

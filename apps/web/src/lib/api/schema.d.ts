@@ -2899,7 +2899,7 @@ export interface components {
             packLanguage: components["schemas"]["Domain.InterfaceLanguage"];
             /**
              * Format: int32
-             * @description How many delivery attempts the operator has made.
+             * @description Retries re-filed by the operator: the count rises at each retry, never at a failure, so a row standing after its third failed attempt carries two.
              */
             attemptCount: number;
             /** @description The content-addressed reference to the frozen handoff pack, once the pack is generated. */
@@ -4025,7 +4025,7 @@ export interface components {
          * @description A stable, machine-readable error code. The UI branches on it; the message is for a human.
          * @enum {string}
          */
-        "Http.ErrorCode": "validation_failed" | "unauthenticated" | "invalid_credentials" | "invalid_second_factor" | "challenge_expired" | "account_locked" | "invitation_invalid" | "invitation_expired" | "forbidden" | "not_found" | "state_conflict" | "duplicate_title" | "duplicate_entity" | "violation_reserved" | "notice_not_withdrawable" | "submission_not_pending" | "last_administrator" | "quota_exhausted" | "profile_paused" | "recipient_ineligible" | "grouping_limit_exceeded" | "allowlist_hit" | "host_objection" | "wrong_work_requires_title" | "note_required" | "evidence_required" | "empty_citation" | "capture_unavailable" | "pack_not_ready" | "bytes_purged" | "setup_required" | "schema_mismatch" | "rate_limited" | "upstream_unavailable" | "not_supported" | "internal_error";
+        "Http.ErrorCode": "validation_failed" | "unauthenticated" | "invalid_credentials" | "invalid_second_factor" | "challenge_expired" | "account_locked" | "invitation_invalid" | "invitation_expired" | "forbidden" | "not_found" | "state_conflict" | "duplicate_title" | "duplicate_entity" | "violation_reserved" | "violation_needs_review" | "notice_not_withdrawable" | "submission_not_pending" | "last_administrator" | "quota_exhausted" | "profile_paused" | "recipient_ineligible" | "grouping_limit_exceeded" | "allowlist_hit" | "host_objection" | "wrong_work_requires_title" | "note_required" | "evidence_required" | "empty_citation" | "capture_unavailable" | "pack_not_ready" | "bytes_purged" | "setup_required" | "schema_mismatch" | "rate_limited" | "upstream_unavailable" | "not_supported" | "internal_error";
         /** @description A capture's metadata and artifact manifest. Bytes are fetched through a separate signed reference. */
         "Http.EvidenceDetail": {
             /** @description The capture record. */

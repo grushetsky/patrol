@@ -67,6 +67,10 @@ export type ComposeRefusal = {
     conflictingViolationIds: string[];
     existingNoticeId: string;
 } | {
+    status: "violation_needs_review";
+    conflictingViolationIds: string[];
+    existingNoticeId: string;
+} | {
     status: "duplicate_entity";
     violationId: string;
     existingNoticeId: string;

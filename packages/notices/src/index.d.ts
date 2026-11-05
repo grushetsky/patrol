@@ -14,10 +14,12 @@ export type { BuiltPackFile, HandoffArtifactKind, HandoffPackInput, PackCaptureF
 export { approveNotice, SECOND_OPERATOR_FIRST_NOTICES, TEMPLATE_MAX_AGE_MS, } from "./approval.js";
 export type { ApprovalDeps, ApprovalInput, ApprovalOutcome, ApprovalRefusal } from "./approval.js";
 export { buildHandoffPackIfMissing, createPendingSubmissionIfSettled, loadCaptureFlagsForCitations, loadPackInput, settlePreHandoffCapture, storePackFiles, TERMINAL_CAPTURE_STATES, } from "./submission.js";
-export type { PackBuildDeps, PackBuildOutcome, PackStore, SettleDeps, SubmissionCreation } from "./submission.js";
+export type { PackBuildDeps, PackBuildOutcome, PackStore, SettleDeps, SubmissionCreation, } from "./submission.js";
 export { withdrawNotice } from "./withdrawal.js";
 export type { WithdrawalDeps, WithdrawalInput, WithdrawalOutcome, WithdrawalRefusal } from "./withdrawal.js";
 export { supersedeNotice } from "./supersession.js";
 export type { SupersessionDeps, SupersessionInput, SupersessionOutcome, SupersessionRefusal, } from "./supersession.js";
 export { PAUSE_REASON_PREFIX, PAUSE_THRESHOLD, PAUSE_WINDOW, readPauseComputation, recomputeProfilePause, } from "./pause.js";
 export type { PauseComputation } from "./pause.js";
+export { ATTEMPT_COUNT_BEFORE_FLAG, FLAGGED_FAILED_ATTEMPTS, REMINDER_DAYS, clearSubmissionAlert, clearSubmissionAlertByNotice, flaggedSubmissions, pendingBacklogCondition, pendingBacklogCutoff, pendingSubmissionBacklog, raiseSubmissionAlerts, recordAcknowledgement, recordDelivery, recordSubmissionFailure, rejectionBlockedViolations, retrySubmission, validateAcknowledgement, } from "./submissions.js";
+export type { AcknowledgementBody, FlaggedSubmissionItem, PendingBacklogItem, StoredAcknowledgement, SubmissionAttestationInput, SubmissionDeps, SubmissionFailureReason, SubmissionOutcome, SubmissionRefusal, SubmissionState, } from "./submissions.js";

@@ -9,9 +9,9 @@ import { mapViolation } from "@patrol/scans";
  * card page the notices screen renders, and the detail with the notice's
  * content — cited violations with the pinned evidence, work
  * identification, the statement set with its template version, and the
- * resolved field map. The derived status is the notice's own state in this
- * slice; the submission-derived statuses (delivered, acknowledged,
- * rejected, failed) extend it when submissions land.
+ * resolved field map. The derived status is settled law: an approved
+ * notice renders its own state until its submission moves it, then the
+ * submission's state (delivered, acknowledged, rejected, failed).
  */
 
 /** One submission row the notice detail exposes once approval settles. */
@@ -27,11 +27,33 @@ export interface SubmissionRow {
   pack_sha256: string | null;
   created_at: Date;
   cancelled_at: Date | null;
+  operator_id: string | null;
+  delivered_at: Date | null;
+  decided_at: Date | null;
+  failed_at: Date | null;
+  failure_reason: string | null;
+  failure_note: string | null;
+  failure_recorded_at: Date | null;
+  attested_at: Date | null;
+  statement_version: string | null;
+  acknowledgement: Record<string, unknown> | null;
+  acknowledged_at: Date | null;
 }
 
-/** The contract's Submission, serialized from the row. */
+/** Every column the submissions read models select, in one place. */
+export const SUBMISSION_COLUMNS = `id, notice_id, recipient_profile_id, channel, state,
+  attempt_count, pack_language, pack_ref, pack_sha256, created_at, cancelled_at, operator_id,
+  delivered_at, decided_at, failed_at, failure_reason, failure_note, failure_recorded_at,
+  attested_at, statement_version, acknowledgement, acknowledged_at`;
+
+/**
+ * The contract's Submission, serialized from the row: the lifecycle union's
+ * variant the row's state names — delivered and acknowledged carry the
+ * operator's filing attestation, acknowledged adds what the recipient
+ * returned, rejected and failed carry the failure and its cause.
+ */
 export function submissionJson(row: SubmissionRow): Record<string, unknown> {
-  return {
+  const base = {
     id: row.id,
     noticeId: row.notice_id,
     channel: row.channel,
@@ -42,23 +64,90 @@ export function submissionJson(row: SubmissionRow): Record<string, unknown> {
     ...(row.pack_sha256 === null ? {} : { packSha256: row.pack_sha256 }),
     createdAt: row.created_at.toISOString(),
     ...(row.cancelled_at === null ? {} : { cancelledAt: row.cancelled_at.toISOString() }),
-    // The delivered, acknowledged, rejected, and failed branches carry their
-    // own fields; slice 7's write path is what produces them.
-    lifecycle: { state: row.state },
   };
+  const failure =
+    row.failure_reason === null
+      ? null
+      : {
+          reason: row.failure_reason,
+          note: row.failure_note,
+          recordedAt: row.failure_recorded_at?.toISOString(),
+        };
+  switch (row.state) {
+    case "pending":
+      return { ...base, lifecycle: { state: "pending" } };
+    case "delivered":
+      return {
+        ...base,
+        lifecycle: {
+          state: "delivered",
+          operatorId: row.operator_id,
+          deliveredAt: row.delivered_at?.toISOString(),
+          attestation: {
+            attestedAt: row.attested_at?.toISOString(),
+            statementVersion: row.statement_version,
+          },
+        },
+      };
+    case "acknowledged": {
+      // The schema's CHECK makes a null acknowledgement unreachable in
+      // this state; fabricating one would launder a corrupted row into a
+      // plausible response, so the reader refuses it instead.
+      if (row.acknowledgement === null) {
+        throw new Error(
+          `submission ${row.id} is acknowledged but carries no acknowledgement — the row is corrupt`,
+        );
+      }
+      return {
+        ...base,
+        lifecycle: {
+          state: "acknowledged",
+          operatorId: row.operator_id,
+          deliveredAt: row.delivered_at?.toISOString(),
+          attestation: {
+            attestedAt: row.attested_at?.toISOString(),
+            statementVersion: row.statement_version,
+          },
+          acknowledgement: row.acknowledgement,
+        },
+      };
+    }
+    case "rejected":
+      return {
+        ...base,
+        lifecycle: {
+          state: "rejected",
+          operatorId: row.operator_id,
+          decidedAt: row.decided_at?.toISOString(),
+          failure,
+        },
+      };
+    case "failed":
+      return {
+        ...base,
+        lifecycle: {
+          state: "failed",
+          operatorId: row.operator_id,
+          failedAt: row.failed_at?.toISOString(),
+          failure,
+        },
+      };
+  }
 }
 
 /**
  * The contract's NoticeStatus, derived: the notice's own state, except that
- * an approved notice renders its submission's state once one moves it
- * (pending in this slice; the delivery outcomes arrive with slice 7).
+ * an approved notice renders its submission's state once one moves it past
+ * pending (delivered, acknowledged, rejected, or failed). Every surface
+ * that renders a status derives it through this one function or the SQL
+ * transcription beside it.
  */
 export function noticeStatus(
   state: "draft" | "approved" | "withdrawn" | "superseded",
   submissionState?: "pending" | "delivered" | "acknowledged" | "rejected" | "failed",
 ): string {
-  // A pending submission keeps the notice `approved`; the delivery outcomes
-  // take over the status once they happen (slice 7's write path).
+  // A pending submission keeps the notice `approved`; any other submission
+  // state takes over the rendered status.
   if (
     state === "approved" &&
     submissionState !== undefined &&
@@ -458,7 +547,7 @@ export async function readNoticeDetail(
   });
 
   const submission = await pool.query<SubmissionRow>(
-    "select id, notice_id, recipient_profile_id, channel, state, attempt_count, pack_language, pack_ref, pack_sha256, created_at, cancelled_at from submissions where notice_id = $1",
+    `select ${SUBMISSION_COLUMNS} from submissions where notice_id = $1`,
     [noticeId],
   );
   const packAvailable = await pool.query<{ exists: boolean }>(

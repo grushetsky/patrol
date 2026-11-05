@@ -358,7 +358,7 @@ model Submission {
   @doc("The language of the operator-facing handoff checklist, frozen from the approving operator at approval.")
   packLanguage: InterfaceLanguage;
 
-  @doc("How many delivery attempts the operator has made.")
+  @doc("Retries re-filed by the operator: the count rises at each retry, never at a failure, so a row standing after its third failed attempt carries two.")
   @minValue(0)
   attemptCount: int32;
 

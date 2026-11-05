@@ -74,6 +74,11 @@ export function supersessionRefusalError(
       return new ApiError(404, "not_found");
     case "state_conflict":
       return new ApiError(409, "state_conflict", { currentState: refusal.currentState });
+    case "already_filed":
+      // A genuine lifecycle conflict: the notice's rendered status — the
+      // submission's delivered or acknowledged state — is the reason the
+      // supersession cannot run, exactly as it is for a withdrawal.
+      return new ApiError(409, "state_conflict", { currentState: refusal.submissionState });
     case "empty_set":
       return new ApiError(400, "validation_failed", {
         fieldErrors: [

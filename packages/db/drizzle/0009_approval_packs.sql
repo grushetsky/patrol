@@ -23,8 +23,9 @@
 -- built and stored from the API, idempotently, on the first pack read);
 -- slice 7 owns the transitions (delivered, acknowledged, rejected, failed)
 -- and fills the operator, delivery, and failure columns that stand nullable
--- here. cancelled_at marks the pending row a withdrawal or supersession
--- cancelled so the notice can be re-drafted.
+-- here. cancelled_at marks the pending or failed row a withdrawal or
+-- supersession cancelled so the notice can be re-drafted (a failed row is
+-- still retryable, so a supersession must kill that path too).
 CREATE TABLE submissions (
   id uuid PRIMARY KEY DEFAULT uuidv7(),
   notice_id uuid NOT NULL UNIQUE REFERENCES notices (id),
@@ -54,11 +55,61 @@ CREATE TABLE submissions (
   CHECK (state <> 'pending' OR (operator_id IS NULL AND delivered_at IS NULL
                                  AND decided_at IS NULL AND failed_at IS NULL
                                  AND failure_reason IS NULL AND failure_note IS NULL
-                                 AND failure_recorded_at IS NULL))
+                                 AND failure_recorded_at IS NULL)),
+  -- The operator's attestation that the notice was filed as presented
+  -- (contract Patrol.Domain.OperatorAttestation): written by the delivery
+  -- and acknowledgement paths, cleared by a retry.
+  attested_at timestamptz,
+  statement_version text,
+  -- What the recipient returned, in the contract's Acknowledgement shape
+  -- (one object with the per-recipient fields present for its recipient).
+  acknowledgement jsonb CHECK (acknowledgement IS NULL OR jsonb_typeof(acknowledgement) = 'object'),
+  acknowledged_at timestamptz,
+  -- Set once, at the third failed attempt, and never cleared: the row is
+  -- flagged for an administrator, who decides whether to withdraw the
+  -- notice or try again — nothing is cancelled automatically, and a
+  -- successful retry does not un-flag history. The attempt counter and
+  -- this flag are the two facts a retry KEEPS; every delivery, failure,
+  -- and acknowledgement column is cleared for the fresh attempt.
+  flagged_at timestamptz,
+  -- When the operator last re-filed (retry) the same row.
+  last_retried_at timestamptz,
+  CHECK ((attested_at IS NULL) = (statement_version IS NULL)),
+  CHECK (state <> 'pending' OR (attested_at IS NULL AND statement_version IS NULL
+                                 AND acknowledgement IS NULL AND acknowledged_at IS NULL)),
+  CHECK (state <> 'delivered' OR (operator_id IS NOT NULL AND delivered_at IS NOT NULL
+                                   AND attested_at IS NOT NULL AND statement_version IS NOT NULL
+                                   AND decided_at IS NULL AND failed_at IS NULL
+                                   AND failure_reason IS NULL AND failure_note IS NULL
+                                   AND failure_recorded_at IS NULL
+                                   AND acknowledgement IS NULL AND acknowledged_at IS NULL)),
+  CHECK (state <> 'acknowledged' OR (operator_id IS NOT NULL AND delivered_at IS NOT NULL
+                                      AND attested_at IS NOT NULL AND statement_version IS NOT NULL
+                                      AND acknowledgement IS NOT NULL AND acknowledged_at IS NOT NULL
+                                      AND decided_at IS NULL AND failed_at IS NULL
+                                      AND failure_reason IS NULL AND failure_note IS NULL
+                                      AND failure_recorded_at IS NULL)),
+  CHECK (state <> 'rejected' OR (operator_id IS NOT NULL AND decided_at IS NOT NULL
+                                  AND failure_reason IS NOT NULL AND failure_note IS NOT NULL
+                                  AND failure_recorded_at IS NOT NULL
+                                  AND delivered_at IS NULL AND failed_at IS NULL
+                                  AND attested_at IS NULL AND statement_version IS NULL
+                                  AND acknowledgement IS NULL AND acknowledged_at IS NULL)),
+  CHECK (state <> 'failed' OR (operator_id IS NOT NULL AND failed_at IS NOT NULL
+                                AND failure_reason IS NOT NULL AND failure_note IS NOT NULL
+                                AND failure_recorded_at IS NOT NULL
+                                AND delivered_at IS NULL AND decided_at IS NULL
+                                AND attested_at IS NULL AND statement_version IS NULL
+                                AND acknowledgement IS NULL AND acknowledged_at IS NULL))
 );
 
 CREATE INDEX submissions_profile_idx ON submissions (recipient_profile_id, created_at DESC);
 CREATE INDEX submissions_state_idx ON submissions (state);
+-- The seven-day reminder and the olderThanDays backlog filter both scan
+-- live pending rows by age; the list's default order is newest first.
+CREATE INDEX submissions_created_idx ON submissions (created_at DESC);
+CREATE INDEX submissions_pending_backlog_idx
+  ON submissions (created_at) WHERE state = 'pending' AND cancelled_at IS NULL;
 
 -- The frozen handoff pack (ADR 0020): generated once from the approved
 -- notice, content-addressed in the evidence bucket under the packs prefix,
@@ -93,6 +144,24 @@ CREATE TABLE notice_pre_handoff_captures (
 
 CREATE INDEX notice_pre_handoff_captures_capture_idx
   ON notice_pre_handoff_captures (capture_id);
+
+-- The seven-day reminder's durable half, in the budget alerts' fire-once
+-- pattern (0003): exactly one row per submission the reminder has named,
+-- held by the UNIQUE submission_id, so the second daily run that still
+-- sees the backlog inserts nothing. The row stands exactly while the
+-- submission stays a named, still-pending, overdue delivery — every
+-- transition out of pending and the cancellation a withdrawal or
+-- supersession writes delete it — so a re-filed submission that goes
+-- overdue again is re-raised by the next run. Slice 8/9's dashboard badge
+-- and reminder surfacing read this table; the backlog filter and the
+-- remind job's log line name the same rows it does.
+CREATE TABLE submission_alerts (
+  id uuid PRIMARY KEY DEFAULT uuidv7(),
+  submission_id uuid NOT NULL UNIQUE REFERENCES submissions (id) ON DELETE CASCADE,
+  raised_at timestamptz NOT NULL
+);
+
+CREATE INDEX submission_alerts_raised_idx ON submission_alerts (raised_at);
 
 -- The superseding OPERATOR (the person), beside 0008's
 -- superseded_by_notice_id (the replacement). The contract's SupersededNotice

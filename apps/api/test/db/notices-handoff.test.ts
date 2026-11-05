@@ -198,17 +198,76 @@ describe("withdrawal, supersession, the pack, and the profile pause (slice 6b)",
 
   it("refuses withdrawal after the submission was delivered", async () => {
     const approved = await composeApproved("https://pirate.net/withdraw-delivered");
-    // Delivery itself is slice 7; the guard is seeded the way its write path
-    // will leave the row.
-    await pool.query(
-      `update submissions set state = 'delivered', operator_id = $2, delivered_at = $3
-        where notice_id = $1`,
-      [approved.noticeId, admin.operatorId, FROZEN_NOW],
-    );
+    // Slice 7's delivery path records the operator's filing.
+    const delivered = await world.app.inject({
+      method: "POST",
+      url: `/api/submissions/${
+        (await pool.query<{ id: string }>("select id from submissions where notice_id = $1", [
+          approved.noticeId,
+        ])).rows[0].id
+      }/delivery`,
+      headers: { "content-type": "application/json", ...authHeaders(admin) },
+      payload: {
+        attestation: { filedAsPresented: true, statementVersion: approved.templateVersion },
+      },
+    });
+    expect(delivered.statusCode).toBe(200);
 
     const response = await withdraw(approved.noticeId);
     expect(response.statusCode).toBe(409);
     expect(response.json().code).toBe("notice_not_withdrawable");
+  });
+
+  it("refuses supersession after the submission was delivered", async () => {
+    const approved = await composeApproved("https://pirate.net/supersede-delivered");
+    const submissionId = (
+      await pool.query<{ id: string }>("select id from submissions where notice_id = $1", [
+        approved.noticeId,
+      ])
+    ).rows[0].id;
+    const delivered = await world.app.inject({
+      method: "POST",
+      url: `/api/submissions/${submissionId}/delivery`,
+      headers: { "content-type": "application/json", ...authHeaders(admin) },
+      payload: {
+        attestation: { filedAsPresented: true, statementVersion: approved.templateVersion },
+      },
+    });
+    expect(delivered.statusCode).toBe(200);
+
+    // A filed notice is beyond supersession exactly as it is beyond
+    // withdrawal: the recipient owns the process, and a wrong notice is
+    // corrected by a new notice. The delivered state is the reason, so the
+    // conflict names it.
+    const fresh = await seedViolation(pool, seeded, {
+      url: "https://pirate.net/supersede-delivered-fresh",
+    });
+    const supersession = await world.app.inject({
+      method: "POST",
+      url: `/api/notices/${approved.noticeId}/supersession`,
+      headers: { "content-type": "application/json", ...authHeaders(admin) },
+      payload: { citedViolationIds: [fresh] },
+    });
+    expect(supersession.statusCode).toBe(409);
+    expect(supersession.json().code).toBe("state_conflict");
+    expect(supersession.json().currentState).toBe("delivered");
+
+    // Nothing moved: the notice still stands behind its delivered row,
+    // uncancelled, and no replacement draft exists.
+    const notice = await pool.query<{ state: string }>(
+      "select state from notices where id = $1",
+      [approved.noticeId],
+    );
+    expect(notice.rows[0].state).toBe("approved");
+    const row = await pool.query<{ cancelled_at: Date | null }>(
+      "select cancelled_at from submissions where id = $1",
+      [submissionId],
+    );
+    expect(row.rows[0].cancelled_at).toBeNull();
+    const drafts = await pool.query<{ count: string }>(
+      "select count(*) as count from notices where state = 'draft'",
+    );
+    expect(Number(drafts.rows[0].count)).toBe(0);
   });
 
   it("supersedes an approved notice: pending submission cancelled, replacement draft carries the corrected set, ids recorded", async () => {
@@ -343,6 +402,58 @@ describe("withdrawal, supersession, the pack, and the profile pause (slice 6b)",
     });
     expect(draftSupersession.statusCode).toBe(409);
     expect(draftSupersession.json().currentState).toBe("draft");
+  });
+
+  it("supersedes an approved notice whose submission failed: the failed row is cancelled and the retry is refused", async () => {
+    const approved = await composeApproved("https://pirate.net/supersede-failed");
+    const submissionId = (
+      await pool.query<{ id: string }>("select id from submissions where notice_id = $1", [
+        approved.noticeId,
+      ])
+    ).rows[0].id;
+    const failed = await world.app.inject({
+      method: "POST",
+      url: `/api/submissions/${submissionId}/failure`,
+      headers: { "content-type": "application/json", ...authHeaders(admin) },
+      payload: { reason: "recipient_error", note: "Google's form returned a 500 on submit" },
+    });
+    expect(failed.statusCode).toBe(200);
+
+    // The correction route still runs over a failed row — the replacement
+    // carries a fresh violation, so the corrected set differs.
+    const fresh = await seedViolation(pool, seeded, {
+      url: "https://pirate.net/supersede-failed-fresh",
+    });
+    const supersession = await world.app.inject({
+      method: "POST",
+      url: `/api/notices/${approved.noticeId}/supersession`,
+      headers: { "content-type": "application/json", ...authHeaders(admin) },
+      payload: { citedViolationIds: [fresh] },
+    });
+    expect(supersession.statusCode).toBe(200);
+
+    // The failed row is cancelled with the pending row's brush: a failed
+    // row is still retryable, and a retry under a superseded notice would
+    // stand pending with no reservation behind it (the supersession has
+    // already released the citations).
+    const row = await pool.query<{ state: string; cancelled_at: Date | null }>(
+      "select state, cancelled_at from submissions where notice_id = $1",
+      [approved.noticeId],
+    );
+    expect(row.rows[0].state).toBe("failed");
+    expect(row.rows[0].cancelled_at).not.toBeNull();
+
+    // The dead row has no future: the retry is a state conflict on a
+    // cancelled row, exactly as a withdrawn notice's is.
+    const retry = await world.app.inject({
+      method: "POST",
+      url: `/api/submissions/${submissionId}/retry`,
+      headers: { "content-type": "application/json", ...authHeaders(admin) },
+      payload: {},
+    });
+    expect(retry.statusCode).toBe(409);
+    expect(retry.json().code).toBe("state_conflict");
+    expect(retry.json().currentState).toBe("cancelled");
   });
 
   it("serves the frozen pack with signed artifact downloads and live capture flags", async () => {
@@ -588,15 +699,36 @@ describe("withdrawal, supersession, the pack, and the profile pause (slice 6b)",
       }
       if (input.submissionState !== undefined) {
         const outcome = input.submissionState;
+        // The columns each lifecycle branch's CHECK demands, filled the way
+        // the slice-7 write path leaves them (attestation on delivery and
+        // acknowledgement, the failure quartet on rejected and failed).
         await pool.query(
           `insert into submissions (notice_id, recipient_profile_id, channel, state, attempt_count,
-              pack_language, operator_id, delivered_at, decided_at, failed_at)
+              pack_language, operator_id, delivered_at, decided_at, failed_at,
+              failure_reason, failure_note, failure_recorded_at,
+              attested_at, statement_version, acknowledgement, acknowledged_at)
            values ($1, $2, 'web_form', $3, 1, 'en',
               case when $3 <> 'pending' then $4::uuid end,
-              case when $3 = 'delivered' then $5::timestamptz end,
-              case when $3 in ('acknowledged', 'rejected') then $5::timestamptz end,
-              case when $3 = 'failed' then $5::timestamptz end)`,
-          [row.rows[0].id, googleId, outcome, admin.operatorId, FROZEN_NOW],
+              case when $3 in ('delivered', 'acknowledged') then $5::timestamptz end,
+              case when $3 = 'rejected' then $5::timestamptz end,
+              case when $3 = 'failed' then $5::timestamptz end,
+              case when $3 in ('rejected', 'failed') then 'recipient_error' end,
+              case when $3 in ('rejected', 'failed') then 'seeded cause' end,
+              case when $3 in ('rejected', 'failed') then $5::timestamptz end,
+              case when $3 in ('delivered', 'acknowledged') then $5::timestamptz end,
+              case when $3 in ('delivered', 'acknowledged') then $6 end,
+              case when $3 = 'acknowledged'
+                then '{"recipient":"google","referenceNumber":"dmc-seed-0001","dashboardUrl":"https://support.google.com/legal/removals/dashboard"}'::jsonb
+              end,
+              case when $3 = 'acknowledged' then $5::timestamptz end)`,
+          [
+            row.rows[0].id,
+            googleId,
+            outcome,
+            admin.operatorId,
+            FROZEN_NOW,
+            "google-search.en.v1@ed9f34155836",
+          ],
         );
       }
       return row.rows[0].id;
@@ -694,8 +826,17 @@ describe("withdrawal, supersession, the pack, and the profile pause (slice 6b)",
         index < 17 ? "delivered" : index < 19 ? "rejected" : "failed";
       await pool.query(
         `insert into submissions (notice_id, recipient_profile_id, channel, state, attempt_count,
-            pack_language, operator_id, delivered_at, decided_at, failed_at)
-         values ($1, $2, 'web_form', $3, 1, 'en', $4, $5, $5, $5)`,
+            pack_language, operator_id, delivered_at, decided_at, failed_at,
+            failure_reason, failure_note, failure_recorded_at, attested_at, statement_version)
+         values ($1, $2, 'web_form', $3, 1, 'en', $4,
+            case when $3 = 'delivered' then $5::timestamptz end,
+            case when $3 = 'rejected' then $5::timestamptz end,
+            case when $3 = 'failed' then $5::timestamptz end,
+            case when $3 in ('rejected', 'failed') then 'recipient_error' end,
+            case when $3 in ('rejected', 'failed') then 'seeded cause' end,
+            case when $3 in ('rejected', 'failed') then $5::timestamptz end,
+            case when $3 = 'delivered' then $5::timestamptz end,
+            case when $3 = 'delivered' then 'google-search.en.v1@ed9f34155836' end)`,
         [notice.rows[0].id, googleId, outcome, admin.operatorId, FROZEN_NOW],
       );
       void violationId;
@@ -745,10 +886,21 @@ describe("withdrawal, supersession, the pack, and the profile pause (slice 6b)",
 
     // The outcomes improve; the pause STAYS (no automatic resume) but the
     // counters fall below the share, so the explicit clearance resets it.
+    // The rows are rewritten the way the delivery path leaves them — the
+    // CHECKs demand the attestation and refuse a half-cleared row.
     await pool.query(
-      `update submissions set state = 'delivered', decided_at = null, failed_at = null
+      `update submissions set
+          state = 'delivered',
+          delivered_at = $2,
+          attested_at = $2,
+          statement_version = 'google-search.en.v1@ed9f34155836',
+          decided_at = null,
+          failed_at = null,
+          failure_reason = null,
+          failure_note = null,
+          failure_recorded_at = null
         where recipient_profile_id = $1 and state in ('rejected', 'failed')`,
-      [googleId],
+      [googleId, FROZEN_NOW],
     );
     await recomputeProfilePause(pool, clock.now, googleId);
     const stillPaused = await pool.query<{ paused: boolean; recent_rejected: number; recent_failed: number }>(

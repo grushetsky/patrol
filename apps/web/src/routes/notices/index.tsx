@@ -73,6 +73,11 @@ function NoticesIndex() {
   return (
     <main>
       <h1>{t(locale, "web.notices.title")}</h1>
+      <p>
+        {/* The submissions screen: the delivery attempts this list's notices
+            own, with the seven-day backlog filter. */}
+        <Link to="/submissions">{t(locale, "web.submissions.title")}</Link>
+      </p>
       {error !== null && <p role="alert">{error}</p>}
       {cards === null ? (
         <p>{t(locale, "web.common.loading")}</p>

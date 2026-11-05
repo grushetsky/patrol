@@ -1,4 +1,5 @@
 import type { Pool } from "pg";
+import { clearSubmissionAlert } from "./submissions.js";
 
 /**
  * Withdrawal (docs/design/notice-composition.md "Approval"): a draft may be
@@ -74,6 +75,8 @@ export async function withdrawNotice(
           "update submissions set cancelled_at = $2 where id = $1",
           [submissionRow.id, deps.now().toISOString()],
         );
+        // A cancelled row is dead, so the reminder's alert dies with it.
+        await clearSubmissionAlert(client, submissionRow.id);
       }
     }
 
