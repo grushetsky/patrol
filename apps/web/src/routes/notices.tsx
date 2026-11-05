@@ -37,7 +37,11 @@ function NoticesPage() {
   const notices = useQuery(noticesQuery);
   const [selected, setSelected] = useState<NoticeCard | null>(null);
   const [approving, setApproving] = useState(false);
-  const [attested, setAttested] = useState(false);
+  const [attestation, setAttestation] = useState({
+    reviewed: false,
+    statements: false,
+    authorized: false,
+  });
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -63,7 +67,7 @@ function NoticesPage() {
         detail.notice.content.templateVersion,
       );
       setApproving(false);
-      setAttested(false);
+      setAttestation({ reviewed: false, statements: false, authorized: false });
       setNotice(t("noticesApproved"));
       await refresh();
     } catch (cause) {
@@ -75,7 +79,8 @@ function NoticesPage() {
 
   async function withdraw(target: NoticeCard) {
     if (!session) return;
-    const reason = window.prompt(t("noticesWithdrawReason")) ?? "";
+    const reason = window.prompt(t("noticesWithdrawReason"));
+    if (reason === null) return;
     setBusy(true);
     setError(null);
     try {
@@ -133,7 +138,7 @@ function NoticesPage() {
                 <dd className="text-[var(--fg)]">{card.signatoryName ?? "—"}</dd>
               </div>
               <div>
-                <dt>{t("noticesTemplate")}</dt>
+                <dt>{t("noticesCreated")}</dt>
                 <dd className="text-[var(--fg)]">{new Date(card.createdAt).toLocaleDateString(
                   language === "ru" ? "ru-RU" : "en-US",
                 )}</dd>
@@ -150,6 +155,7 @@ function NoticesPage() {
                 onClick={() => {
                   setSelected(card);
                   setApproving(false);
+                  setAttestation({ reviewed: false, statements: false, authorized: false });
                   setError(null);
                 }}
               >
@@ -181,11 +187,15 @@ function NoticesPage() {
         <NoticeDialog
           notice={selected}
           approving={approving}
-          attested={attested}
-          onAttested={setAttested}
+          attestation={attestation}
+          onAttestation={setAttestation}
           busy={busy}
           error={error}
-          onClose={() => setSelected(null)}
+          onClose={() => {
+            setSelected(null);
+            setApproving(false);
+            setAttestation({ reviewed: false, statements: false, authorized: false });
+          }}
           onApprove={() => void approve()}
           t={t}
           language={language}
@@ -204,8 +214,8 @@ function NoticesPage() {
 function NoticeDialog({
   notice,
   approving,
-  attested,
-  onAttested,
+  attestation,
+  onAttestation,
   busy,
   error,
   onClose,
@@ -215,8 +225,8 @@ function NoticeDialog({
 }: {
   notice: NoticeCard;
   approving: boolean;
-  attested: boolean;
-  onAttested: (value: boolean) => void;
+  attestation: { reviewed: boolean; statements: boolean; authorized: boolean };
+  onAttestation: (value: { reviewed: boolean; statements: boolean; authorized: boolean }) => void;
   busy: boolean;
   error: string | null;
   onClose: () => void;
@@ -237,7 +247,7 @@ function NoticeDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-label={t("noticesAttestTitle")}>
       <Card className="max-h-[88vh] w-full max-w-3xl overflow-auto p-6">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -268,9 +278,17 @@ function NoticeDialog({
                 {t("noticesPack")}
               </Button>
               {approving ? (
-                <Button onClick={onApprove} disabled={busy || !attested}>
-                  {t("noticesApproveConfirm")}
-                </Button>
+                <Button
+                onClick={onApprove}
+                disabled={
+                  busy ||
+                  !attestation.reviewed ||
+                  !attestation.statements ||
+                  !attestation.authorized
+                }
+              >
+                {t("noticesApproveConfirm")}
+              </Button>
               ) : null}
             </div>
             {pack ? (
@@ -290,10 +308,25 @@ function NoticeDialog({
             ) : null}
             {packError ? <p className="text-sm text-[var(--error)]">{packError}</p> : null}
             {approving ? (
-              <label className="flex items-start gap-2 text-xs">
-                <input type="checkbox" checked={attested} onChange={(event) => onAttested(event.target.checked)} />
-                <span>{t("noticesAttestLead")}</span>
-              </label>
+              <div className="space-y-2 text-xs">
+                <p>{t("noticesAttestLead")}</p>
+                {[
+                  ["reviewed", "noticesReviewed"],
+                  ["statements", "noticesStatements"],
+                  ["authorized", "noticesAuthorized"],
+                ].map(([key, label]) => (
+                  <label key={key} className="flex items-start gap-2">
+                    <input
+                      type="checkbox"
+                      checked={attestation[key as keyof typeof attestation]}
+                      onChange={(event) =>
+                        onAttestation({ ...attestation, [key]: event.target.checked })
+                      }
+                    />
+                    <span>{t(label as MessageKey)}</span>
+                  </label>
+                ))}
+              </div>
             ) : null}
             {error ? <p className="text-sm text-[var(--error)]">{error}</p> : null}
           </div>

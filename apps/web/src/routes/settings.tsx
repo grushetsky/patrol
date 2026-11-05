@@ -7,7 +7,7 @@ import {
   createAllowlistEntry,
   removeAllowlistEntry,
 } from "../api/admin";
-import { api, errorMessage, setCsrf } from "../api/client";
+import { api, ApiError, errorMessage, setCsrf } from "../api/client";
 import { translate, useLanguage, type MessageKey } from "../i18n";
 import { useSession } from "../components/session";
 import { Badge, Button, Card, CardHeader, EmptyState, Input, Spinner } from "../components/ui";
@@ -66,7 +66,10 @@ function SettingsPage() {
       ) : (
         <BudgetPanel
           csrfToken={session?.csrfToken ?? ""}
-          onChanged={() => void router.invalidate()}
+          onChanged={() => void Promise.all([
+            queryClient.invalidateQueries({ queryKey: ["budget"] }),
+            router.invalidate(),
+          ])}
           t={t}
         />
       )}
@@ -88,6 +91,7 @@ function AllowlistPanel({
   const [scope, setScope] = useState<(typeof ALLOWLIST_SCOPES)[number]>("rights_holder");
   const [value, setValue] = useState("");
   const [territory, setTerritory] = useState("");
+  const [target, setTarget] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -102,6 +106,8 @@ function AllowlistPanel({
         matchKind: kind === "licensed_destination" ? "url_prefix" : "host",
         value: value.trim(),
         scope,
+        ...(scope === "title_group" ? { titleGroupId: target } : {}),
+        ...(scope === "tracked_title" ? { trackedTitleId: target } : {}),
         ...(kind === "licensed_destination" ? { territory: territory as never } : {}),
       } as never);
       setValue("");
@@ -140,10 +146,28 @@ function AllowlistPanel({
           </select>
           <Input placeholder={t("settingsValue")} value={value} onChange={(event) => setValue(event.target.value)} />
           <Input placeholder={t("settingsTerritory")} value={territory} onChange={(event) => setTerritory(event.target.value)} />
-          <Button onClick={() => void add()} disabled={busy || !value.trim()}>{t("settingsAdd")}</Button>
+          {scope !== "rights_holder" ? (
+            <Input
+              placeholder={scope === "title_group" ? "Title group id" : "Tracked title id"}
+              value={target}
+              onChange={(event) => setTarget(event.target.value)}
+            />
+          ) : null}
+          <Button
+            onClick={() => void add()}
+            disabled={
+              busy ||
+              !value.trim() ||
+              (scope !== "rights_holder" && !target.trim()) ||
+              (kind === "licensed_destination" && !territory.trim())
+            }
+          >
+            {t("settingsAdd")}
+          </Button>
         </div>
         {error ? <p className="text-sm text-[var(--error)]">{error}</p> : null}
         {query.isLoading ? <Spinner label={t("loading")} /> : null}
+        {query.error ? <p className="text-sm text-[var(--error)]">{errorMessage(query.error, t("authErrorGeneric"))}</p> : null}
         {query.data?.items.length === 0 ? <EmptyState title={t("settingsNoAllowlist")} /> : null}
         {query.data && query.data.items.length > 0 ? (
           <div className="divide-y divide-[var(--border)]">
@@ -205,7 +229,7 @@ function BudgetPanel({
           recheckSharePercent: Number(share || budget.budget.recheckSharePercent),
         },
       });
-      if (result.error) throw new Error(errorMessage(result.error, t("authErrorGeneric")));
+      if (result.error) throw new ApiError(result.response.status, result.error);
       onChanged();
     } catch (cause) {
       setError(errorMessage(cause, t("authErrorGeneric")));
@@ -219,6 +243,7 @@ function BudgetPanel({
       <CardHeader title={t("settingsBudget")} />
       <div className="space-y-4 p-5">
         {query.isLoading ? <Spinner label={t("loading")} /> : null}
+        {query.error ? <p className="text-sm text-[var(--error)]">{errorMessage(query.error, t("authErrorGeneric"))}</p> : null}
         {budget ? (
           <>
             {budget.budget.engineCaps.map((cap) => (
