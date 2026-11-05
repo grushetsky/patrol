@@ -8,6 +8,7 @@ import {
   toReviewDecision,
   toViolation,
 } from "../review/records.js";
+import { noticeStatus, toNoticeRef } from "../notices/records.js";
 
 export interface ViolationFilters {
   trackedTitleId?: string;
@@ -240,6 +241,21 @@ export class ViolationService {
           )
         ).rows[0]
       : undefined;
+    const notice = (
+      await this.db.query(
+        `SELECT n.id, n.recipient, n.state, n.created_at,
+                s.state AS submission_state
+           FROM notice_citation c
+           JOIN notice n ON n.id = c.notice_id
+           LEFT JOIN submission s ON s.notice_id = n.id
+          WHERE c.violation_id = $1
+            AND n.state IN ('draft', 'approved')
+            AND (s.id IS NULL OR (s.cancelled_at IS NULL AND s.state NOT IN ('rejected', 'failed')))
+          ORDER BY n.created_at DESC
+          LIMIT 1`,
+        [row.id],
+      )
+    ).rows[0];
     return {
       violation: toViolation(row),
       displayTitle: String(row.display_title ?? ""),
@@ -247,6 +263,21 @@ export class ViolationService {
       titleType: String(row.title_type),
       ...(newest
         ? { newestEvidence: toEvidenceSummary(newest, thumbnail) }
+        : {}),
+      ...(notice
+        ? {
+            notice: toNoticeRef(
+              {
+                id: notice.id,
+                recipient: notice.recipient,
+                created_at: notice.created_at,
+              },
+              noticeStatus(
+                { state: notice.state },
+                { state: notice.submission_state ?? "pending" },
+              ),
+            ),
+          }
         : {}),
     };
   }
