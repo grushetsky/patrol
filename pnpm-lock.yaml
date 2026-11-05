@@ -304,6 +304,12 @@ importers:
 
   packages/notices:
     dependencies:
+      '@patrol/evidence':
+        specifier: workspace:*
+        version: link:../evidence
+      '@patrol/i18n':
+        specifier: workspace:*
+        version: link:../i18n
       pg:
         specifier: ^8.23.1
         version: 8.23.1

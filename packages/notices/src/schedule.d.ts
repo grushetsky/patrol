@@ -15,6 +15,13 @@ import { type ComposeDeps } from "./compose.js";
  * most once whatever the cron does. A worker that was down for days reads
  * the profile's last RECORDED window as the cut-off's start, so no day is
  * skipped; the reservation indexes keep the catch-up from double-noticing.
+ *
+ * A SKIPPED window (paused or ineligible) never moves the cut-off: the
+ * start is the last run the profile actually composed from — a run with no
+ * `skipped_reason` — so every interval a pause or an ineligibility stood
+ * over folds into the first window that runs after the clearance, and a
+ * violation confirmed during the pause composes then instead of falling
+ * out of every future window.
  */
 /** Why one profile's window composed nothing. */
 export type WindowSkipReason = "paused" | "recipient_ineligible" | "template_absent" | "rights_holder_absent";

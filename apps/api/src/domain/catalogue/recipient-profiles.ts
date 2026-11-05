@@ -1,4 +1,5 @@
 import type { Pool, PoolClient } from "pg";
+import { readPauseComputation } from "@patrol/notices";
 import { ApiError } from "../../errors.js";
 import { pageParams } from "../../routes/support.js";
 import { recipientProfileJson, type RecipientProfileRow } from "./serialize.js";
@@ -177,9 +178,11 @@ export async function updateRecipientProfile(
 
 /**
  * Clears a pause the rejection threshold set. A profile whose last twenty
- * submissions still exceed the threshold cannot be cleared (the slice-7
- * write path maintains those counters; at zero submissions nothing exceeds
- * anything). The clearance is recorded against the profile: who, when, why.
+ * submissions still exceed the threshold cannot be cleared — the share is
+ * recomputed LIVE through the same computation the submission write paths
+ * maintain (@patrol/notices' readPauseComputation, the single source of the
+ * window and the threshold; at zero submissions nothing exceeds anything).
+ * The clearance is recorded against the profile: who, when, why.
  */
 export async function clearProfilePause(
   pool: Pool,
@@ -195,12 +198,8 @@ export async function clearProfilePause(
     if (!existing.paused) {
       throw new ApiError(409, "state_conflict");
     }
-    const thresholdExceeded =
-      existing.recent_window_size > 0 &&
-      (existing.recent_rejected + existing.recent_failed) /
-        existing.recent_window_size >
-        0.1;
-    if (thresholdExceeded) {
+    const computation = await readPauseComputation(client, id);
+    if (computation !== null && computation.thresholdExceeded) {
       throw new ApiError(409, "state_conflict", {
         fieldErrors: [
           {

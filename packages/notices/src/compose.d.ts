@@ -196,7 +196,7 @@ export interface WorkIdentificationSeed {
     trackedTitleId: string;
     displayTitle: string;
     releaseYear: number;
-    titleType: "film" | "series" | "miniseries" | "other";
+    titleType: CitationFacts["titleType"];
 }
 /** The notice's resolved content: what the child tables store. */
 export interface ResolvedNoticeContent {
@@ -213,12 +213,10 @@ export interface ResolvedNoticeContent {
  * function, no database. The composer calls it with the reads it just took,
  * so a draft carries a preview of the resolved field map (the signature
  * included) and the work identifications; the design freezes them at
- * APPROVAL, not composition, so slice 6b's approval MUST recompute through
- * this same function from FRESH rights-holder/signatory/profile reads
- * before it freezes — a draft's stored values are never trusted as the
- * frozen content. TODO(slice-6b): wire that recompute into the approval
- * write path next to the freeze columns (notices.rights_holder_snapshot
- * and friends, packages/db/drizzle/0008_notices.sql).
+ * APPROVAL, not composition, so the approval (approval.ts) recomputes
+ * through this same function from FRESH rights-holder/signatory/profile
+ * reads before it freezes — a draft's stored values are never trusted as
+ * the frozen content.
  */
 export declare function resolveNoticeContent(inputs: NoticeContentInputs): ResolvedNoticeContent;
 /**

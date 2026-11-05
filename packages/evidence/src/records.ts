@@ -122,9 +122,17 @@ export type EnqueueCaptureResult =
   | { status: "refused"; hostObjectionId: string }
   | { status: "fresh"; evidenceId: string };
 
+/**
+ * Anything that can run a parameterized query — the pool itself or a
+ * transaction client. The enqueue port's callers run inside approval
+ * transactions (the capture rows join the notice's commit), so the port
+ * takes the narrower executor rather than demanding the pool.
+ */
+export type SqlExecutor = { query: Pool["query"] };
+
 /** The enqueue port's dependencies; slice 5 injects the queue dispatch. */
 export interface EnqueueCaptureDeps {
-  pool: Pool;
+  pool: SqlExecutor;
   now: () => Date;
   /** Wakes the worker's capture queue for one capture. */
   dispatch: (captureId: string) => Promise<void>;
@@ -207,7 +215,7 @@ export async function enqueueCapture(
 }
 
 async function existingCapture(
-  pool: Pool,
+  pool: SqlExecutor,
   normalizedUrl: string,
   reason: CaptureReason,
   pointKey: string,
@@ -266,7 +274,7 @@ async function insertCaptureRow(
  * fetch is seen only once 5b carries the pair onto the capture itself.
  */
 export async function allowlistHitForUrl(
-  pool: Pool,
+  pool: SqlExecutor | Pool,
   url: string,
   context?: AllowlistTitleContext,
 ): Promise<{ kind: string; matchKind: string; value: string } | null> {
@@ -619,7 +627,7 @@ export async function readEvidence(
 
 /** The newest live (captured) evidence for a normalized URL; null when none. */
 export async function newestLiveEvidence(
-  pool: Pool,
+  pool: SqlExecutor,
   normalizedUrl: string,
 ): Promise<EvidenceRow | null> {
   const result = await pool.query(
@@ -672,7 +680,7 @@ function objectionRow(row: Record<string, unknown>): HostObjectionRow {
  * suspend its siblings, because the host said what it said and no more.
  */
 export async function activeObjectionForUrl(
-  pool: Pool,
+  pool: SqlExecutor | Pool,
   url: string,
 ): Promise<HostObjectionRow | null> {
   const host = hostForUrl(url);

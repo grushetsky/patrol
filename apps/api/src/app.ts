@@ -19,6 +19,7 @@ import { readSetupState } from "./domain/bootstrap.js";
 import type { MailTransport } from "./mail/transport.js";
 import { noopScanDispatcher, type ScanDispatcher } from "./queue/dispatch.js";
 import { S3EvidenceStore, enqueueCapture, s3ConfigFromEnv } from "@patrol/evidence";
+import type { PackStore } from "@patrol/notices";
 import { evidenceRoutes } from "./routes/evidence.js";
 import type { EvidencePresigner } from "./domain/evidence.js";
 
@@ -48,6 +49,14 @@ export interface AppDeps {
    * the environment.
    */
   evidencePresigner?: EvidencePresigner;
+  /**
+   * The store behind the handoff pack's writes and its signed downloads
+   * (the pack read builds the pack lazily when it does not stand, then
+   * presigns its artifacts — the API owns the object store by topology).
+   * Absent builds the store from the environment — the same bucket, the
+   * `packs/` prefix.
+   */
+  noticeStore?: PackStore;
 }
 
 /**
@@ -154,7 +163,14 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
     { prefix: "/api" },
   );
   await app.register(
-    noticesRoutes({ config: deps.config, pool: deps.pool }),
+    noticesRoutes({
+      config: deps.config,
+      pool: deps.pool,
+      store:
+        deps.noticeStore ?? new S3EvidenceStore(s3ConfigFromEnv(process.env)),
+      captureDispatch:
+        deps.captureDispatch ?? ((captureId: string) => Promise.resolve()),
+    }),
     { prefix: "/api" },
   );
 

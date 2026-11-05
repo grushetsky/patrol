@@ -55,3 +55,56 @@ export type {
 } from "./compose.js";
 export { runScheduledComposition } from "./schedule.js";
 export type { CompositionWindowOutcome, WindowSkipReason } from "./schedule.js";
+export {
+  buildPackFiles,
+  packContentKey,
+  packManifestHash,
+  recipientFormUrl,
+  recipientTakesUploadFile,
+} from "./pack.js";
+export type {
+  BuiltPackFile,
+  HandoffArtifactKind,
+  HandoffPackInput,
+  PackCaptureFlag,
+  PackCitation,
+} from "./pack.js";
+export {
+  approveNotice,
+  SECOND_OPERATOR_FIRST_NOTICES,
+  TEMPLATE_MAX_AGE_MS,
+} from "./approval.js";
+export type { ApprovalDeps, ApprovalInput, ApprovalOutcome, ApprovalRefusal } from "./approval.js";
+export {
+  buildHandoffPackIfMissing,
+  createPendingSubmissionIfSettled,
+  loadCaptureFlagsForCitations,
+  loadPackInput,
+  settlePreHandoffCapture,
+  storePackFiles,
+  TERMINAL_CAPTURE_STATES,
+} from "./submission.js";
+export type {
+  PackBuildDeps,
+  PackBuildOutcome,
+  PackStore,
+  SettleDeps,
+  SubmissionCreation,
+} from "./submission.js";
+export { withdrawNotice } from "./withdrawal.js";
+export type { WithdrawalDeps, WithdrawalInput, WithdrawalOutcome, WithdrawalRefusal } from "./withdrawal.js";
+export { supersedeNotice } from "./supersession.js";
+export type {
+  SupersessionDeps,
+  SupersessionInput,
+  SupersessionOutcome,
+  SupersessionRefusal,
+} from "./supersession.js";
+export {
+  PAUSE_REASON_PREFIX,
+  PAUSE_THRESHOLD,
+  PAUSE_WINDOW,
+  readPauseComputation,
+  recomputeProfilePause,
+} from "./pause.js";
+export type { PauseComputation } from "./pause.js";

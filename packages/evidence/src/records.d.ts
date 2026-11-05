@@ -83,9 +83,18 @@ export type EnqueueCaptureResult = {
     status: "fresh";
     evidenceId: string;
 };
+/**
+ * Anything that can run a parameterized query — the pool itself or a
+ * transaction client. The enqueue port's callers run inside approval
+ * transactions (the capture rows join the notice's commit), so the port
+ * takes the narrower executor rather than demanding the pool.
+ */
+export type SqlExecutor = {
+    query: Pool["query"];
+};
 /** The enqueue port's dependencies; slice 5 injects the queue dispatch. */
 export interface EnqueueCaptureDeps {
-    pool: Pool;
+    pool: SqlExecutor;
     now: () => Date;
     /** Wakes the worker's capture queue for one capture. */
     dispatch: (captureId: string) => Promise<void>;
@@ -133,7 +142,7 @@ export declare function enqueueCapture(deps: EnqueueCaptureDeps, input: {
  * no title pairing — so a scoped entry landing between the enqueue and the
  * fetch is seen only once 5b carries the pair onto the capture itself.
  */
-export declare function allowlistHitForUrl(pool: Pool, url: string, context?: AllowlistTitleContext): Promise<{
+export declare function allowlistHitForUrl(pool: SqlExecutor | Pool, url: string, context?: AllowlistTitleContext): Promise<{
     kind: string;
     matchKind: string;
     value: string;
@@ -253,7 +262,7 @@ export declare function readEvidence(pool: Pool, evidenceId: string): Promise<{
     artifacts: EvidenceArtifactRow[];
 } | null>;
 /** The newest live (captured) evidence for a normalized URL; null when none. */
-export declare function newestLiveEvidence(pool: Pool, normalizedUrl: string): Promise<EvidenceRow | null>;
+export declare function newestLiveEvidence(pool: SqlExecutor, normalizedUrl: string): Promise<EvidenceRow | null>;
 /** One recorded host objection (the contract's HostObjection). */
 export interface HostObjectionRow {
     id: string;
@@ -276,7 +285,7 @@ export interface HostObjectionRow {
  * not reach sideways — an objection on one subdomain of a domain does not
  * suspend its siblings, because the host said what it said and no more.
  */
-export declare function activeObjectionForUrl(pool: Pool, url: string): Promise<HostObjectionRow | null>;
+export declare function activeObjectionForUrl(pool: SqlExecutor | Pool, url: string): Promise<HostObjectionRow | null>;
 /**
  * Records an objection — the worker's reading of a host's 451 or its page
  * naming Patrol in a cease-and-desist, or (slice 5+ via the operator

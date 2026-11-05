@@ -18,9 +18,10 @@ export declare function previousWindowOccurrence(windowTime: string, window: Dat
 /**
  * The cut-off interval a window composes: violations confirmed strictly
  * after the previous window and at or before this one. `previousWindow` is
- * the profile's last RECORDED window when one exists (a worker that was
- * down for days does not skip the days it missed); otherwise the
- * arithmetic occurrence a day before.
+ * the profile's last recorded UNSKIPPED window when one exists (a worker
+ * that was down for days does not skip the days it missed, and a skipped
+ * window never moves the cut-off); otherwise the arithmetic occurrence a
+ * day before.
  */
 export declare function compositionInterval(previousWindow: Date, window: Date): {
     from: Date;

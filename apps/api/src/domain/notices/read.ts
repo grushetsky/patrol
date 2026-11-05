@@ -14,8 +14,58 @@ import { mapViolation } from "@patrol/scans";
  * rejected, failed) extend it when submissions land.
  */
 
-/** The contract's NoticeStatus for a notice no submission has moved. */
-export function noticeStatus(state: "draft" | "approved" | "withdrawn" | "superseded"): string {
+/** One submission row the notice detail exposes once approval settles. */
+export interface SubmissionRow {
+  id: string;
+  notice_id: string;
+  recipient_profile_id: string;
+  channel: "web_form" | "trusted_program";
+  state: "pending" | "delivered" | "acknowledged" | "rejected" | "failed";
+  attempt_count: number;
+  pack_language: "en" | "ru";
+  pack_ref: string | null;
+  pack_sha256: string | null;
+  created_at: Date;
+  cancelled_at: Date | null;
+}
+
+/** The contract's Submission, serialized from the row. */
+export function submissionJson(row: SubmissionRow): Record<string, unknown> {
+  return {
+    id: row.id,
+    noticeId: row.notice_id,
+    channel: row.channel,
+    recipientProfileId: row.recipient_profile_id,
+    packLanguage: row.pack_language,
+    attemptCount: Number(row.attempt_count),
+    ...(row.pack_ref === null ? {} : { packRef: row.pack_ref }),
+    ...(row.pack_sha256 === null ? {} : { packSha256: row.pack_sha256 }),
+    createdAt: row.created_at.toISOString(),
+    ...(row.cancelled_at === null ? {} : { cancelledAt: row.cancelled_at.toISOString() }),
+    // The delivered, acknowledged, rejected, and failed branches carry their
+    // own fields; slice 7's write path is what produces them.
+    lifecycle: { state: row.state },
+  };
+}
+
+/**
+ * The contract's NoticeStatus, derived: the notice's own state, except that
+ * an approved notice renders its submission's state once one moves it
+ * (pending in this slice; the delivery outcomes arrive with slice 7).
+ */
+export function noticeStatus(
+  state: "draft" | "approved" | "withdrawn" | "superseded",
+  submissionState?: "pending" | "delivered" | "acknowledged" | "rejected" | "failed",
+): string {
+  // A pending submission keeps the notice `approved`; the delivery outcomes
+  // take over the status once they happen (slice 7's write path).
+  if (
+    state === "approved" &&
+    submissionState !== undefined &&
+    submissionState !== "pending"
+  ) {
+    return submissionState;
+  }
   return state;
 }
 
@@ -41,17 +91,74 @@ interface NoticeRow {
   withdrawal_reason: string | null;
   superseded_at: Date | null;
   superseded_by_notice_id: string | null;
+  superseded_by: string | null;
 }
 
 const NOTICE_COLUMNS = `id, recipient, recipient_profile_id, channel, state, template_version,
   language, composed_at, composed_by, trigger_kind, updated_at, approved_by, approved_at,
   rights_holder_snapshot, signatory_snapshot, profile_snapshot, withdrawn_by, withdrawn_at,
-  withdrawal_reason, superseded_at, superseded_by_notice_id`;
+  withdrawal_reason, superseded_at, superseded_by_notice_id, superseded_by`;
 
-/** The list filters GET /notices declares. */
+/**
+ * The list filters GET /notices declares. `state` takes the full DERIVED
+ * status vocabulary the cards render (NoticeStatus), not only the notice's
+ * own lifecycle states: the four delivery outcomes map onto the submission
+ * state through the same derivation `noticeStatus` applies to a card, so
+ * `?state=delivered` returns the notices whose rendered status is
+ * delivered. (The contract's query parameter spells the four lifecycle
+ * values; the derived four are a server-side widening that keeps every
+ * contract-declared request behaving identically.)
+ */
 export interface NoticeListFilter {
-  state?: "draft" | "approved" | "withdrawn" | "superseded";
+  state?:
+    | "draft"
+    | "approved"
+    | "delivered"
+    | "acknowledged"
+    | "rejected"
+    | "failed"
+    | "withdrawn"
+    | "superseded";
   recipient?: "google" | "bing" | "yandex";
+}
+
+/** The derived statuses the list filter accepts, in NoticeStatus order. */
+const LIST_STATES = [
+  "draft",
+  "approved",
+  "delivered",
+  "acknowledged",
+  "rejected",
+  "failed",
+  "withdrawn",
+  "superseded",
+] as const;
+
+/**
+ * The SQL the state filter runs — the derivation `noticeStatus` spells in
+ * TypeScript, transcribed: an approved notice renders its submission's
+ * state once one has moved it past pending, and itself until then. The two
+ * homes move together by hand. (The interpolated literals are safe because
+ * the state's type is the closed NoticeStatus vocabulary the enum filter
+ * admitted it from.)
+ */
+function stateFilterCondition(
+  state: Exclude<NoticeListFilter["state"], undefined>,
+  submissionStateRef: string,
+): string {
+  switch (state) {
+    case "draft":
+    case "withdrawn":
+    case "superseded":
+      return `n.state = '${state}'`;
+    case "approved":
+      return `n.state = 'approved' and (${submissionStateRef} is null or ${submissionStateRef} = 'pending')`;
+    case "delivered":
+    case "acknowledged":
+    case "rejected":
+    case "failed":
+      return `n.state = 'approved' and ${submissionStateRef} = '${state}'`;
+  }
 }
 
 /** GET /notices: the card page, newest first. */
@@ -70,15 +177,17 @@ export async function listNotices(
       ? (value as T)
       : undefined;
   const filter: NoticeListFilter = {
-    state: enumFilter(query.state, ["draft", "approved", "withdrawn", "superseded"] as const),
+    state: enumFilter(query.state, LIST_STATES),
     recipient: enumFilter(query.recipient, ["google", "bing", "yandex"] as const),
   };
 
+  // The submission state the derivation reads — the same subquery the card
+  // select carries.
+  const submissionStateRef = "(select s.state from submissions s where s.notice_id = n.id)";
   const conditions: string[] = [];
   const values: unknown[] = [];
   if (filter.state !== undefined) {
-    values.push(filter.state);
-    conditions.push(`n.state = $${values.length}`);
+    conditions.push(stateFilterCondition(filter.state, submissionStateRef));
   }
   if (filter.recipient !== undefined) {
     values.push(filter.recipient);
@@ -86,13 +195,23 @@ export async function listNotices(
   }
   const where = conditions.length === 0 ? "" : `where ${conditions.join(" and ")}`;
 
-  const rows = await pool.query<NoticeRow & { violation_count: number; signatory_name: string | null }>(
+  const rows = await pool.query<
+    NoticeRow & {
+      violation_count: number;
+      signatory_name: string | null;
+      pack_available: boolean;
+      submission_state: SubmissionRow["state"] | null;
+    }
+  >(
     `select n.id, n.recipient, n.recipient_profile_id, n.channel, n.state, n.template_version,
             n.language, n.composed_at, n.composed_by, n.trigger_kind, n.updated_at, n.approved_by,
             n.approved_at, n.rights_holder_snapshot, n.signatory_snapshot, n.profile_snapshot,
             n.withdrawn_by, n.withdrawn_at, n.withdrawal_reason, n.superseded_at, n.superseded_by_notice_id,
+            n.superseded_by,
             (select count(*)::int from notice_citations c where c.notice_id = n.id) as violation_count,
-            (n.signatory_snapshot ->> 'fullLegalName') as signatory_name
+            (n.signatory_snapshot ->> 'fullLegalName') as signatory_name,
+            exists(select 1 from handoff_packs p where p.notice_id = n.id) as pack_available,
+            (select s.state from submissions s where s.notice_id = n.id) as submission_state
      from notices n ${where}
      order by n.composed_at desc, n.id
      limit $${values.length + 1} offset $${values.length + 2}`,
@@ -110,9 +229,9 @@ export async function listNotices(
       // The signatory's name reaches the card only once approval snapshots it.
       ...(row.signatory_name === null ? {} : { signatoryName: row.signatory_name }),
       createdAt: row.composed_at.toISOString(),
-      status: noticeStatus(row.state),
-      // The handoff pack is generated at approval; a draft has none.
-      packAvailable: false,
+      status: noticeStatus(row.state, row.submission_state ?? undefined),
+      // The handoff pack is generated when the submission is created.
+      packAvailable: row.pack_available,
     })),
     total: Number(total.rows[0].count),
     page,
@@ -133,8 +252,6 @@ async function readNoticeRow(pool: Pool, noticeId: string): Promise<NoticeRow> {
 
 /**
  * The contract's NoticeLifecycle union, serialized from the row's columns.
- * The superseded branch's actor is the one piece the row does not hold:
- * 6b's supersession write path records the correcting operator.
  */
 type LifecycleJson =
   | { state: "draft"; updatedAt?: string }
@@ -149,12 +266,8 @@ type LifecycleJson =
   | { state: "withdrawn"; withdrawnBy: string; withdrawnAt: string; reason?: string }
   | {
       state: "superseded";
-      /**
-       * The operator who superseded the notice. No 6a write path records
-       * one, so the wire shape is untested until 6b; it stands null until
-       * the supersession writes it. TODO(slice-6b).
-       */
-      supersededBy: string | null;
+      /** The operator who superseded the notice. */
+      supersededBy: string;
       supersededAt: string;
       supersededByNoticeId: string;
     };
@@ -186,7 +299,7 @@ function lifecycleJson(row: NoticeRow): LifecycleJson {
     case "superseded":
       return {
         state: "superseded",
-        supersededBy: null,
+        supersededBy: row.superseded_by!,
         supersededAt: row.superseded_at!.toISOString(),
         supersededByNoticeId: row.superseded_by_notice_id!,
       };
@@ -344,6 +457,15 @@ export async function readNoticeDetail(
     };
   });
 
+  const submission = await pool.query<SubmissionRow>(
+    "select id, notice_id, recipient_profile_id, channel, state, attempt_count, pack_language, pack_ref, pack_sha256, created_at, cancelled_at from submissions where notice_id = $1",
+    [noticeId],
+  );
+  const packAvailable = await pool.query<{ exists: boolean }>(
+    "select exists(select 1 from handoff_packs where notice_id = $1) as exists",
+    [noticeId],
+  );
+
   return {
     notice: {
       id: row.id,
@@ -388,10 +510,11 @@ export async function readNoticeDetail(
       createdAt: row.composed_at.toISOString(),
       lifecycle: lifecycleJson(row),
     },
-    status: noticeStatus(row.state),
+    status: noticeStatus(row.state, submission.rows[0]?.state),
     citedViolations,
-    // The submission and its pack arrive with approval (6b).
-    packAvailable: false,
+    // The submission and its pack arrive with approval's settled captures.
+    ...(submission.rows[0] === undefined ? {} : { submission: submissionJson(submission.rows[0]) }),
+    packAvailable: packAvailable.rows[0].exists,
     template: await templateSummary(pool, row, now),
   };
 }

@@ -2,6 +2,7 @@ export {
   S3EvidenceStore,
   artifactKey,
   isThumbnailKind,
+  isPackKind,
   s3ConfigFromEnv,
   sha256Hex,
 } from "./store.js";
@@ -9,6 +10,7 @@ export type {
   ArtifactUpload,
   EvidenceArtifactKind,
   EvidenceStore,
+  PackArtifactKind,
   PresignRequest,
   PresignedDownload,
   S3StoreConfig,
@@ -49,4 +51,5 @@ export type {
   NewEvidenceArtifact,
   NewEvidenceRecord,
   RedirectHopRow,
+  SqlExecutor,
 } from "./records.js";

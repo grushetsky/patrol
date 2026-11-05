@@ -16,6 +16,7 @@ import { Route as AuthSetupRouteImport } from './routes/auth/setup'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as CatalogueIndexRouteImport } from './routes/catalogue/index'
 import { Route as NoticesIndexRouteImport } from './routes/notices/index'
+import { Route as NoticesNoticeIdRouteImport } from './routes/notices/$noticeId'
 import { Route as ReviewIndexRouteImport } from './routes/review/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SettingsAllowlistRouteImport } from './routes/settings/allowlist'
@@ -58,6 +59,11 @@ const CatalogueIndexRoute = CatalogueIndexRouteImport.update({
 const NoticesIndexRoute = NoticesIndexRouteImport.update({
   id: '/notices/',
   path: '/notices/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NoticesNoticeIdRoute = NoticesNoticeIdRouteImport.update({
+  id: '/notices/$noticeId',
+  path: '/notices/$noticeId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReviewIndexRoute = ReviewIndexRouteImport.update({
@@ -108,6 +114,7 @@ export interface FileRoutesByFullPath {
   '/auth/preferences': typeof AuthPreferencesRoute
   '/auth/setup': typeof AuthSetupRoute
   '/auth/sign-in': typeof AuthSignInRoute
+  '/notices/$noticeId': typeof NoticesNoticeIdRoute
   '/settings/allowlist': typeof SettingsAllowlistRoute
   '/settings/recipient-profiles': typeof SettingsRecipientProfilesRoute
   '/catalogue/': typeof CatalogueIndexRoute
@@ -125,6 +132,7 @@ export interface FileRoutesByTo {
   '/auth/preferences': typeof AuthPreferencesRoute
   '/auth/setup': typeof AuthSetupRoute
   '/auth/sign-in': typeof AuthSignInRoute
+  '/notices/$noticeId': typeof NoticesNoticeIdRoute
   '/settings/allowlist': typeof SettingsAllowlistRoute
   '/settings/recipient-profiles': typeof SettingsRecipientProfilesRoute
   '/catalogue': typeof CatalogueIndexRoute
@@ -143,6 +151,7 @@ export interface FileRoutesById {
   '/auth/preferences': typeof AuthPreferencesRoute
   '/auth/setup': typeof AuthSetupRoute
   '/auth/sign-in': typeof AuthSignInRoute
+  '/notices/$noticeId': typeof NoticesNoticeIdRoute
   '/settings/allowlist': typeof SettingsAllowlistRoute
   '/settings/recipient-profiles': typeof SettingsRecipientProfilesRoute
   '/catalogue/': typeof CatalogueIndexRoute
@@ -162,6 +171,7 @@ export interface FileRouteTypes {
     | '/auth/preferences'
     | '/auth/setup'
     | '/auth/sign-in'
+    | '/notices/$noticeId'
     | '/settings/allowlist'
     | '/settings/recipient-profiles'
     | '/catalogue/'
@@ -179,6 +189,7 @@ export interface FileRouteTypes {
     | '/auth/preferences'
     | '/auth/setup'
     | '/auth/sign-in'
+    | '/notices/$noticeId'
     | '/settings/allowlist'
     | '/settings/recipient-profiles'
     | '/catalogue'
@@ -196,6 +207,7 @@ export interface FileRouteTypes {
     | '/auth/preferences'
     | '/auth/setup'
     | '/auth/sign-in'
+    | '/notices/$noticeId'
     | '/settings/allowlist'
     | '/settings/recipient-profiles'
     | '/catalogue/'
@@ -214,6 +226,7 @@ export interface RootRouteChildren {
   AuthPreferencesRoute: typeof AuthPreferencesRoute
   AuthSetupRoute: typeof AuthSetupRoute
   AuthSignInRoute: typeof AuthSignInRoute
+  NoticesNoticeIdRoute: typeof NoticesNoticeIdRoute
   SettingsAllowlistRoute: typeof SettingsAllowlistRoute
   SettingsRecipientProfilesRoute: typeof SettingsRecipientProfilesRoute
   CatalogueIndexRoute: typeof CatalogueIndexRoute
@@ -275,6 +288,13 @@ declare module '@tanstack/react-router' {
       path: '/notices'
       fullPath: '/notices/'
       preLoaderRoute: typeof NoticesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notices/$noticeId': {
+      id: '/notices/$noticeId'
+      path: '/notices/$noticeId'
+      fullPath: '/notices/$noticeId'
+      preLoaderRoute: typeof NoticesNoticeIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/review/': {
@@ -342,6 +362,7 @@ const rootRouteChildren: RootRouteChildren = {
   AuthPreferencesRoute: AuthPreferencesRoute,
   AuthSetupRoute: AuthSetupRoute,
   AuthSignInRoute: AuthSignInRoute,
+  NoticesNoticeIdRoute: NoticesNoticeIdRoute,
   SettingsAllowlistRoute: SettingsAllowlistRoute,
   SettingsRecipientProfilesRoute: SettingsRecipientProfilesRoute,
   CatalogueIndexRoute: CatalogueIndexRoute,

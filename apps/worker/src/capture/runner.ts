@@ -1,5 +1,6 @@
 import type { Pool } from "pg";
 import { hostForUrl, normalizeUrlKey } from "@patrol/domain";
+import { settlePreHandoffCapture } from "@patrol/notices";
 import {
   recordRemovalsForDeadCapture,
   reopenDismissedOnCapture,
@@ -446,6 +447,33 @@ export async function runCapture(
         }
       } catch (error) {
         log("capture.run failed recording removals", {
+          captureId,
+          err: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+    // The notice lifecycle's worker hook (slice 6b): a settled pre-handoff
+    // capture wakes the approved notices that waited on it, and each whose
+    // queue has fully settled gets its pending submission row — DATABASE
+    // work only, because the deployment topology grants the object store
+    // to the API alone; the pack's bytes are built there, idempotently, on
+    // the first pack read. After the evidence record stands, so a failure
+    // is logged and never fails the capture; the next terminal capture of
+    // the notice (or a re-run of the settle) catches up.
+    if (row.reason === "pre_handoff") {
+      try {
+        const created = await settlePreHandoffCapture(
+          { pool: deps.pool, now: deps.now },
+          captureId,
+        );
+        if (created.length > 0) {
+          log("capture.run created pending submissions for settled notices", {
+            captureId,
+            submissions: created,
+          });
+        }
+      } catch (error) {
+        log("capture.run failed settling pre-handoff notices", {
           captureId,
           err: error instanceof Error ? error.message : String(error),
         });

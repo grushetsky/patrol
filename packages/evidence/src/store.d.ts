@@ -13,18 +13,25 @@
 export type EvidenceArtifactKind = "response_body" | "response_headers" | "rendered_dom" | "screenshot" | "thumbnail" | "extraction_sidecar";
 /** True for the one artifact kind stored under the derived prefix. */
 export declare function isThumbnailKind(kind: string): boolean;
+/** The handoff pack's artifact kinds (the contract's HandoffArtifactKind). */
+export type PackArtifactKind = "notice_html" | "fields_json" | "upload_file" | "handoff_markdown";
+/** True for the pack's artifact kinds, stored under the packs prefix. */
+export declare function isPackKind(kind: string): kind is PackArtifactKind;
 /**
- * The object key one artifact lives under:
+ * The object key one artifact lives under — the ONE key helper, used by the
+ * production store's writes and presigns and by the test fakes alike:
  * `evidence/sha256/<first two>/<next two>/<full hash>` for evidence
  * artifacts, `derived/thumbnail/sha256/...` for the viewport thumbnails,
- * sharded by the hash's leading byte pairs so a listing stays walkable.
+ * `packs/sha256/...` for the handoff pack's files (ADR 0020: the pack is
+ * content-addressed in the same bucket), sharded by the hash's leading byte
+ * pairs so a listing stays walkable.
  */
 export declare function artifactKey(kind: string, sha256: string): string;
 /** The SHA-256 of some bytes as lowercase hex — the identity of an object. */
 export declare function sha256Hex(bytes: Uint8Array): string;
 /** One artifact's bytes ready for the store. */
 export interface ArtifactUpload {
-    kind: EvidenceArtifactKind;
+    kind: EvidenceArtifactKind | PackArtifactKind;
     sha256: string;
     bytes: Uint8Array;
     contentType: string;
@@ -39,7 +46,7 @@ export interface StoredObject {
 }
 /** The parameters a signed download reference carries. */
 export interface PresignRequest {
-    kind: EvidenceArtifactKind;
+    kind: EvidenceArtifactKind | PackArtifactKind;
     sha256: string;
     contentType: string;
     /** The version to pin the read to, when one was recorded at write time. */

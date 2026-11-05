@@ -4,10 +4,10 @@ import type { Recipient } from "./statements.js";
  * recipient"; implementation rules "Notices and submissions / Grouping"):
  *
  * - Google: many works per notice, at most `GOOGLE_DEFAULT_URL_CAP` URLs
- *   by default, lowered to the profile's published per-file cap and the
- *   server-discovered cap the form's error text supplied. Patrol never
- *   hard-codes a discovered cap — the profile records it and this module
- *   only reads it.
+ *   by default, lowered to the profile's published per-notice and per-file
+ *   caps and the server-discovered cap the form's error text supplied.
+ *   Patrol never hard-codes a discovered cap — the profile records it and
+ *   this module only reads it.
  * - Bing: ONE tracked title per notice, at most 1,000 URLs; a title over
  *   the cap splits into numbered notices.
  * - Yandex: one violation, one URL, per notice.
@@ -37,8 +37,8 @@ export interface GroupingViolation {
 }
 /**
  * Google's effective URL cap: the default lowered by the profile's
- * published and server-discovered caps — the lowest of the values that
- * exist and are at least one.
+ * published per-notice and per-file caps and the server-discovered cap —
+ * the lowest of the values that exist and are at least one.
  */
 export declare function googleUrlCap(caps: GroupingCaps): number;
 /**

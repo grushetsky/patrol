@@ -98,10 +98,11 @@ function NoticesIndex() {
             {cards.map((card) => (
               <tr key={card.id}>
                 <td>
-                  {/* TODO(slice-6b): the id becomes a link to the notice's
-                      detail route once the card/stepper form exists — a
-                      self-link to the list is no link at all. */}
-                  <code>{card.id.slice(0, 8)}</code>
+                  {/* The detail route carries the stepper, the approval
+                      panel, the document, and the pack. */}
+                  <Link params={{ noticeId: card.id }} to="/notices/$noticeId">
+                    <code>{card.id.slice(0, 8)}</code>
+                  </Link>
                 </td>
                 <td>
                   {t(
@@ -122,16 +123,11 @@ function NoticesIndex() {
                 </td>
                 <td>{status(card.status)}</td>
                 <td>
-                  {/* Approval, withdrawal, and the pack arrive with slice
-                      6b; the control stands disabled so its place is the
-                      one 6b brings to life. */}
-                  <button
-                    type="button"
-                    disabled
-                    title={t(locale, "web.notices.approveDisabled")}
-                  >
-                    {t(locale, "web.notices.approve")}
-                  </button>
+                  <Link params={{ noticeId: card.id }} to="/notices/$noticeId">
+                    {card.status === "draft"
+                      ? t(locale, "web.notices.approve")
+                      : t(locale, "web.notices.detail.pack.title")}
+                  </Link>
                 </td>
               </tr>
             ))}

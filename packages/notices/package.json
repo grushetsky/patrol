@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "The notice machinery shared by the API (draft composition and read models) and the worker (the scheduled composition window): the statement-template registry with its canonical hash, per-recipient grouping, and the draft composer.",
+  "description": "The notice machinery shared by the API (draft composition, approval, withdrawal, supersession, and the handoff pack) and the worker (the scheduled composition window and the pre-handoff settle watcher): the statement-template registry with its canonical hash, per-recipient grouping, the draft composer, and the approval lifecycle.",
   "exports": {
     ".": {
       "types": "./src/index.d.ts",
@@ -16,7 +16,9 @@
     "test:unit": "vitest run"
   },
   "dependencies": {
-    "pg": "^8.23.1"
+    "pg": "^8.23.1",
+    "@patrol/evidence": "workspace:*",
+    "@patrol/i18n": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "26.6.6",
