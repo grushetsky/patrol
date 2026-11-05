@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { evidenceQuery } from "../api/screens";
 import { api, ApiError, errorMessage } from "../api/client";
@@ -14,16 +15,22 @@ export function EvidenceDialog({
   const language = useLanguage();
   const t = (key: MessageKey) => translate(language, key);
   const query = useQuery(evidenceQuery(evidenceId));
+  const [error, setError] = useState<string | null>(null);
 
   async function download(sha256: string) {
-    const result = await api.GET(
-      "/evidence/{evidenceId}/artifacts/{sha256}/download",
-      { params: { path: { evidenceId, sha256 } } },
-    );
-    if (result.error || !result.data) {
-      throw new ApiError(result.response.status, result.error);
+    setError(null);
+    try {
+      const result = await api.GET(
+        "/evidence/{evidenceId}/artifacts/{sha256}/download",
+        { params: { path: { evidenceId, sha256 } } },
+      );
+      if (result.error || !result.data) {
+        throw new ApiError(result.response.status, result.error);
+      }
+      window.location.assign(result.data.url);
+    } catch (cause) {
+      setError(errorMessage(cause, t("authErrorGeneric")));
     }
-    window.open(result.data.url, "_blank", "noopener");
   }
 
   return (
@@ -59,7 +66,11 @@ export function EvidenceDialog({
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-wide text-[var(--muted)]">{t("evidenceObserved")}</dt>
-                <dd>{new Date(query.data.evidence.observedAt).toLocaleString()}</dd>
+                <dd>
+                  {new Date(query.data.evidence.observedAt).toLocaleString(
+                    language === "ru" ? "ru-RU" : "en-US",
+                  )}
+                </dd>
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-wide text-[var(--muted)]">{t("evidenceOutcome")}</dt>
@@ -68,10 +79,13 @@ export function EvidenceDialog({
               <div>
                 <dt className="text-xs uppercase tracking-wide text-[var(--muted)]">{t("reviewEvidence")}</dt>
                 <dd>
-                  {query.data.downloadAvailable ? t("dashHealthy") : t("evidencePurged")}
+                  {query.data.downloadAvailable
+                    ? t("evidenceAvailable")
+                    : t("evidencePurged")}
                 </dd>
               </div>
             </dl>
+            {error ? <p className="text-sm text-[var(--error)]">{error}</p> : null}
             <div>
               <h3 className="text-sm font-semibold">{t("reviewArtifacts")}</h3>
               {query.data.artifacts.length === 0 ? (

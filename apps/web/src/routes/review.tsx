@@ -43,6 +43,10 @@ function ReviewPage() {
     if (!selected) return;
     const evidenceIds = selected.newestEvidence ? [selected.newestEvidence.id] : [];
     if (evidenceIds.length === 0) return;
+    if (action === "violation" && selected.allowlistEntry) {
+      setError(t("reviewAllowlisted"));
+      return;
+    }
     if (action === "not_a_violation" && note.trim().length === 0) {
       setError(t("reviewNoteRequired"));
       return;
@@ -174,6 +178,7 @@ function ReviewPage() {
                 <Button
                   key={item.action}
                   variant={action === item.action ? "primary" : "secondary"}
+                  disabled={item.action === "violation" && Boolean(selected.allowlistEntry)}
                   onClick={() => setAction(item.action)}
                 >
                   {t(item.key)}
@@ -243,9 +248,37 @@ function CandidateRow({
         <p className="mt-1 break-all text-sm text-[var(--accent)]">{row.url}</p>
         <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--muted)]">
           <span>{row.host}</span>
+          <span>{row.registrableDomain}</span>
           <span>{row.engine ?? row.source}{row.rank ? ` · #${row.rank}` : ""}</span>
-          <span>{row.matchedVariant.text}</span>
-          {row.queryText ? <span>“{row.queryText}”</span> : null}
+          <span>{row.locale ?? "—"}{row.territory ? ` / ${row.territory}` : ""}</span>
+          <span>
+            {row.matchedVariant.kind} · {row.matchedVariant.language}/{row.matchedVariant.script}
+            {row.matchedVariant.territory ? ` · ${row.matchedVariant.territory}` : ""}
+          </span>
+          {row.finalUrl && row.finalUrl !== row.url ? (
+            <span className="break-all">→ {row.finalUrl}</span>
+          ) : null}
+        </div>
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-[var(--muted)]">
+          <span>
+            {t("reviewScore")}: {(row.scoreComponents.titleMatch ?? 0).toFixed(2)} +{" "}
+            {row.scoreComponents.signals?.length ?? 0} signals +{" "}
+            {(row.scoreComponents.reputation ?? 0).toFixed(2)}
+          </span>
+          <span>
+            {t("reviewHostReputation")}: {row.reputation.confirmedViolations ?? 0} · +
+            {(row.reputation.bonus ?? 0).toFixed(2)}
+          </span>
+          {row.allowlistEntry ? (
+            <span>
+              {t("reviewAllowlisted")}: {row.allowlistEntry.value} ({row.allowlistEntry.kind})
+            </span>
+          ) : null}
+          {row.priorDecision ? (
+            <span>
+              {t("reviewPriorDecision")}: {row.priorDecision.action}
+            </span>
+          ) : null}
         </div>
         <div className="mt-3 flex flex-wrap items-center gap-2">
           <Button
@@ -289,7 +322,12 @@ function CandidateRow({
         {row.newestEvidence ? (
           <div>
             <div className="font-mono text-[10px]">{row.newestEvidence.id.slice(0, 8)}</div>
-            <div>{new Date(row.newestEvidence.observedAt).toLocaleDateString()}</div>
+            <div>
+              {new Date(row.newestEvidence.observedAt).toLocaleDateString(
+                language === "ru" ? "ru-RU" : "en-US",
+              )}
+            </div>
+            <div>{row.newestEvidence.outcome}</div>
           </div>
         ) : null}
       </div>
@@ -322,9 +360,19 @@ function CandidateCard({
       <div className="mt-3 flex flex-wrap gap-2">
         {row.allowlistEntry ? <Badge tone="warning">{t("reviewAllowlisted")}</Badge> : null}
         {row.newestEvidence ? (
-          <Button variant="secondary" className="px-3 py-1.5 text-xs" onClick={() => onEvidence(row.newestEvidence?.id ?? null)}>
-            {t("reviewEvidence")}
-          </Button>
+          <>
+            <Badge tone={row.newestEvidence.outcome === "captured" ? "neutral" : "warning"}>
+              {row.newestEvidence.outcome}
+            </Badge>
+            <span className="text-xs text-[var(--muted)]">
+              {new Date(row.newestEvidence.observedAt).toLocaleDateString(
+                language === "ru" ? "ru-RU" : "en-US",
+              )}
+            </span>
+            <Button variant="secondary" className="px-3 py-1.5 text-xs" onClick={() => onEvidence(row.newestEvidence?.id ?? null)}>
+              {t("reviewEvidence")}
+            </Button>
+          </>
         ) : (
           <Badge tone="neutral">{t("reviewNoEvidence")}</Badge>
         )}
@@ -339,6 +387,9 @@ function CandidateCard({
         </Button>
         <Button variant="ghost" className="px-3 py-1.5 text-xs" disabled={!row.newestEvidence} onClick={() => onDecide("not_a_violation")}>
           {t("reviewDismiss")}
+        </Button>
+        <Button variant="ghost" className="px-3 py-1.5 text-xs" disabled={!row.newestEvidence} onClick={() => onDecide("page_dead")}>
+          {t("reviewPageDead")}
         </Button>
       </div>
     </Card>

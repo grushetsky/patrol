@@ -174,6 +174,8 @@ export const en = {
   evidenceOutcome: "Outcome",
   evidencePurged: "Bytes purged",
   evidenceDownload: "Download",
+  evidenceAvailable: "Bytes available",
+  violationsFilter: "Filter by title",
 } as const;
 
 export type MessageKey = keyof typeof en;
@@ -353,6 +355,8 @@ export const ru: Record<MessageKey, string> = {
   evidenceOutcome: "Результат",
   evidencePurged: "Байты удалены",
   evidenceDownload: "Скачать",
+  evidenceAvailable: "Байты доступны",
+  violationsFilter: "Фильтр по произведению",
 };
 
 const catalogues: Record<Language, Record<MessageKey, string>> = { en, ru };

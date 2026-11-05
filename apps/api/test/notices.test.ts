@@ -202,10 +202,23 @@ describe("notice composition", () => {
         observedAt: "2026-11-04T10:00:00Z",
       },
     ]);
-    expect((await compose([id])).statusCode).toBe(201);
+    const first = await compose([id]);
+    expect(first.statusCode).toBe(201);
     const second = await compose([id]);
     expect(second.statusCode).toBe(409);
     expect(second.json().code).toBe("violation_reserved");
+
+    const violations = await read(
+      h.app,
+      session,
+      "/api/violations?state=open&pageSize=200",
+    );
+    const reserved = violations
+      .json()
+      .items.find(
+        (item: { violation: { id: string } }) => item.violation.id === id,
+      );
+    expect(reserved.notice.id).toBe(first.json().notice.id);
   });
 });
 

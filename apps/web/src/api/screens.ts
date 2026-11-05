@@ -34,11 +34,11 @@ export const candidatesQuery = queryOptions({
 });
 
 export const violationsQuery = queryOptions({
-  queryKey: ["violations", "open"],
+  queryKey: ["violations", "all"],
   queryFn: async () =>
     unwrap(
       await api.GET("/violations", {
-        params: { query: { state: "open", pageSize: 200 } },
+        params: { query: { pageSize: 200 } },
       }),
     ),
 });
@@ -95,23 +95,7 @@ export async function createNotice(
   return unwrap(
     await api.POST("/notices", {
       params: { header: { "X-Patrol-CSRF": csrfToken } },
-      body: input as never,
-    }),
-  );
-}
-
-export async function closeViolation(
-  violationId: string,
-  csrfToken: string,
-  input: { reason: "url_removed" | "operator_closed"; note?: string },
-) {
-  return unwrap(
-    await api.POST("/violations/{violationId}/closure", {
-      params: {
-        path: { violationId },
-        header: { "X-Patrol-CSRF": csrfToken },
-      },
-      body: input,
+      body: input as Schemas["Http.CreateNoticeRequest"],
     }),
   );
 }

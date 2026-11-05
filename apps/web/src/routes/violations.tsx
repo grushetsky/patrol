@@ -29,6 +29,7 @@ function ViolationsPage() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [filter, setFilter] = useState("");
   const [evidenceId, setEvidenceId] = useState<string | null>(null);
   const t = (key: MessageKey, values?: Record<string, string | number>) =>
     translate(language, key, values);
@@ -41,14 +42,23 @@ function ViolationsPage() {
 
   const rows = violations.data?.items ?? [];
   const groups = useMemo(() => {
+    const needle = filter.trim().toLowerCase();
     const map = new Map<string, ViolationRow[]>();
     for (const row of rows) {
+      if (
+        needle &&
+        !row.displayTitle.toLowerCase().includes(needle) &&
+        !row.violation.url.toLowerCase().includes(needle) &&
+        !row.violation.host.toLowerCase().includes(needle)
+      ) {
+        continue;
+      }
       const list = map.get(row.displayTitle) ?? [];
       list.push(row);
       map.set(row.displayTitle, list);
     }
     return [...map.entries()].sort(([left], [right]) => left.localeCompare(right));
-  }, [rows]);
+  }, [filter, rows]);
 
   function toggle(id: string) {
     setSelected((current) => {
@@ -92,6 +102,12 @@ function ViolationsPage() {
         </p>
         <h1 className="page-title mt-1 text-4xl md:text-5xl">{t("violationsTitle")}</h1>
         <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">{t("violationsLead")}</p>
+        <input
+          className="glass-select mt-4 w-full max-w-md px-3 py-2 text-sm"
+          placeholder={t("violationsFilter")}
+          value={filter}
+          onChange={(event) => setFilter(event.target.value)}
+        />
       </header>
 
       {violations.isLoading ? (
@@ -116,27 +132,38 @@ function ViolationsPage() {
                   {groupRows[0]?.releaseYear} · {groupRows[0]?.titleType}
                 </p>
               </div>
-              <Badge tone="accent">{groupRows.length}</Badge>
+              <Badge tone="accent">
+                {groupRows.filter((row) => row.violation.lifecycle.state === "open").length} / {groupRows.length}
+              </Badge>
             </header>
             <div className="divide-y divide-[var(--border)]">
               {groupRows.map((row) => {
                 const reserved = Boolean(row.notice);
                 const checked = selected.has(row.violation.id);
+                const open = row.violation.lifecycle.state === "open";
+                const statusKey: MessageKey =
+                  row.violation.lifecycle.state === "open"
+                    ? "violationsOpenOnly"
+                    : row.violation.lifecycle.state === "removed"
+                      ? "violationsRemoved"
+                      : "violationsClosed";
                 return (
-                  <label
+                  <div
                     key={row.violation.id}
-                    className="flex cursor-pointer items-start gap-3 px-5 py-4 hover:bg-[rgba(255,255,255,0.03)]"
+                    className="flex items-start gap-3 px-5 py-4 hover:bg-[rgba(255,255,255,0.03)]"
                   >
                     <input
                       type="checkbox"
                       className="mt-1 h-4 w-4 accent-[var(--accent)]"
                       checked={checked}
-                      disabled={reserved}
+                      disabled={!open || reserved}
                       onChange={() => toggle(row.violation.id)}
+                      aria-label={row.violation.url}
                     />
-                    <div className="min-w-0 flex-1">
+                    <label className="min-w-0 flex-1 cursor-pointer">
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="font-medium">{row.violation.host}</span>
+                        <Badge tone={open ? "accent" : "neutral"}>{t(statusKey)}</Badge>
                         {reserved ? <Badge tone="success">{t("violationsInNotice")}</Badge> : null}
                         {row.newestEvidence ? (
                           <Badge tone={row.newestEvidence.outcome === "captured" ? "neutral" : "warning"}>
@@ -146,22 +173,24 @@ function ViolationsPage() {
                       </div>
                       <p className="mt-1 break-all text-sm text-[var(--accent)]">{row.violation.url}</p>
                       <p className="mt-1 text-xs text-[var(--muted)]">
-                        {new Date(row.violation.detectedAt).toLocaleDateString()}
+                        {new Date(row.violation.detectedAt).toLocaleDateString(
+                          language === "ru" ? "ru-RU" : "en-US",
+                        )}
+                        {row.newestEvidence
+                          ? ` · ${row.newestEvidence.id.slice(0, 12)}`
+                          : ""}
                       </p>
-                    </div>
+                    </label>
                     {row.newestEvidence ? (
                       <Button
                         variant="ghost"
                         className="px-2 py-1 text-xs"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          setEvidenceId(row.newestEvidence?.id ?? null);
-                        }}
+                        onClick={() => setEvidenceId(row.newestEvidence?.id ?? null)}
                       >
                         {t("reviewEvidence")}
                       </Button>
                     ) : null}
-                  </label>
+                  </div>
                 );
               })}
             </div>
