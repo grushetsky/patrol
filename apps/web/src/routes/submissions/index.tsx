@@ -4,6 +4,8 @@ import { t } from "@patrol/i18n";
 import { ATTEMPT_COUNT_BEFORE_FLAG } from "@patrol/notices";
 import { api } from "../../lib/api/client";
 import { useSession } from "../../lib/session";
+import { Icon } from "../../components/icons";
+import { Chip, EmptyState, PageHead, Panel, Skeleton } from "../../components/ui";
 
 /**
  * The submissions screen (slice 7): the single delivery attempt of every
@@ -90,19 +92,32 @@ function SubmissionsIndex() {
   };
 
   return (
-    <main>
-      <h1>{t(locale, "web.submissions.title")}</h1>
-      {error !== null && <p role="alert">{error}</p>}
+    <main className="page">
+      <PageHead
+        eyebrow={t(locale, "web.notices.eyebrow")}
+        title={t(locale, "web.submissions.title")}
+        actions={
+          <Link className="btn btn-ghost btn-sm" to="/notices">
+            {t(locale, "web.notices.title")}
+          </Link>
+        }
+      />
+      {error !== null && (
+        <p className="banner" role="alert">
+          {error}
+        </p>
+      )}
       <form
+        className="filter-bar"
+        style={{ marginBottom: 18 }}
         onSubmit={(event) => {
           event.preventDefault();
           void load();
         }}
-        style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "flex-end" }}
       >
-        <label>
-          {t(locale, "web.submissions.filter.state")}
-          <select value={state} onChange={(event) => setState(event.target.value)}>
+        <label className="field" style={{ gap: 4 }}>
+          <span className="field-label">{t(locale, "web.submissions.filter.state")}</span>
+          <select className="select" value={state} onChange={(event) => setState(event.target.value)}>
             <option value="">{t(locale, "web.submissions.filter.all")}</option>
             {Object.keys(STATE_KEYS).map((value) => (
               <option key={value} value={value}>
@@ -111,81 +126,119 @@ function SubmissionsIndex() {
             ))}
           </select>
         </label>
-        <label>
-          {t(locale, "web.submissions.filter.noticeId")}
-          <input value={noticeId} onChange={(event) => setNoticeId(event.target.value)} />
+        <label className="field" style={{ gap: 4, flex: "1 1 200px" }}>
+          <span className="field-label">{t(locale, "web.submissions.filter.noticeId")}</span>
+          <input className="input mono" value={noticeId} onChange={(event) => setNoticeId(event.target.value)} />
         </label>
-        <label>
+        <label style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <input
             type="checkbox"
+            className="check"
             checked={backlogOnly}
             onChange={(event) => setBacklogOnly(event.target.checked)}
           />{" "}
           {t(locale, "web.submissions.filter.backlog")}
         </label>
-        <button type="submit">{t(locale, "web.submissions.filter.apply")}</button>
+        <button type="submit" className="btn btn-sm">
+          {t(locale, "web.submissions.filter.apply")}
+        </button>
       </form>
       {items === null ? (
-        <p>{t(locale, "web.common.loading")}</p>
-      ) : items.length === 0 ? (
-        <p>
-          {t(locale, "web.submissions.empty")}{" "}
-          <Link to="/notices">{t(locale, "web.notices.title")}</Link>
-        </p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">{t(locale, "web.submissions.column.notice")}</th>
-              <th scope="col">{t(locale, "web.submissions.column.recipient")}</th>
-              <th scope="col">{t(locale, "web.submissions.column.state")}</th>
-              <th scope="col">{t(locale, "web.submissions.column.attempts")}</th>
-              <th scope="col">{t(locale, "web.submissions.column.createdAt")}</th>
-              <th scope="col">{t(locale, "web.submissions.column.actions")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.submission.id}>
-                <td>
-                  <code>{item.submission.noticeId.slice(0, 8)}</code>
-                </td>
-                <td>
-                  {t(locale, (RECIPIENT_KEYS[item.notice.recipient] ?? "web.notices.recipient.google") as never)}
-                </td>
-                <td>
-                  {label(item.submission.lifecycle.state)}
-                  {item.submission.cancelledAt !== undefined
-                    ? ` · ${t(locale, "web.notices.detail.submission.cancelled")}`
-                    : ""}
-                  {/* The three-attempt flag, derived where the UI stands:
-                      the contract's Submission carries no flaggedAt (its
-                      shape is closed), so the badge mirrors the server's
-                      flagged read model — a failure that landed with the
-                      row already carrying ATTEMPT_COUNT_BEFORE_FLAG
-                      re-files raised the durable flag. Slice 8's dashboard
-                      badge surfaces the read model itself. */}
-                  {item.submission.lifecycle.state === "failed" &&
-                  item.submission.attemptCount >= ATTEMPT_COUNT_BEFORE_FLAG
-                    ? ` · ${t(locale, "web.submissions.flagged")}`
-                    : ""}
-                </td>
-                <td>{item.submission.attemptCount}</td>
-                <td>
-                  <time dateTime={item.submission.createdAt}>
-                    {item.submission.createdAt.slice(0, 10)}
-                  </time>
-                </td>
-                <td>
-                  <Link params={{ noticeId: item.submission.noticeId }} to="/notices/$noticeId">
-                    {t(locale, "web.submissions.open")}
-                  </Link>
-                </td>
-              </tr>
+        <Panel title={t(locale, "web.submissions.title")}>
+          <div aria-busy="true">
+            {[0, 1, 2].map((index) => (
+              <div key={index} style={{ padding: "10px 0" }}>
+                <Skeleton variant="wide" />
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        </Panel>
+      ) : items.length === 0 ? (
+        <EmptyState
+          title={t(locale, "web.submissions.empty.title")}
+          action={
+            <Link className="btn btn-primary" to="/notices">
+              <Icon name="file" size="sm" />
+              <span>{t(locale, "web.submissions.goToNotices")}</span>
+            </Link>
+          }
+        >
+          {t(locale, "web.submissions.empty")}
+        </EmptyState>
+      ) : (
+        <Panel title={t(locale, "web.submissions.title")}>
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th scope="col">{t(locale, "web.submissions.column.notice")}</th>
+                  <th scope="col">{t(locale, "web.submissions.column.recipient")}</th>
+                  <th scope="col">{t(locale, "web.submissions.column.state")}</th>
+                  <th scope="col">{t(locale, "web.submissions.column.attempts")}</th>
+                  <th scope="col">{t(locale, "web.submissions.column.createdAt")}</th>
+                  <th scope="col">{t(locale, "web.submissions.column.actions")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {items.map((item) => (
+                  <tr key={item.submission.id}>
+                    <td>
+                      <code>{item.submission.noticeId.slice(0, 8)}</code>
+                    </td>
+                    <td>
+                      {t(locale, (RECIPIENT_KEYS[item.notice.recipient] ?? "web.notices.recipient.google") as never)}
+                    </td>
+                    <td>
+                      <SubmissionState item={item} label={label} locale={locale} />
+                    </td>
+                    <td className="mono">{item.submission.attemptCount}</td>
+                    <td>
+                      <time dateTime={item.submission.createdAt}>
+                        {item.submission.createdAt.slice(0, 10)}
+                      </time>
+                    </td>
+                    <td>
+                      <Link params={{ noticeId: item.submission.noticeId }} to="/notices/$noticeId">
+                        {t(locale, "web.submissions.open")}
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
       )}
     </main>
+  );
+}
+
+/** The state cell: the state chip, the cancelled mark, and the derived
+ *  three-attempt administrators' flag. */
+function SubmissionState(props: {
+  item: SubmissionDetail;
+  label: (key: string) => string;
+  locale: "en" | "ru";
+}) {
+  const { item, label, locale } = props;
+  const state = item.submission.lifecycle.state;
+  const flagged =
+    state === "failed" && item.submission.attemptCount >= ATTEMPT_COUNT_BEFORE_FLAG;
+  return (
+    <span style={{ display: "inline-flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
+      <Chip tone={state === "failed" || state === "rejected" ? "danger" : state === "acknowledged" ? "green" : state === "pending" ? "amber" : "muted"} dot={state === "pending"}>
+        {label(state)}
+      </Chip>
+      {item.submission.cancelledAt !== undefined && (
+        <small className="muted">{t(locale, "web.notices.detail.submission.cancelled")}</small>
+      )}
+      {/* The three-attempt flag, derived where the UI stands: the
+      contract's Submission carries no flaggedAt (its shape is closed), so
+      the badge mirrors the server's flagged read model — a failure that
+      landed with the row already carrying ATTEMPT_COUNT_BEFORE_FLAG
+      re-files raised the durable flag. Slice 8's dashboard badge surfaces
+      the read model itself. */}
+      {flagged && <Chip tone="amber">{t(locale, "web.submissions.flagged")}</Chip>}
+    </span>
   );
 }

@@ -9,6 +9,8 @@ import {
   TITLE_TYPE_MESSAGES,
   VARIANT_KIND_MESSAGES,
 } from "../../../lib/messages";
+import { PageHead, Panel } from "../../../components/ui";
+import { Icon } from "../../../components/icons";
 
 /**
  * The title detail: variants with their per-row provenance, external
@@ -107,11 +109,16 @@ function TitleDetail() {
 
   if (detail === null) {
     return (
-      <main>
-        <p>{error ?? t(locale, "web.common.loading")}</p>
-        <p>
-          <Link to="/catalogue/titles">{t(locale, "web.catalogue.titles.title")}</Link>
-        </p>
+      <main className="page">
+        <PageHead
+          eyebrow={t(locale, "web.nav.titles")}
+          title={error ?? t(locale, "web.common.loading")}
+          actions={
+            <Link className="btn btn-ghost btn-sm" to="/catalogue/titles">
+              {t(locale, "web.catalogue.titles.title")}
+            </Link>
+          }
+        />
       </main>
     );
   }
@@ -119,72 +126,104 @@ function TitleDetail() {
   const archived = detail.title.mergedIntoTitleId !== undefined;
 
   return (
-    <main>
-      <h1>
-        {detail.displayTitle} ({detail.title.releaseYear},{" "}
-        {t(locale, TITLE_TYPE_MESSAGES[detail.title.titleType])})
-      </h1>
-      <p>
-        <Link to="/catalogue/titles">{t(locale, "web.catalogue.titles.title")}</Link>
-      </p>
-      {error !== null && <p role="alert">{error}</p>}
+    <main className="page stack">
+      <PageHead
+        eyebrow={t(locale, "web.nav.titles")}
+        title={
+          <>
+            {detail.displayTitle}{" "}
+            <span className="muted">
+              ({detail.title.releaseYear}, {t(locale, TITLE_TYPE_MESSAGES[detail.title.titleType])})
+            </span>
+          </>
+        }
+        note={
+          <>
+            {t(locale, "web.catalogue.detail.provenance")}:{" "}
+            {t(locale, SOURCE_MESSAGES[detail.title.provenance.source])} —{" "}
+            {detail.title.provenance.enteredAt}
+          </>
+        }
+        actions={
+          <div className="toolbar-links">
+            {/* The prototype's active/paused switch, as the detail's own
+                control. */}
+            <button
+              type="button"
+              className="switch"
+              role="switch"
+              aria-checked={!detail.title.paused}
+              disabled={busy || archived}
+              aria-label={
+                detail.title.paused
+                  ? t(locale, "web.catalogue.detail.unpause")
+                  : t(locale, "web.catalogue.detail.pause")
+              }
+              title={
+                detail.title.paused
+                  ? t(locale, "web.catalogue.detail.unpause")
+                  : t(locale, "web.catalogue.detail.pause")
+              }
+              onClick={() =>
+                void mutate(async (csrfToken) => {
+                  const { response } = await api.PATCH("/titles/{trackedTitleId}", {
+                    params: {
+                      path: { trackedTitleId: titleId },
+                      header: { "X-Patrol-CSRF": csrfToken },
+                    },
+                    body: { paused: !detail.title.paused },
+                  });
+                  return response.ok;
+                })
+              }
+            >
+              <span className="switch-thumb" aria-hidden="true" />
+            </button>
+            <Link className="btn btn-ghost btn-sm" to="/catalogue/titles">
+              {t(locale, "web.catalogue.titles.title")}
+            </Link>
+          </div>
+        }
+      />
+      {error !== null && (
+        <p className="banner" role="alert">
+          {error}
+        </p>
+      )}
       {archived && (
-        <p role="status">
+        <p className="banner" role="status">
           {t(locale, "web.catalogue.detail.archived")}{" "}
           <Link to="/catalogue/titles/$titleId" params={{ titleId: detail.title.mergedIntoTitleId! }}>
             {detail.title.mergedIntoTitleId}
           </Link>
         </p>
       )}
-      <p>
-        {t(locale, "web.catalogue.detail.provenance")}:{" "}
-        {t(locale, SOURCE_MESSAGES[detail.title.provenance.source])} —{" "}
-        {detail.title.provenance.enteredAt}
-      </p>
-      <button
-        disabled={busy || archived}
-        onClick={() =>
-          void mutate(async (csrfToken) => {
-            const { response } = await api.PATCH("/titles/{trackedTitleId}", {
-              params: {
-                path: { trackedTitleId: titleId },
-                header: { "X-Patrol-CSRF": csrfToken },
-              },
-              body: { paused: !detail.title.paused },
-            });
-            return response.ok;
-          })
-        }
-      >
-        {detail.title.paused
-          ? t(locale, "web.catalogue.detail.unpause")
-          : t(locale, "web.catalogue.detail.pause")}
-      </button>
 
-      <section>
-        <h2>{t(locale, "web.catalogue.detail.variants")}</h2>
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">{t(locale, "web.catalogue.detail.textLabel")}</th>
-              <th scope="col">{t(locale, "web.catalogue.detail.kindLabel")}</th>
-              <th scope="col">{t(locale, "web.catalogue.create.languageLabel")}</th>
-              <th scope="col">{t(locale, "web.catalogue.create.sourceLabel")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {detail.variants.map((variant) => (
-              <tr key={variant.id}>
-                <td>{variant.text}</td>
-                <td>{t(locale, VARIANT_KIND_MESSAGES[variant.kind])}</td>
-                <td>
-                  {variant.language} / {variant.script}
-                </td>
-                <td>{t(locale, SOURCE_MESSAGES[variant.source])}</td>
+      <Panel title={t(locale, "web.catalogue.detail.variants")}>
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th scope="col">{t(locale, "web.catalogue.detail.textLabel")}</th>
+                <th scope="col">{t(locale, "web.catalogue.detail.kindLabel")}</th>
+                <th scope="col">{t(locale, "web.catalogue.create.languageLabel")}</th>
+                <th scope="col">{t(locale, "web.catalogue.create.sourceLabel")}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {detail.variants.map((variant) => (
+                <tr key={variant.id}>
+                  <td>{variant.text}</td>
+                  <td>{t(locale, VARIANT_KIND_MESSAGES[variant.kind])}</td>
+                  <td>
+                    {variant.language} / {variant.script}
+                  </td>
+                  <td>{t(locale, SOURCE_MESSAGES[variant.source])}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         {!archived && (
           <form
             onSubmit={(event) => {
@@ -211,13 +250,14 @@ function TitleDetail() {
               setVariantText("");
             }}
           >
-            <label>
-              {t(locale, "web.catalogue.detail.textLabel")}
-              <input value={variantText} onChange={(e) => setVariantText(e.target.value)} required />
+            <label className="field">
+              <span>{t(locale, "web.catalogue.detail.textLabel")}</span>
+              <input className="input" value={variantText} onChange={(e) => setVariantText(e.target.value)} required />
             </label>
-            <label>
-              {t(locale, "web.catalogue.detail.kindLabel")}
+            <label className="field">
+              <span>{t(locale, "web.catalogue.detail.kindLabel")}</span>
               <select
+                className="select"
                 value={variantKind}
                 onChange={(e) =>
                   setVariantKind(
@@ -236,30 +276,35 @@ function TitleDetail() {
                 </option>
               </select>
             </label>
-            <label>
-              {t(locale, "web.catalogue.create.languageLabel")}
+            <label className="field">
+              <span>{t(locale, "web.catalogue.create.languageLabel")}</span>
               <input
+                className="input"
                 value={variantLanguage}
                 onChange={(e) => setVariantLanguage(e.target.value)}
                 required
               />
             </label>
-            <button type="submit" disabled={busy}>
-              {t(locale, "web.catalogue.detail.addVariant")}
+            <button type="submit" className="btn btn-sm" disabled={busy}>
+              <Icon name="plus" size="sm" />
+              <span>{t(locale, "web.catalogue.detail.addVariant")}</span>
             </button>
           </form>
         )}
-      </section>
+      </Panel>
 
-      <section>
-        <h2>{t(locale, "web.catalogue.detail.identifiers")}</h2>
-        <ul>
+      <Panel title={t(locale, "web.catalogue.detail.identifiers")}>
+        <ul className="option-list" style={{ marginBottom: 14 }}>
           {detail.externalIdentifiers.map((identifier) => (
-            <li key={identifier.id}>
-              {identifier.scheme}: {identifier.value} —{" "}
-              {t(locale, SOURCE_MESSAGES[identifier.source])}{" "}
+            <li key={identifier.id} className="option">
+              <span className="option-name mono">
+                {identifier.scheme}: {identifier.value}
+              </span>
+              <span className="option-sub">{t(locale, SOURCE_MESSAGES[identifier.source])}</span>
               {!archived && (
                 <button
+                  type="button"
+                  className="btn btn-ghost btn-sm"
                   disabled={busy}
                   onClick={() =>
                     void mutate(async (csrfToken) => {
@@ -287,6 +332,7 @@ function TitleDetail() {
         </ul>
         {!archived && (
           <form
+            className="form-row"
             onSubmit={(event) => {
               event.preventDefault();
               void mutate(async (csrfToken) => {
@@ -305,9 +351,10 @@ function TitleDetail() {
               setIdentifierValue("");
             }}
           >
-            <label>
-              {t(locale, "web.catalogue.create.identifierScheme")}
+            <label className="field">
+              <span>{t(locale, "web.catalogue.create.identifierScheme")}</span>
               <select
+                className="select"
                 value={identifierScheme}
                 onChange={(e) =>
                   setIdentifierScheme(
@@ -320,25 +367,27 @@ function TitleDetail() {
                 <option value="kinopoisk">kinopoisk</option>
               </select>
             </label>
-            <label>
-              {t(locale, "web.catalogue.create.identifierValue")}
+            <label className="field">
+              <span>{t(locale, "web.catalogue.create.identifierValue")}</span>
               <input
+                className="input"
                 value={identifierValue}
                 onChange={(e) => setIdentifierValue(e.target.value)}
                 required
               />
             </label>
-            <button type="submit" disabled={busy}>
-              {t(locale, "web.catalogue.detail.addIdentifier")}
+            <button type="submit" className="btn btn-sm" disabled={busy}>
+              <Icon name="plus" size="sm" />
+              <span>{t(locale, "web.catalogue.detail.addIdentifier")}</span>
             </button>
           </form>
         )}
-      </section>
+      </Panel>
 
       {!archived && (
-        <section>
-          <h2>{t(locale, "web.catalogue.detail.mergeTitle")}</h2>
+        <Panel title={t(locale, "web.catalogue.detail.mergeTitle")}>
           <form
+            className="form-row"
             onSubmit={(event) => {
               event.preventDefault();
               void mutate(async (csrfToken) => {
@@ -356,19 +405,20 @@ function TitleDetail() {
               });
             }}
           >
-            <label>
-              {t(locale, "web.catalogue.detail.mergeLabel")}
+            <label className="field">
+              <span>{t(locale, "web.catalogue.detail.mergeLabel")}</span>
               <input
+                className="input mono"
                 value={mergeTarget}
                 onChange={(e) => setMergeTarget(e.target.value)}
                 required
               />
             </label>
-            <button type="submit" disabled={busy}>
+            <button type="submit" className="btn btn-danger btn-sm" disabled={busy}>
               {t(locale, "web.catalogue.detail.merge")}
             </button>
           </form>
-        </section>
+        </Panel>
       )}
     </main>
   );

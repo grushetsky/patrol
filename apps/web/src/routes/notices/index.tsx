@@ -2,15 +2,16 @@ import { useCallback, useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { t } from "@patrol/i18n";
 import { api } from "../../lib/api/client";
-import { NoticesBadge } from "../../lib/section-badge";
 import { useSession } from "../../lib/session";
+import { Chip, EmptyState, PageHead, Skeleton } from "../../components/ui";
+import { Icon } from "../../components/icons";
 
 /**
  * The notices screen (docs/design/dashboard-ui.md "Notices"): one card per
- * notice with its recipient, cited-violation count, the signatory once
- * approval snapshots one, and the derived status chip. A draft's actions
- * are the approvals and withdrawals of slice 6b: the approve control is
- * present but disabled, so the screen's shape is the one 6b brings to life.
+ * notice with its identifier, recipient, cited-violation count, signatory,
+ * drafting time, and the derived status chip. The card links to the detail
+ * that carries the lifecycle stepper, the approval panel, the document, and
+ * the handoff pack.
  */
 
 interface NoticeCard {
@@ -37,6 +38,19 @@ const STATUS_KEYS: Record<string, string> = {
   failed: "web.notices.status.failed",
   withdrawn: "web.notices.status.withdrawn",
   superseded: "web.notices.status.superseded",
+};
+
+/** The chip tone each status reads as (prototype: amber draft, blue sent,
+ *  green acknowledged, muted terminal). */
+const STATUS_TONES: Record<string, "amber" | "blue" | "green" | "muted" | "danger"> = {
+  draft: "amber",
+  approved: "blue",
+  delivered: "blue",
+  acknowledged: "green",
+  rejected: "danger",
+  failed: "danger",
+  withdrawn: "muted",
+  superseded: "muted",
 };
 
 const RECIPIENT_KEYS: Record<string, string> = {
@@ -72,75 +86,88 @@ function NoticesIndex() {
   };
 
   return (
-    <main>
-      <h1>
-        {t(locale, "web.notices.title")} <NoticesBadge />
-      </h1>
-      <p>
-        {/* The submissions screen: the delivery attempts this list's notices
-            own, with the seven-day backlog filter. */}
-        <Link to="/submissions">{t(locale, "web.submissions.title")}</Link>
-      </p>
-      {error !== null && <p role="alert">{error}</p>}
-      {cards === null ? (
-        <p>{t(locale, "web.common.loading")}</p>
-      ) : cards.length === 0 ? (
-        <p>
-          {t(locale, "web.notices.empty")}{" "}
-          <Link to="/violations">{t(locale, "web.notices.goToViolations")}</Link>
+    <main className="page">
+      <PageHead
+        eyebrow={t(locale, "web.notices.eyebrow")}
+        title={t(locale, "web.notices.title")}
+        actions={
+          <Link className="btn btn-ghost btn-sm" to="/submissions">
+            {t(locale, "web.submissions.title")}
+          </Link>
+        }
+      />
+      {error !== null && (
+        <p className="banner" role="alert">
+          {error}
         </p>
+      )}
+      {cards === null ? (
+        <div className="notices" aria-busy="true">
+          {[0, 1, 2].map((index) => (
+            <div key={index} className="notice" aria-hidden="true">
+              <div className="notice-head">
+                <Skeleton variant="score" />
+                <Skeleton variant="wide" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : cards.length === 0 ? (
+        <EmptyState
+          title={t(locale, "web.notices.empty.title")}
+          action={
+            <Link className="btn btn-primary" to="/violations">
+              <Icon name="shield" size="sm" />
+              <span>{t(locale, "web.notices.goToViolations")}</span>
+            </Link>
+          }
+        >
+          {t(locale, "web.notices.empty")}
+        </EmptyState>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">{t(locale, "web.notices.column.id")}</th>
-              <th scope="col">{t(locale, "web.notices.column.recipient")}</th>
-              <th scope="col">{t(locale, "web.notices.column.violations")}</th>
-              <th scope="col">{t(locale, "web.notices.column.signatory")}</th>
-              <th scope="col">{t(locale, "web.notices.column.createdAt")}</th>
-              <th scope="col">{t(locale, "web.notices.column.status")}</th>
-              <th scope="col">{t(locale, "web.notices.column.actions")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {cards.map((card) => (
-              <tr key={card.id}>
-                <td>
+        <div className="notices">
+          {cards.map((card) => (
+            <article key={card.id} className="notice">
+              <div className="notice-head">
+                <span className="notice-glyph">
+                  <Icon name="file" />
+                </span>
+                <div className="notice-main">
                   {/* The detail route carries the stepper, the approval
                       panel, the document, and the pack. */}
-                  <Link params={{ noticeId: card.id }} to="/notices/$noticeId">
+                  <Link
+                    params={{ noticeId: card.id }}
+                    to="/notices/$noticeId"
+                    className="notice-id"
+                    style={{ textDecoration: "none", color: "inherit" }}
+                  >
                     <code>{card.id.slice(0, 8)}</code>
                   </Link>
-                </td>
-                <td>
-                  {t(
-                    locale,
-                    (RECIPIENT_KEYS[card.recipient] ?? "web.notices.recipient.google") as never,
-                  )}
-                </td>
-                <td>{card.violationCount}</td>
-                <td>
-                  {card.signatoryName === undefined ? (
-                    <small>—</small>
-                  ) : (
-                    card.signatoryName
-                  )}
-                </td>
-                <td>
-                  <time dateTime={card.createdAt}>{card.createdAt.slice(0, 10)}</time>
-                </td>
-                <td>{status(card.status)}</td>
-                <td>
-                  <Link params={{ noticeId: card.id }} to="/notices/$noticeId">
+                  <div className="notice-sub">
+                    {t(locale, RECIPIENT_KEYS[card.recipient] as never)} ·{" "}
+                    {t(locale, "web.notices.column.violations")} {card.violationCount} ·{" "}
+                    {card.signatoryName ?? "—"} ·{" "}
+                    <time dateTime={card.createdAt}>{card.createdAt.slice(0, 10)}</time>
+                  </div>
+                </div>
+                <Chip tone={STATUS_TONES[card.status] ?? "muted"} dot={card.status === "draft"}>
+                  {status(card.status)}
+                </Chip>
+                <div className="notice-actions">
+                  <Link
+                    className="btn btn-ghost btn-sm"
+                    params={{ noticeId: card.id }}
+                    to="/notices/$noticeId"
+                  >
                     {card.status === "draft"
                       ? t(locale, "web.notices.approve")
                       : t(locale, "web.notices.detail.pack.title")}
                   </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+              </div>
+            </article>
+          ))}
+        </div>
       )}
     </main>
   );

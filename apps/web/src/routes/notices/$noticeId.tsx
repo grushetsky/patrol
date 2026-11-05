@@ -5,6 +5,8 @@ import { ATTEMPT_COUNT_BEFORE_FLAG } from "@patrol/notices";
 import { api } from "../../lib/api/client";
 import { fetchSessionCsrfToken } from "../../lib/api/auth";
 import { useSession } from "../../lib/session";
+import { Chip, PageHead, Panel, Skeleton } from "../../components/ui";
+import { Icon } from "../../components/icons";
 
 /**
  * The notice detail (docs/design/dashboard-ui.md "Notices"; slice 6b): the
@@ -141,6 +143,18 @@ const STATUS_KEYS: Record<string, string> = {
   failed: "web.notices.status.failed",
   withdrawn: "web.notices.status.withdrawn",
   superseded: "web.notices.status.superseded",
+};
+
+/** The chip tone each status reads as, matching the list screen's chips. */
+const STATUS_TONES: Record<string, "amber" | "blue" | "green" | "muted" | "danger"> = {
+  draft: "amber",
+  approved: "blue",
+  delivered: "blue",
+  acknowledged: "green",
+  rejected: "danger",
+  failed: "danger",
+  withdrawn: "muted",
+  superseded: "muted",
 };
 
 const RECIPIENT_KEYS: Record<string, string> = {
@@ -451,9 +465,20 @@ function NoticeDetail() {
 
   if (detail === null) {
     return (
-      <main>
-        <h1>{t(locale, "web.notices.detail.title")}</h1>
-        {error !== null ? <p role="alert">{error}</p> : <p>{t(locale, "web.common.loading")}</p>}
+      <main className="page">
+        <PageHead eyebrow={t(locale, "web.notices.eyebrow")} title={t(locale, "web.notices.detail.title")} />
+        {error !== null ? (
+          <p className="banner" role="alert">
+            {error}
+          </p>
+        ) : (
+          <div className="notice" aria-busy="true">
+            <div className="notice-head">
+              <Skeleton variant="score" />
+              <Skeleton variant="wide" />
+            </div>
+          </div>
+        )}
       </main>
     );
   }
@@ -474,87 +499,144 @@ function NoticeDetail() {
   const currentStep = detail.status as Step;
 
   return (
-    <main>
-      <p>
-        <Link to="/notices">{t(locale, "web.notices.detail.back")}</Link>
-      </p>
-      <h1>
-        {t(locale, RECIPIENT_KEYS[detail.notice.content.recipient] as never)}{" "}
-        <small>
-          {t(locale, "web.notices.detail.approvedAt").replace(
-            "{date}",
-            lifecycle.approvedAt === undefined ? "—" : lifecycle.approvedAt.slice(0, 10),
-          )}
-        </small>
-      </h1>
+    <main className="page stack">
+      <PageHead
+        eyebrow={t(locale, "web.notices.eyebrow")}
+        title={t(locale, RECIPIENT_KEYS[detail.notice.content.recipient] as never)}
+        note={t(locale, "web.notices.detail.approvedAt").replace(
+          "{date}",
+          lifecycle.approvedAt === undefined ? "—" : lifecycle.approvedAt.slice(0, 10),
+        )}
+        actions={
+          <Link className="btn btn-ghost btn-sm" to="/notices">
+            <Icon name="arrow" size="sm" />
+            <span>{t(locale, "web.notices.detail.back")}</span>
+          </Link>
+        }
+      />
 
-      {/* The stepper: Draft → Approved → Delivered → Acknowledged, with the
-          notice's derived status marking the reached step. A withdrawn or
+      {/* The notice's own card: identity, the derived status chip, and the
+          lifecycle stepper — Draft → Approved → Delivered → Acknowledged —
+          with the derived status marking the reached step. A withdrawn or
           superseded notice renders its terminal chip instead. */}
-      <ol aria-label="lifecycle" style={{ display: "flex", gap: "0.5rem", listStyle: "none", padding: 0 }}>
-        {terminal
-          ? [lifecycle.state].map((step) => (
-              <li key={step}>
-                <strong>{status(step)}</strong>
-              </li>
-            ))
-          : renderSteps(currentStep).map((step) => (
-              <li
-                key={step}
-                style={{
-                  fontWeight: step === currentStep ? "bold" : "normal",
-                  opacity:
-                    (STEPS as readonly string[]).includes(step) &&
-                    step !== currentStep &&
-                    (STEPS as readonly string[]).indexOf(currentStep) >
-                      (STEPS as readonly string[]).indexOf(step)
-                      ? 0.5
-                      : 1,
-                }}
-              >
-                {step === currentStep ? `▸ ${status(step)}` : status(step)}
-              </li>
-            ))}
-      </ol>
+      <article className="notice">
+        <div className="notice-head">
+          <span className="notice-glyph">
+            <Icon name="file" />
+          </span>
+          <div className="notice-main">
+            <span className="notice-id">
+              <code>{detail.notice.id.slice(0, 8)}</code>
+            </span>
+            <div className="notice-sub">
+              {new Date(detail.notice.createdAt).toISOString().slice(0, 16).replace("T", " ")}Z
+              {detail.notice.lifecycle.signatory !== undefined &&
+                detail.notice.lifecycle.signatory.fullLegalName !== "" &&
+                ` · ${detail.notice.lifecycle.signatory.fullLegalName}`}
+            </div>
+          </div>
+          <Chip tone={STATUS_TONES[detail.status] ?? "muted"} dot={detail.status === "draft"}>
+            {status(detail.status)}
+          </Chip>
+        </div>
+        <div className="notice-body">
+          {terminal ? (
+            <div className="stepper">
+              <span className="step is-done">
+                <span className="step-dot" aria-hidden="true" />
+                {status(lifecycle.state)}
+              </span>
+              <span className="step-line is-cut" aria-hidden="true" />
+            </div>
+          ) : (
+            <ol className="stepper" aria-label="lifecycle" style={{ listStyle: "none", margin: 0, padding: 0 }}>
+              {renderSteps(currentStep).map((step, index, rail) => {
+                const reached = (STEPS as readonly string[]).indexOf(currentStep) > (STEPS as readonly string[]).indexOf(step);
+                const current = step === currentStep;
+                return (
+                  <li
+                    key={step}
+                    className={`step${current ? " is-current" : reached ? " is-done" : ""}`}
+                    style={{ display: "flex", alignItems: "center", gap: 7 }}
+                    aria-current={current ? "step" : undefined}
+                  >
+                    <span className="step-dot" aria-hidden="true" />
+                    {status(step)}
+                    {index < rail.length - 1 && (
+                      <span
+                        className={`step-line${reached ? " is-done" : ""}`}
+                        aria-hidden="true"
+                      />
+                    )}
+                  </li>
+                );
+              })}
+            </ol>
+          )}
+        </div>
+      </article>
+      {error !== null && (
+        <p className="banner" role="alert">
+          {error}
+        </p>
+      )}
 
       {lifecycle.state === "draft" && (
-        <section>
-          <h2>{t(locale, "web.notices.detail.approve.title")}</h2>
-          <p>
+        <Panel title={t(locale, "web.notices.detail.approve.title")}>
+          <p className="settings-lede" style={{ marginBottom: 14 }}>
             {t(locale, "web.notices.detail.approve.template")}: <code>{detail.template.version}</code>{" "}
             {detail.template.stale ? (
               <small>({t(locale, "web.notices.detail.approve.stale")})</small>
             ) : null}
           </p>
-          {(
-            [
-              ["reviewed", "web.notices.detail.approve.attestation.reviewed"],
-              ["current", "web.notices.detail.approve.attestation.currentStatements"],
-              ["authorized", "web.notices.detail.approve.attestation.authorizedSignatory"],
-            ] as const
-          ).map(([key, message]) => (
-            <label key={key} style={{ display: "block" }}>
-              <input
-                type="checkbox"
-                checked={attestations[key]}
-                onChange={(event) =>
-                  setAttestations((current) => ({ ...current, [key]: event.target.checked }))
-                }
-              />{" "}
-              {t(locale, message)}
-            </label>
-          ))}
-          <button type="button" disabled={busy || !attestationsReady} onClick={() => void approve()}>
-            {t(locale, "web.notices.approve")}
-          </button>
-        </section>
+          <div className="form-grid">
+            {(
+              [
+                ["reviewed", "web.notices.detail.approve.attestation.reviewed"],
+                ["current", "web.notices.detail.approve.attestation.currentStatements"],
+                ["authorized", "web.notices.detail.approve.attestation.authorizedSignatory"],
+              ] as const
+            ).map(([key, message]) => (
+              <label key={key} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <input
+                  type="checkbox"
+                  className="check"
+                  checked={attestations[key]}
+                  onChange={(event) =>
+                    setAttestations((current) => ({ ...current, [key]: event.target.checked }))
+                  }
+                />{" "}
+                {t(locale, message)}
+              </label>
+            ))}
+          </div>
+          <div className="form-actions" style={{ marginTop: 14 }}>
+            <button
+              type="button"
+              className="btn btn-primary btn-sm"
+              disabled={busy || !attestationsReady}
+              onClick={() => void approve()}
+            >
+              <Icon name="check" size="sm" />
+              <span>{t(locale, "web.notices.approve")}</span>
+            </button>
+          </div>
+        </Panel>
       )}
 
       {detail.notice.lifecycle.state === "approved" && submission !== undefined && (
-        <section>
-          <h2>{t(locale, "web.notices.detail.submission.title")}</h2>
-          <p>
-            {status(submission.lifecycle.state)} ·{" "}
+        <Panel
+          title={t(locale, "web.notices.detail.submission.title")}
+          actions={
+            <Chip
+              tone={STATUS_TONES[submission.lifecycle.state] ?? "muted"}
+              dot={submission.lifecycle.state === "pending"}
+            >
+              {status(submission.lifecycle.state)}
+            </Chip>
+          }
+        >
+          <p className="settings-lede" style={{ marginBottom: 14 }}>
             {t(locale, "web.notices.detail.submission.language").replace(
               "{language}",
               submission.packLanguage,
@@ -605,169 +687,206 @@ function NoticeDetail() {
               cancelled row is dead: its notice was withdrawn or superseded
               and re-drafts. */}
           {submission.cancelledAt === undefined && submission.lifecycle.state === "pending" && (
-            <div>
+            <div className="form-grid">
               <h3>{t(locale, "web.notices.detail.submission.deliver.title")}</h3>
-              <label style={{ display: "block" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <input
                   type="checkbox"
+                  className="check"
                   checked={filedAsPresented}
                   onChange={(event) => setFiledAsPresented(event.target.checked)}
                 />{" "}
                 {t(locale, "web.notices.detail.submission.deliver.attestation")}
               </label>
-              <button
-                type="button"
-                disabled={busy || !filedAsPresented}
-                onClick={() => void recordDelivery()}
-              >
-                {t(locale, "web.notices.detail.submission.deliver.submit")}
-              </button>
-              <h3>{t(locale, "web.notices.detail.submission.fail.title")}</h3>
-              <label style={{ display: "block" }}>
-                {t(locale, "web.notices.detail.submission.fail.reason")}
-                <select
-                  value={failureReason}
-                  onChange={(event) =>
-                    setFailureReason(event.target.value as typeof failureReason)
-                  }
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  disabled={busy || !filedAsPresented}
+                  onClick={() => void recordDelivery()}
                 >
-                  <option value="recipient_error">
-                    {t(locale, "web.notices.detail.submission.failure.recipient_error")}
-                  </option>
-                  <option value="recipient_rejection">
-                    {t(locale, "web.notices.detail.submission.failure.recipient_rejection")}
-                  </option>
-                  <option value="operator_report">
-                    {t(locale, "web.notices.detail.submission.failure.operator_report")}
-                  </option>
-                </select>
-              </label>
-              <label style={{ display: "block" }}>
-                {t(locale, "web.notices.detail.submission.fail.note")}
-                <input
-                  value={failureNote}
-                  onChange={(event) => setFailureNote(event.target.value)}
-                />
-              </label>
-              <button
-                type="button"
-                disabled={busy || failureNote.trim() === ""}
-                onClick={() => void reportFailure()}
-              >
-                {t(locale, "web.notices.detail.submission.fail.submit")}
-              </button>
+                  <Icon name="send" size="sm" />
+                  <span>{t(locale, "web.notices.detail.submission.deliver.submit")}</span>
+                </button>
+              </div>
+              <h3>{t(locale, "web.notices.detail.submission.fail.title")}</h3>
+              <div className="form-row">
+                <label className="field" style={{ gap: 4 }}>
+                  <span className="field-label">{t(locale, "web.notices.detail.submission.fail.reason")}</span>
+                  <select
+                    className="select"
+                    value={failureReason}
+                    onChange={(event) =>
+                      setFailureReason(event.target.value as typeof failureReason)
+                    }
+                  >
+                    <option value="recipient_error">
+                      {t(locale, "web.notices.detail.submission.failure.recipient_error")}
+                    </option>
+                    <option value="recipient_rejection">
+                      {t(locale, "web.notices.detail.submission.failure.recipient_rejection")}
+                    </option>
+                    <option value="operator_report">
+                      {t(locale, "web.notices.detail.submission.failure.operator_report")}
+                    </option>
+                  </select>
+                </label>
+                <label className="field" style={{ gap: 4 }}>
+                  <span className="field-label">{t(locale, "web.notices.detail.submission.fail.note")}</span>
+                  <input
+                    className="input"
+                    value={failureNote}
+                    onChange={(event) => setFailureNote(event.target.value)}
+                  />
+                </label>
+              </div>
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="btn btn-danger btn-sm"
+                  disabled={busy || failureNote.trim() === ""}
+                  onClick={() => void reportFailure()}
+                >
+                  {t(locale, "web.notices.detail.submission.fail.submit")}
+                </button>
+              </div>
             </div>
           )}
 
           {submission.cancelledAt === undefined && submission.lifecycle.state === "delivered" && (
-            <div>
+            <div className="form-grid">
               <h3>{t(locale, "web.notices.detail.submission.acknowledge.title")}</h3>
               {detail.notice.content.recipient === "google" && (
-                <>
-                  <label style={{ display: "block" }}>
-                    {t(locale, "web.notices.detail.submission.acknowledge.referenceNumber")}
+                <div className="form-row">
+                  <label className="field" style={{ gap: 4 }}>
+                    <span className="field-label">{t(locale, "web.notices.detail.submission.acknowledge.referenceNumber")}</span>
                     <input
+                      className="input"
                       value={referenceNumber}
                       onChange={(event) => setReferenceNumber(event.target.value)}
                     />
                   </label>
-                  <label style={{ display: "block" }}>
-                    {t(locale, "web.notices.detail.submission.acknowledge.dashboardUrl")}
+                  <label className="field" style={{ gap: 4 }}>
+                    <span className="field-label">{t(locale, "web.notices.detail.submission.acknowledge.dashboardUrl")}</span>
                     <input
+                      className="input"
                       value={dashboardUrl}
                       onChange={(event) => setDashboardUrl(event.target.value)}
                     />
                   </label>
-                </>
+                </div>
               )}
               {detail.notice.content.recipient === "bing" && (
-                <>
-                  <label style={{ display: "block" }}>
-                    {t(locale, "web.notices.detail.submission.acknowledge.ticketId")}
-                    <input value={ticketId} onChange={(event) => setTicketId(event.target.value)} />
+                <div className="form-row">
+                  <label className="field" style={{ gap: 4 }}>
+                    <span className="field-label">{t(locale, "web.notices.detail.submission.acknowledge.ticketId")}</span>
+                    <input className="input" value={ticketId} onChange={(event) => setTicketId(event.target.value)} />
                   </label>
-                  <label style={{ display: "block" }}>
-                    {t(locale, "web.notices.detail.submission.acknowledge.ticketDetailsUrl")}
+                  <label className="field" style={{ gap: 4 }}>
+                    <span className="field-label">{t(locale, "web.notices.detail.submission.acknowledge.ticketDetailsUrl")}</span>
                     <input
+                      className="input"
                       value={ticketDetailsUrl}
                       onChange={(event) => setTicketDetailsUrl(event.target.value)}
                     />
                   </label>
-                </>
+                </div>
               )}
               {detail.notice.content.recipient === "yandex" && (
-                <>
-                  <label style={{ display: "block" }}>
-                    {t(locale, "web.notices.detail.submission.acknowledge.messageId")}
-                    <input value={messageId} onChange={(event) => setMessageId(event.target.value)} />
+                <div className="form-row">
+                  <label className="field" style={{ gap: 4 }}>
+                    <span className="field-label">{t(locale, "web.notices.detail.submission.acknowledge.messageId")}</span>
+                    <input className="input" value={messageId} onChange={(event) => setMessageId(event.target.value)} />
                   </label>
-                  <label style={{ display: "block" }}>
-                    {t(locale, "web.notices.detail.submission.acknowledge.replyDate")}
+                  <label className="field" style={{ gap: 4 }}>
+                    <span className="field-label">{t(locale, "web.notices.detail.submission.acknowledge.replyDate")}</span>
                     <input
+                      className="input"
                       placeholder="YYYY-MM-DD"
                       value={replyDate}
                       onChange={(event) => setReplyDate(event.target.value)}
                     />
                   </label>
-                </>
+                </div>
               )}
-              <label style={{ display: "block" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: 10 }}>
                 <input
                   type="checkbox"
+                  className="check"
                   checked={filedAsPresented}
                   onChange={(event) => setFiledAsPresented(event.target.checked)}
                 />{" "}
                 {t(locale, "web.notices.detail.submission.deliver.attestation")}
               </label>
-              <button type="button" disabled={busy || !filedAsPresented} onClick={() => void recordAcknowledgement()}>
-                {t(locale, "web.notices.detail.submission.acknowledge.submit")}
-              </button>
+              <div className="form-actions">
+                <button
+                  type="button"
+                  className="btn btn-primary btn-sm"
+                  disabled={busy || !filedAsPresented}
+                  onClick={() => void recordAcknowledgement()}
+                >
+                  <Icon name="check" size="sm" />
+                  <span>{t(locale, "web.notices.detail.submission.acknowledge.submit")}</span>
+                </button>
+              </div>
             </div>
           )}
 
           {submission.cancelledAt === undefined && submission.lifecycle.state === "failed" && (
-            <div>
-              <button type="button" disabled={busy} onClick={() => void retry()}>
-                {t(locale, "web.notices.detail.submission.retry")}
+            <div className="form-actions">
+              <button type="button" className="btn btn-sm" disabled={busy} onClick={() => void retry()}>
+                <Icon name="refresh" size="sm" />
+                <span>{t(locale, "web.notices.detail.submission.retry")}</span>
               </button>{" "}
-              <small>{t(locale, "web.notices.detail.submission.retry.hint")}</small>
+              <small className="muted">{t(locale, "web.notices.detail.submission.retry.hint")}</small>
             </div>
           )}
-        </section>
+        </Panel>
       )}
 
-      <section>
-        <h2>{t(locale, "web.notices.detail.document.title")}</h2>
-        <h3>{t(locale, "web.notices.detail.document.statements")}</h3>
-        <ol>
-          {detail.notice.content.statements.map((statement) => (
-            <li key={statement.key}>
-              <p>{statement.text}</p>
-            </li>
-          ))}
-        </ol>
-        <h3>{t(locale, "web.notices.detail.document.fields")}</h3>
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">{t(locale, "web.notices.detail.document.field")}</th>
-              <th scope="col">{t(locale, "web.notices.detail.document.value")}</th>
-              <th scope="col">{t(locale, "web.notices.detail.document.required")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {detail.notice.content.resolvedFields.map((field) => (
-              <tr key={field.name}>
-                <td>
-                  <code>{field.name}</code>
-                </td>
-                <td>{field.value}</td>
-                <td>{field.required ? t(locale, "web.notices.detail.document.yes") : "—"}</td>
-              </tr>
+      <Panel title={t(locale, "web.notices.detail.document.title")}>
+        {/* The signed statements render as the prototype's paper: the
+            recipient-facing document, verbatim in its own language. */}
+        <div className="doc">
+          <h3>{t(locale, "web.notices.detail.document.statements")}</h3>
+          <ol>
+            {detail.notice.content.statements.map((statement) => (
+              <li key={statement.key}>
+                <p>{statement.text}</p>
+              </li>
             ))}
-          </tbody>
-        </table>
-        <h3>{t(locale, "web.notices.detail.document.works")}</h3>
+          </ol>
+          {detail.notice.lifecycle.signatory !== undefined && (
+            <p className="sign">
+              {detail.notice.lifecycle.signatory.fullLegalName}
+              <span>{detail.notice.lifecycle.signatory.authorityBasis}</span>
+            </p>
+          )}
+        </div>
+        <h3 style={{ marginTop: 22 }}>{t(locale, "web.notices.detail.document.fields")}</h3>
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th scope="col">{t(locale, "web.notices.detail.document.field")}</th>
+                <th scope="col">{t(locale, "web.notices.detail.document.value")}</th>
+                <th scope="col">{t(locale, "web.notices.detail.document.required")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              {detail.notice.content.resolvedFields.map((field) => (
+                <tr key={field.name}>
+                  <td>
+                    <code>{field.name}</code>
+                  </td>
+                  <td>{field.value}</td>
+                  <td>{field.required ? t(locale, "web.notices.detail.document.yes") : "—"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <h3 style={{ marginTop: 22 }}>{t(locale, "web.notices.detail.document.works")}</h3>
         <ul>
           {detail.notice.content.workIdentifications.map((work) => (
             <li key={work.trackedTitleId}>
@@ -775,39 +894,40 @@ function NoticeDetail() {
             </li>
           ))}
         </ul>
-        <h3>{t(locale, "web.notices.detail.document.citations")}</h3>
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">{t(locale, "web.notices.detail.document.citations.work")}</th>
-              <th scope="col">{t(locale, "web.notices.detail.document.citations.url")}</th>
-              <th scope="col">{t(locale, "web.notices.detail.document.citations.evidence")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {detail.citedViolations.map((citation) => (
-              <tr key={citation.violation.id}>
-                <td>{citation.displayTitle}</td>
-                <td>
-                  <a href={citation.violation.url} target="_blank" rel="noreferrer">
-                    {citation.violation.url}
-                  </a>
-                </td>
-                <td>
-                  {citation.evidence.map((evidence) => (
-                    <code key={evidence.id}>{evidence.id.slice(0, 8)}</code>
-                  ))}
-                </td>
+        <h3 style={{ marginTop: 22 }}>{t(locale, "web.notices.detail.document.citations")}</h3>
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th scope="col">{t(locale, "web.notices.detail.document.citations.work")}</th>
+                <th scope="col">{t(locale, "web.notices.detail.document.citations.url")}</th>
+                <th scope="col">{t(locale, "web.notices.detail.document.citations.evidence")}</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </section>
+            </thead>
+            <tbody>
+              {detail.citedViolations.map((citation) => (
+                <tr key={citation.violation.id}>
+                  <td>{citation.displayTitle}</td>
+                  <td>
+                    <a className="url" href={citation.violation.url} target="_blank" rel="noreferrer">
+                      {citation.violation.url}
+                    </a>
+                  </td>
+                  <td>
+                    {citation.evidence.map((evidence) => (
+                      <code key={evidence.id}>{evidence.id.slice(0, 8)}</code>
+                    ))}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </Panel>
 
       {lifecycle.approvedAt !== undefined && (
-        <section>
-          <h2>{t(locale, "web.notices.detail.snapshots.title")}</h2>
-          <dl>
+        <Panel title={t(locale, "web.notices.detail.snapshots.title")}>
+          <dl className="kv">
             <dt>{t(locale, "web.notices.detail.snapshots.rightsHolder")}</dt>
             <dd>
               {lifecycle.rightsHolder?.legalName} ({lifecycle.rightsHolder?.country}) ·{" "}
@@ -822,13 +942,12 @@ function NoticeDetail() {
               {lifecycle.profile?.account} (v{lifecycle.profile?.version})
             </dd>
           </dl>
-        </section>
+        </Panel>
       )}
 
       {pack !== null && (
-        <section>
-          <h2>{t(locale, "web.notices.detail.pack.title")}</h2>
-          <p>
+        <Panel title={t(locale, "web.notices.detail.pack.title")}>
+          <p className="settings-lede" style={{ marginBottom: 14 }}>
             {t(locale, "web.notices.detail.pack.language").replace("{language}", pack.packLanguage)} ·{" "}
             <code>{pack.packSha256.slice(0, 12)}</code>
           </p>
@@ -845,57 +964,64 @@ function NoticeDetail() {
                 <a href={artifact.downloadUrl} target="_blank" rel="noreferrer">
                   {t(locale, "web.notices.detail.pack.download")} {artifact.fileName}
                 </a>{" "}
-                <small>{artifact.byteSize} B</small>
+                <small className="muted">{artifact.byteSize} B</small>
               </li>
             ))}
           </ul>
           {pack.captureFlags.some(
             (flag) => flag.newestOutcome === "dead" || flag.newestOutcome === "blocked",
           ) && (
-            <>
-              <h3>{t(locale, "web.notices.detail.pack.flags")}</h3>
-              <ul>
-                {pack.captureFlags
-                  .filter((flag) => flag.newestOutcome === "dead" || flag.newestOutcome === "blocked")
-                  .map((flag) => (
-                    <li key={flag.violationId}>
-                      {t(locale, `web.notices.detail.pack.flag.${flag.newestOutcome}` as never)}{" "}
-                      <a href={flag.url} target="_blank" rel="noreferrer">
-                        {flag.url}
-                      </a>
-                    </li>
-                  ))}
-              </ul>
-            </>
+            <p className="banner" role="status">
+              <Icon name="bolt" size="sm" />
+              {t(locale, "web.notices.detail.pack.flags")}
+              {pack.captureFlags
+                .filter((flag) => flag.newestOutcome === "dead" || flag.newestOutcome === "blocked")
+                .map((flag) => (
+                  <span key={flag.violationId} style={{ display: "block" }}>
+                    {t(locale, `web.notices.detail.pack.flag.${flag.newestOutcome}` as never)}{" "}
+                    <a href={flag.url} target="_blank" rel="noreferrer">
+                      {flag.url}
+                    </a>
+                  </span>
+                ))}
+            </p>
           )}
-        </section>
+        </Panel>
       )}
 
       {(canWithdraw || canSupersede) && (
-        <section>
-          <h2>{t(locale, "web.notices.detail.actions.title")}</h2>
+        <Panel title={t(locale, "web.notices.detail.actions.title")}>
           {canWithdraw && (
-            <>
-              <label>
-                {t(locale, "web.notices.detail.withdraw.reason")}
+            <div className="form-row" style={{ marginBottom: 16 }}>
+              <label className="field" style={{ gap: 4, flex: "1 1 260px" }}>
+                <span className="field-label">{t(locale, "web.notices.detail.withdraw.reason")}</span>
                 <input
+                  className="input"
                   value={withdrawalReason}
                   onChange={(event) => setWithdrawalReason(event.target.value)}
                 />
-              </label>{" "}
-              <button type="button" disabled={busy} onClick={() => void withdraw()}>
+              </label>
+              <button
+                type="button"
+                className="btn btn-danger btn-sm"
+                disabled={busy}
+                onClick={() => void withdraw()}
+              >
                 {t(locale, "web.notices.detail.withdraw.submit")}
               </button>
-            </>
+            </div>
           )}
           {canSupersede && (
-            <div>
+            <div className="form-grid">
               <h3>{t(locale, "web.notices.detail.supersede.title")}</h3>
-              <p>{t(locale, "web.notices.detail.supersede.hint")}</p>
+              <p className="settings-lede" style={{ marginBottom: 10 }}>
+                {t(locale, "web.notices.detail.supersede.hint")}
+              </p>
               {detail.citedViolations.map((citation) => (
-                <label key={citation.violation.id} style={{ display: "block" }}>
+                <label key={citation.violation.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <input
                     type="checkbox"
+                    className="check"
                     checked={kept?.has(citation.violation.id) ?? false}
                     onChange={(event) =>
                       setKept((current) => {
@@ -909,16 +1035,17 @@ function NoticeDetail() {
                       })
                     }
                   />{" "}
-                  {citation.violation.url} <small>({citation.displayTitle})</small>
+                  {citation.violation.url} <small className="muted">({citation.displayTitle})</small>
                 </label>
               ))}
               {addable !== null && addable.length > 0 && (
                 <>
-                  <h4>{t(locale, "web.notices.detail.supersede.add.title")}</h4>
+                  <h4 style={{ marginTop: 12 }}>{t(locale, "web.notices.detail.supersede.add.title")}</h4>
                   {addable.map((row) => (
-                    <label key={row.violation.id} style={{ display: "block" }}>
+                    <label key={row.violation.id} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <input
                         type="checkbox"
+                        className="check"
                         checked={kept?.has(row.violation.id) ?? false}
                         onChange={(event) =>
                           setKept((current) => {
@@ -932,22 +1059,29 @@ function NoticeDetail() {
                           })
                         }
                       />{" "}
-                      {row.violation.url} <small>({row.displayTitle})</small>
+                      {row.violation.url} <small className="muted">({row.displayTitle})</small>
                     </label>
                   ))}
                 </>
               )}
-              <button type="button" disabled={busy || (kept?.size ?? 0) === 0} onClick={() => void supersede()}>
-                {t(locale, "web.notices.detail.supersede.submit")}
-              </button>
+              <div className="form-actions" style={{ marginTop: 12 }}>
+                <button
+                  type="button"
+                  className="btn btn-sm"
+                  disabled={busy || (kept?.size ?? 0) === 0}
+                  onClick={() => void supersede()}
+                >
+                  {t(locale, "web.notices.detail.supersede.submit")}
+                </button>
+              </div>
             </div>
           )}
           {actionError !== null && (
-            <p role="alert" style={{ marginTop: "0.5rem" }}>
+            <p className="banner" role="alert" style={{ marginTop: 12 }}>
               {actionError}
             </p>
           )}
-        </section>
+        </Panel>
       )}
     </main>
   );

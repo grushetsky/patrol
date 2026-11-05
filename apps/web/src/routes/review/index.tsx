@@ -4,6 +4,9 @@ import { t, type MessageKey } from "@patrol/i18n";
 import { api } from "../../lib/api/client";
 import { fetchSessionCsrfToken } from "../../lib/api/auth";
 import { useSession } from "../../lib/session";
+import { Chip, EmptyState, PageHead, Panel, Skeleton } from "../../components/ui";
+import { Icon } from "../../components/icons";
+import { useToast } from "../../components/toast";
 
 /**
  * The review queue (docs/design/dashboard-ui.md "Review queue"): dense rows
@@ -84,10 +87,10 @@ export const Route = createFileRoute("/review/")({
 
 function ReviewIndex() {
   const { locale } = useSession();
+  const toast = useToast();
   const [rows, setRows] = useState<QueueRow[] | null>(null);
   const [titles, setTitles] = useState<TitleOption[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [notice, setNotice] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -143,7 +146,6 @@ function ReviewIndex() {
     ): Promise<boolean> => {
       setBusyId(row.id);
       setError(null);
-      setNotice(null);
       try {
         const csrfToken = await fetchSessionCsrfToken();
         if (csrfToken === null) {
@@ -173,21 +175,22 @@ function ReviewIndex() {
           );
           return false;
         }
-        setNotice(t(locale, "web.review.decision.recorded"));
+        // The design's States section: a state-changing action raises a
+        // toast confirming the new state.
+        toast(t(locale, "web.review.decision.recorded"), "green");
         await load();
         return true;
       } finally {
         setBusyId(null);
       }
     },
-    [load, locale],
+    [load, locale, toast],
   );
 
   const captureNow = useCallback(
     async (row: QueueRow): Promise<void> => {
       setBusyId(row.id);
       setError(null);
-      setNotice(null);
       try {
         const csrfToken = await fetchSessionCsrfToken();
         if (csrfToken === null) {
@@ -213,54 +216,82 @@ function ReviewIndex() {
           );
           return;
         }
-        setNotice(t(locale, "web.review.capture.queued"));
+        toast(t(locale, "web.review.capture.queued"), "blue");
         await load();
       } finally {
         setBusyId(null);
       }
     },
-    [load, locale],
+    [load, locale, toast],
   );
 
   return (
-    <main>
-      <h1>{t(locale, "web.review.title")}</h1>
-      {error !== null && <p role="alert">{error}</p>}
-      {notice !== null && <p role="status">{notice}</p>}
-      {rows === null ? (
-        <p>{t(locale, "web.common.loading")}</p>
-      ) : rows.length === 0 ? (
-        <p>
-          {t(locale, "web.review.empty")}{" "}
-          <Link to="/catalogue">{t(locale, "web.review.runScans")}</Link>
+    <main className="page">
+      <PageHead
+        eyebrow={t(locale, "web.review.eyebrow")}
+        title={t(locale, "web.review.title")}
+        note={t(locale, "web.review.note")}
+      />
+      {error !== null && (
+        <p className="banner" role="alert">
+          {error}
         </p>
-      ) : (
-        <table>
-          <thead>
-            <tr>
-              <th scope="col">{t(locale, "web.review.column.score")}</th>
-              <th scope="col">{t(locale, "web.review.column.title")}</th>
-              <th scope="col">{t(locale, "web.review.column.url")}</th>
-              <th scope="col">{t(locale, "web.review.column.source")}</th>
-              <th scope="col">{t(locale, "web.review.column.evidence")}</th>
-              <th scope="col">{t(locale, "web.review.column.flags")}</th>
-              <th scope="col">{t(locale, "web.review.column.actions")}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <QueueRowView
-                key={row.id}
-                row={row}
-                titles={titles}
-                busy={busyId === row.id}
-                onDecide={decide}
-                onCapture={captureNow}
-                locale={locale}
-              />
+      )}
+      {rows === null ? (
+        <Panel title={t(locale, "web.review.title")}>
+          <div aria-busy="true">
+            {[0, 1, 2].map((index) => (
+              <div key={index} style={{ display: "flex", gap: 12, alignItems: "center", padding: "12px 0" }}>
+                <Skeleton variant="score" />
+                <Skeleton variant="wide" />
+                <Skeleton variant="short" />
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        </Panel>
+      ) : rows.length === 0 ? (
+        <EmptyState
+          title={t(locale, "web.review.empty.title")}
+          action={
+            <Link className="btn btn-primary" to="/catalogue">
+              <Icon name="radar" size="sm" />
+              <span>{t(locale, "web.review.runScans")}</span>
+            </Link>
+          }
+        >
+          {t(locale, "web.review.empty")}
+        </EmptyState>
+      ) : (
+        <Panel title={t(locale, "web.review.title")} actions={<span>{t(locale, "web.review.queue.order")}</span>}>
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th scope="col">{t(locale, "web.review.column.score")}</th>
+                  <th scope="col">{t(locale, "web.review.column.title")}</th>
+                  <th scope="col">{t(locale, "web.review.column.url")}</th>
+                  <th scope="col">{t(locale, "web.review.column.source")}</th>
+                  <th scope="col">{t(locale, "web.review.column.evidence")}</th>
+                  <th scope="col">{t(locale, "web.review.column.flags")}</th>
+                  <th scope="col">{t(locale, "web.review.column.actions")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <QueueRowView
+                    key={row.id}
+                    row={row}
+                    titles={titles}
+                    busy={busyId === row.id}
+                    onDecide={decide}
+                    onCapture={captureNow}
+                    locale={locale}
+                  />
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Panel>
       )}
     </main>
   );
@@ -274,6 +305,17 @@ function stateChipKey(state: string): "web.review.state.pending" | "web.review.s
     return "web.review.state.dismissed";
   }
   return "web.review.state.pending";
+}
+
+/** The prototype's score tint: high reads red, mid amber, low muted. */
+function scoreLevel(score: number): "high" | "mid" | "low" {
+  if (score >= 0.75) {
+    return "high";
+  }
+  if (score >= 0.5) {
+    return "mid";
+  }
+  return "low";
 }
 
 function QueueRowView(props: {
@@ -343,62 +385,63 @@ function QueueRowView(props: {
   return (
     <tr>
       <td>
-        <strong>{row.score.toFixed(2)}</strong>
-        <div
-          role="meter"
-          aria-valuemin={0}
-          aria-valuemax={SCORE_BAR_MAX}
-          aria-valuenow={row.score}
-        >
-          <div style={{ width: `${row.score * 100}%` }} />
+        <div className="score">
+          <span className="score-num" data-level={scoreLevel(row.score)}>
+            {row.score.toFixed(2)}
+          </span>
+          <div
+            className="score-track"
+            role="meter"
+            aria-valuemin={0}
+            aria-valuemax={SCORE_BAR_MAX}
+            aria-valuenow={row.score}
+          >
+            <div className="score-fill" style={{ width: `${row.score * 100}%` }} />
+          </div>
+          <small className="score-formula">
+            {t(locale, "web.review.score.titleMatch")} {row.scoreComponents.titleMatch.toFixed(2)}
+            {row.scoreComponents.signals.length > 0 && (
+              <>
+                {" · "}
+                {t(locale, "web.review.score.signals")}:{" "}
+                {row.scoreComponents.signals
+                  .map((signal) => `${signal.kind} +${signal.value.toFixed(2)}`)
+                  .join(", ")}
+              </>
+            )}
+            {row.scoreComponents.reputation > 0 && (
+              <>
+                {" · "}
+                {t(locale, "web.review.score.reputation")}{" "}
+                {row.scoreComponents.reputation.toFixed(2)}
+              </>
+            )}
+          </small>
         </div>
-        <small>
-          {t(locale, "web.review.score.titleMatch")} {row.scoreComponents.titleMatch.toFixed(2)}
-          {row.scoreComponents.signals.length > 0 && (
-            <>
-              {" · "}
-              {t(locale, "web.review.score.signals")}{" "}
-              {row.scoreComponents.signals
-                .map((signal) => `${signal.kind} +${signal.value.toFixed(2)}`)
-                .join(", ")}
-            </>
-          )}
-          {row.scoreComponents.reputation > 0 && (
-            <>
-              {" · "}
-              {t(locale, "web.review.score.reputation")}{" "}
-              {row.scoreComponents.reputation.toFixed(2)}
-            </>
-          )}
-        </small>
       </td>
       <td>
-        {row.displayTitle} ({row.releaseYear})
-        <br />
-        <small>
+        <h3 className="rv-title">
+          {row.displayTitle} <span className="muted">({row.releaseYear})</span>
+        </h3>
+        <span className="sub">
           {t(locale, "web.review.title.variant")}: {row.matchedVariant.text} ·{" "}
           {row.matchedVariant.kind} · {row.matchedVariant.language} ·{" "}
           {row.matchedVariant.script}
           {row.matchedVariant.territory !== undefined && ` · ${row.matchedVariant.territory}`}
-        </small>
+        </span>
       </td>
       <td>
-        <a href={row.url} target="_blank" rel="noreferrer">
+        <a className="url" href={row.url} target="_blank" rel="noreferrer">
           {row.url}
         </a>
         {row.finalUrl !== undefined && row.finalUrl !== row.url && (
-          <>
-            <br />
-            <small>
-              {t(locale, "web.review.url.final")}: {row.finalUrl}
-            </small>
-          </>
+          <span className="sub">
+            {t(locale, "web.review.url.final")}: {row.finalUrl}
+          </span>
         )}
-        <br />
-        <small>
-          {row.host} · {t(locale, "web.review.url.registrableDomain")}{" "}
-          {row.registrableDomain}
-        </small>
+        <span className="sub">
+          {row.host} · {t(locale, "web.review.url.registrableDomain")} {row.registrableDomain}
+        </span>
       </td>
       <td>
         {row.source === "manual" ? (
@@ -408,10 +451,7 @@ function QueueRowView(props: {
             {row.engine}
             {row.rank !== undefined && ` · ${t(locale, "web.review.source.rank")} ${row.rank}`}
             {row.queryText !== undefined && (
-              <>
-                <br />
-                <small>“{row.queryText}”</small>
-              </>
+              <span className="sub">“{row.queryText}”</span>
             )}
             {row.locale !== undefined && (
               <>
@@ -425,116 +465,131 @@ function QueueRowView(props: {
       </td>
       <td>
         {row.newestEvidence === undefined ? (
-          <small>{t(locale, "web.review.evidence.none")}</small>
+          <span className="sub">{t(locale, "web.review.evidence.none")}</span>
         ) : (
           <>
             <code>{row.newestEvidence.id.slice(0, 8)}</code>
-            <br />
-            <small>
+            <span className="sub">
               {row.newestEvidence.outcome} ·{" "}
               {new Date(row.newestEvidence.observedAt).toISOString().slice(0, 16)}Z
-            </small>
+            </span>
           </>
         )}
-        <br />
         {/* An allowlisted URL is never captured; every other row can ask
             for a fresh review capture on demand. */}
         {pending && !allowlisted && (
-          <button type="button" disabled={props.busy} onClick={() => void props.onCapture(row)}>
+          <button
+            type="button"
+            className="btn btn-ghost btn-sm"
+            disabled={props.busy}
+            onClick={() => void props.onCapture(row)}
+          >
             {t(locale, "web.review.capture")}
           </button>
         )}
       </td>
       <td>
-        {allowlisted ? (
-          <small>
-            {t(locale, "web.review.flags.allowlistHit")}: {row.allowlistEntry!.kind} ·{" "}
-            {row.allowlistEntry!.value}
-          </small>
-        ) : (
-          <small>{t(locale, "web.review.flags.reputation")}: {row.reputation.confirmedViolations}</small>
-        )}
-        {row.priorDecision !== undefined && (
-          <>
-            <br />
-            <small>
+        <div className="rv-flags" style={{ display: "flex", flexDirection: "column", gap: 6, alignItems: "flex-start" }}>
+          {allowlisted ? (
+            <Chip tone="locked">
+              {t(locale, "web.review.flags.allowlistHit")}: {row.allowlistEntry!.kind} ·{" "}
+              {row.allowlistEntry!.value}
+            </Chip>
+          ) : (
+            <Chip>
+              {t(locale, "web.review.flags.reputation")}: {row.reputation.confirmedViolations}
+            </Chip>
+          )}
+          {row.priorDecision !== undefined && (
+            <Chip tone="muted">
               {t(locale, "web.review.flags.priorDecision")}: {row.priorDecision.action}
-            </small>
-          </>
-        )}
-        <br />
-        <small>{t(locale, stateChipKey(row.lifecycle.state))}</small>
+            </Chip>
+          )}
+          <Chip tone={pending ? "blue" : "muted"} dot={pending}>
+            {t(locale, stateChipKey(row.lifecycle.state))}
+          </Chip>
+        </div>
       </td>
       <td>
         {allowlisted ? (
-          <small>{t(locale, "web.review.flags.allowlistPreventsConfirm")}</small>
+          <small className="muted">{t(locale, "web.review.flags.allowlistPreventsConfirm")}</small>
         ) : (
           <>
-            <button
-              type="button"
-              disabled={!actionable}
-              onClick={() => void props.onDecide(row, { action: "violation" })}
-            >
-              {t(locale, "web.review.actions.confirm")}
-            </button>{" "}
-            <button
-              type="button"
-              disabled={!actionable}
-              onClick={() => {
-                setForm(form === "dismiss" ? null : "dismiss");
-                setNote("");
-              }}
-            >
-              {t(locale, "web.review.actions.dismiss")}
-            </button>{" "}
-            <button
-              type="button"
-              disabled={!actionable}
-              onClick={() => {
-                setForm(
-                  form === "page_dead" ? null : "page_dead",
-                );
-                setNote("");
-              }}
-            >
-              {t(locale, "web.review.actions.pageDead")}
-            </button>{" "}
-            <button
-              type="button"
-              disabled={!actionable}
-              onClick={() => {
-                setForm(form === "wrong_work" ? null : "wrong_work");
-                setNote("");
-                setWrongWorkTitle("");
-              }}
-            >
-              {t(locale, "web.review.actions.wrongWork")}
-            </button>{" "}
-            <button
-              type="button"
-              disabled={!actionable}
-              onClick={() => {
-                setForm(form === "authorized_here" ? null : "authorized_here");
-                setNote("");
-                setTerritory(row.territory ?? "");
-              }}
-            >
-              {t(locale, "web.review.actions.authorizedHere")}
-            </button>
+            <div className="row-actions">
+              <button
+                type="button"
+                className="btn btn-primary btn-sm"
+                disabled={!actionable}
+                onClick={() => void props.onDecide(row, { action: "violation" })}
+              >
+                <Icon name="check" size="sm" />
+                <span>{t(locale, "web.review.actions.confirm")}</span>
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                disabled={!actionable}
+                onClick={() => {
+                  setForm(form === "dismiss" ? null : "dismiss");
+                  setNote("");
+                }}
+              >
+                {t(locale, "web.review.actions.dismiss")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                disabled={!actionable}
+                onClick={() => {
+                  setForm(form === "wrong_work" ? null : "wrong_work");
+                  setNote("");
+                  setWrongWorkTitle("");
+                }}
+              >
+                {t(locale, "web.review.actions.wrongWork")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                disabled={!actionable}
+                onClick={() => {
+                  setForm(form === "authorized_here" ? null : "authorized_here");
+                  setNote("");
+                  setTerritory(row.territory ?? "");
+                }}
+              >
+                {t(locale, "web.review.actions.authorizedHere")}
+              </button>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                disabled={!actionable}
+                onClick={() => {
+                  setForm(
+                    form === "page_dead" ? null : "page_dead",
+                  );
+                  setNote("");
+                }}
+              >
+                {t(locale, "web.review.actions.pageDead")}
+              </button>
+            </div>
             {form !== null && (
-              <div>
-                <label>
-                  {t(locale, "web.review.actions.note")}
+              <div className="inline-form" style={{ marginTop: 8 }}>
+                <label className="field" style={{ gap: 4 }}>
+                  <span className="field-label">{t(locale, "web.review.actions.note")}</span>
                   <input
+                    className="input"
                     value={note}
                     onChange={(event) => setNote(event.target.value)}
                     placeholder={t(locale, "web.review.actions.notePlaceholder")}
                   />
-                </label>{" "}
+                </label>
                 {form === "wrong_work" && (
-                  <label>
-                    {t(locale, "web.review.actions.wrongWork.titlePicker")}
+                  <label className="field" style={{ gap: 4 }}>
+                    <span className="field-label">{t(locale, "web.review.actions.wrongWork.titlePicker")}</span>
                     <select
+                      className="select"
                       value={wrongWorkTitle}
                       onChange={(event) => setWrongWorkTitle(event.target.value)}
                     >
@@ -550,15 +605,16 @@ function QueueRowView(props: {
                         ))}
                     </select>
                   </label>
-                )}{" "}
+                )}
                 {form === "authorized_here" && (
                   // The entry's territory is a two-letter country code the
                   // operator must name — the schema's CHECK is [A-Z]{2}
                   // with no worldwide representation, so there is no
                   // fallback to invent when the observation carried none.
-                  <label>
-                    {t(locale, "web.settings.allowlist.territory")}
+                  <label className="field" style={{ gap: 4 }}>
+                    <span className="field-label">{t(locale, "web.settings.allowlist.territory")}</span>
                     <input
+                      className="input"
                       value={territory}
                       maxLength={2}
                       onChange={(event) => setTerritory(event.target.value.toUpperCase())}
@@ -568,6 +624,7 @@ function QueueRowView(props: {
                 )}
                 <button
                   type="button"
+                  className="btn btn-primary btn-sm"
                   disabled={
                     props.busy ||
                     note.trim() === "" ||

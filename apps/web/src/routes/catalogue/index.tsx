@@ -5,6 +5,8 @@ import { api } from "../../lib/api/client";
 import { fetchSessionCsrfToken } from "../../lib/api/auth";
 import { useSession } from "../../lib/session";
 import { PRIORITY_MESSAGES } from "../../lib/messages";
+import { Chip, EmptyState, PageHead, Panel, Skeleton } from "../../components/ui";
+import { Icon } from "../../components/icons";
 
 /**
  * The catalogue landing screen: title groups with their scan settings, the
@@ -82,85 +84,110 @@ function CatalogueIndex() {
   }
 
   return (
-    <main>
-      <h1>{t(locale, "web.catalogue.title")}</h1>
-      {error !== null && <p role="alert">{error}</p>}
-      <section>
-        <h2>{t(locale, "web.catalogue.groups.title")}</h2>
-        <p>
-          <Link to="/catalogue/titles">{t(locale, "web.catalogue.titles.title")}</Link>
+    <main className="page stack">
+      <PageHead
+        eyebrow={t(locale, "web.nav.titles")}
+        title={t(locale, "web.catalogue.title")}
+        actions={
+          <Link className="btn btn-ghost btn-sm" to="/catalogue/titles">
+            {t(locale, "web.catalogue.titles.title")}
+          </Link>
+        }
+      />
+      {error !== null && (
+        <p className="banner" role="alert">
+          {error}
         </p>
+      )}
+      <Panel title={t(locale, "web.catalogue.groups.title")}>
         {groups === null ? (
-          <p>{t(locale, "web.common.loading")}</p>
+          <div aria-busy="true">
+            {[0, 1, 2].map((index) => (
+              <div key={index} style={{ padding: "10px 0" }}>
+                <Skeleton variant="wide" />
+              </div>
+            ))}
+          </div>
         ) : groups.length === 0 ? (
-          <p>{t(locale, "web.catalogue.groups.empty")}</p>
+          <EmptyState title={t(locale, "web.catalogue.groups.empty")} />
         ) : (
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">{t(locale, "web.catalogue.groups.nameLabel")}</th>
-                <th scope="col">{t(locale, "web.catalogue.groups.localesLabel")}</th>
-                <th scope="col">{t(locale, "web.catalogue.groups.scanTimeLabel")}</th>
-                <th scope="col">{t(locale, "web.catalogue.groups.priorityLabel")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {groups.map((group) => (
-                <tr key={group.id}>
-                  <td>
-                    <Link
-                      to="/catalogue/titles"
-                      search={{ titleGroupId: group.id }}
-                    >
-                      {group.name}
-                    </Link>
-                  </td>
-                  <td>{group.locales.join(", ")}</td>
-                  <td>{group.scanTime}</td>
-                  <td>{t(locale, PRIORITY_MESSAGES[group.priority])}</td>
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th scope="col">{t(locale, "web.catalogue.groups.nameLabel")}</th>
+                  <th scope="col">{t(locale, "web.catalogue.groups.localesLabel")}</th>
+                  <th scope="col">{t(locale, "web.catalogue.groups.scanTimeLabel")}</th>
+                  <th scope="col">{t(locale, "web.catalogue.groups.priorityLabel")}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {groups.map((group) => (
+                  <tr key={group.id}>
+                    <td>
+                      <Link
+                        to="/catalogue/titles"
+                        search={{ titleGroupId: group.id }}
+                      >
+                        {group.name}
+                      </Link>
+                    </td>
+                    <td className="mono">{group.locales.join(", ")}</td>
+                    <td className="mono">{group.scanTime}</td>
+                    <td>
+                      <Chip tone={group.priority === "high" ? "amber" : "muted"}>
+                        {t(locale, PRIORITY_MESSAGES[group.priority])}
+                      </Chip>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
-      </section>
-      <section>
-        <form onSubmit={createGroup}>
-          <label>
-            {t(locale, "web.catalogue.groups.nameLabel")}
-            <input value={name} onChange={(e) => setName(e.target.value)} required />
-          </label>
-          <label>
-            {t(locale, "web.catalogue.groups.localesLabel")}
-            <input value={locales} onChange={(e) => setLocales(e.target.value)} required />
-          </label>
-          <label>
-            {t(locale, "web.catalogue.groups.scanTimeLabel")}
-            <input
-              type="time"
-              min="02:00"
-              max="05:59"
-              value={scanTime}
-              onChange={(e) => setScanTime(e.target.value)}
-              required
-            />
-          </label>
-          <label>
-            {t(locale, "web.catalogue.groups.priorityLabel")}
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value as "high" | "normal" | "low")}
-            >
-              <option value="high">{t(locale, "web.catalogue.priority.high")}</option>
-              <option value="normal">{t(locale, "web.catalogue.priority.normal")}</option>
-              <option value="low">{t(locale, "web.catalogue.priority.low")}</option>
-            </select>
-          </label>
-          <button type="submit" disabled={busy}>
-            {t(locale, "web.catalogue.groups.create")}
-          </button>
-        </form>
-      </section>
+      </Panel>
+      <form onSubmit={createGroup}>
+        <Panel title={t(locale, "web.catalogue.groups.create")}>
+          <div className="form-row">
+            <label className="field">
+              <span>{t(locale, "web.catalogue.groups.nameLabel")}</span>
+              <input className="input" value={name} onChange={(e) => setName(e.target.value)} required />
+            </label>
+            <label className="field">
+              <span>{t(locale, "web.catalogue.groups.localesLabel")}</span>
+              <input className="input" value={locales} onChange={(e) => setLocales(e.target.value)} required />
+            </label>
+            <label className="field">
+              <span>{t(locale, "web.catalogue.groups.scanTimeLabel")}</span>
+              <input
+                className="input"
+                type="time"
+                min="02:00"
+                max="05:59"
+                value={scanTime}
+                onChange={(e) => setScanTime(e.target.value)}
+                required
+              />
+            </label>
+            <label className="field">
+              <span>{t(locale, "web.catalogue.groups.priorityLabel")}</span>
+              <select
+                className="select"
+                value={priority}
+                onChange={(e) => setPriority(e.target.value as "high" | "normal" | "low")}
+              >
+                <option value="high">{t(locale, "web.catalogue.priority.high")}</option>
+                <option value="normal">{t(locale, "web.catalogue.priority.normal")}</option>
+                <option value="low">{t(locale, "web.catalogue.priority.low")}</option>
+              </select>
+            </label>
+            <button type="submit" className="btn btn-primary btn-sm" disabled={busy}>
+              <Icon name="plus" size="sm" />
+              <span>{t(locale, "web.catalogue.groups.create")}</span>
+            </button>
+          </div>
+        </Panel>
+      </form>
     </main>
   );
 }

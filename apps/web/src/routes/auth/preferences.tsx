@@ -4,6 +4,7 @@ import { t, type Locale } from "@patrol/i18n";
 import { api } from "../../lib/api/client";
 import { fetchSessionCsrfToken } from "../../lib/api/auth";
 import { resolveLocale } from "../../lib/i18n";
+import { Icon } from "../../components/icons";
 
 /**
  * The interface-language preference (contract Sessions.updatePreferences):
@@ -66,25 +67,41 @@ function Preferences() {
   }
 
   return (
-    <main>
-      <h1>{t(locale, "web.auth.preferences.title")}</h1>
-      {error !== null && <p role="alert">{error}</p>}
-      <form onSubmit={save}>
-        <label>
-          {t(locale, "web.auth.preferences.languageLabel")}
-          <select
-            value={language}
-            onChange={(event) => setLanguage(event.target.value as "en" | "ru")}
-          >
-            <option value="en">English</option>
-            <option value="ru">Русский</option>
-          </select>
-        </label>
-        <button type="submit" disabled={busy}>
-          {t(locale, "web.auth.preferences.submit")}
-        </button>
-        {saved && <p>{t(locale, "web.auth.preferences.saved")}</p>}
-      </form>
+    <main className="page">
+      <div className="auth-card panel">
+        <div className="panel-head">
+          <h2>{t(locale, "web.auth.preferences.title")}</h2>
+        </div>
+        <div className="panel-body">
+          {error !== null && (
+            <p className="banner" role="alert">
+              {error}
+            </p>
+          )}
+          <form className="form-grid" onSubmit={save}>
+            <label className="field">
+              <span>{t(locale, "web.auth.preferences.languageLabel")}</span>
+              <select
+                className="select"
+                value={language}
+                onChange={(event) => setLanguage(event.target.value as "en" | "ru")}
+              >
+                <option value="en">English</option>
+                <option value="ru">Русский</option>
+              </select>
+            </label>
+            <button type="submit" className="btn btn-primary" disabled={busy}>
+              {t(locale, "web.auth.preferences.submit")}
+            </button>
+            {saved && (
+              <p className="banner" role="status">
+                <Icon name="check" size="sm" />
+                {t(locale, "web.auth.preferences.saved")}
+              </p>
+            )}
+          </form>
+        </div>
+      </div>
     </main>
   );
 }

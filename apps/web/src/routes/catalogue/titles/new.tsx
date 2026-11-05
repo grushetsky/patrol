@@ -9,6 +9,8 @@ import {
   TITLE_TYPE_MESSAGES,
   VARIANT_KIND_MESSAGES,
 } from "../../../lib/messages";
+import { PageHead, Panel } from "../../../components/ui";
+import { Icon } from "../../../components/icons";
 
 /**
  * The add-title field (docs/design/catalogue-entry.md "The entry surface"):
@@ -267,218 +269,263 @@ function AddTitle() {
   }
 
   return (
-    <main>
-      <h1>{t(locale, "web.catalogue.search.title")}</h1>
-      <p>
-        <Link to="/catalogue/titles">{t(locale, "web.catalogue.titles.title")}</Link>
-      </p>
-      <input
-        placeholder={t(locale, "web.catalogue.search.placeholder")}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        aria-label={t(locale, "web.catalogue.search.placeholder")}
+    <main className="page stack">
+      <PageHead
+        eyebrow={t(locale, "web.nav.titles")}
+        title={t(locale, "web.catalogue.search.title")}
+        actions={
+          <Link className="btn btn-ghost btn-sm" to="/catalogue/titles">
+            {t(locale, "web.catalogue.titles.title")}
+          </Link>
+        }
       />
-      <div role="tablist">
-        <button
-          role="tab"
-          aria-selected={tab === "local"}
-          onClick={() => setTab("local")}
-        >
-          {t(locale, "web.catalogue.search.tab.local")}
-        </button>
-        <button
-          role="tab"
-          aria-selected={tab === "wikidata"}
-          onClick={() => setTab("wikidata")}
-        >
-          {t(locale, "web.catalogue.search.tab.wikidata")}
-        </button>
-      </div>
-      {tab === "local" ? (
-        suggestions.length === 0 ? (
-          <p>{t(locale, "web.catalogue.search.localEmpty")}</p>
+      <Panel title={t(locale, "web.catalogue.search.title")}>
+        <input
+          className="input"
+          placeholder={t(locale, "web.catalogue.search.placeholder")}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          aria-label={t(locale, "web.catalogue.search.placeholder")}
+        />
+        <div role="tablist" className="chart-toolbar" style={{ margin: "12px 0" }}>
+          <button
+            type="button"
+            role="tab"
+            className="chart-tab"
+            aria-selected={tab === "local"}
+            onClick={() => setTab("local")}
+          >
+            {t(locale, "web.catalogue.search.tab.local")}
+          </button>
+          <button
+            type="button"
+            role="tab"
+            className="chart-tab"
+            aria-selected={tab === "wikidata"}
+            onClick={() => setTab("wikidata")}
+          >
+            {t(locale, "web.catalogue.search.tab.wikidata")}
+          </button>
+        </div>
+        {tab === "local" ? (
+          suggestions.length === 0 ? (
+            <p className="page-note" style={{ margin: 0 }}>
+              {t(locale, "web.catalogue.search.localEmpty")}
+            </p>
+          ) : (
+            <div className="option-list">
+              {suggestions.map((suggestion) => (
+                <div key={suggestion.trackedTitleId} className="option">
+                  <Link
+                    to="/catalogue/titles/$titleId"
+                    params={{ titleId: suggestion.trackedTitleId }}
+                    className="option-name"
+                    style={{ textDecoration: "none" }}
+                  >
+                    {suggestion.displayTitle} ({suggestion.releaseYear},{" "}
+                    {suggestion.titleGroupName})
+                  </Link>
+                  <span className="option-sub">
+                    {t(locale, "web.catalogue.search.matchedVariant")}:{" "}
+                    {suggestion.matchedVariant.text} (
+                    {t(locale, VARIANT_KIND_MESSAGES[suggestion.matchedVariant.kind])})
+                  </span>
+                </div>
+              ))}
+            </div>
+          )
+        ) : wikidataDown ? (
+          <p className="page-note" role="status" style={{ margin: 0 }}>
+            {t(locale, "web.catalogue.search.wikidataUnavailable")}
+          </p>
+        ) : wikidata.length === 0 ? (
+          <p className="page-note" style={{ margin: 0 }}>
+            {t(locale, "web.catalogue.search.wikidataEmpty")}
+          </p>
         ) : (
-          <ul>
-            {suggestions.map((suggestion) => (
-              <li key={suggestion.trackedTitleId}>
-                <Link
-                  to="/catalogue/titles/$titleId"
-                  params={{ titleId: suggestion.trackedTitleId }}
-                >
-                  {suggestion.displayTitle} ({suggestion.releaseYear},{" "}
-                  {suggestion.titleGroupName})
-                </Link>{" "}
-                — {t(locale, "web.catalogue.search.matchedVariant")}:{" "}
-                {suggestion.matchedVariant.text} (
-                {t(locale, VARIANT_KIND_MESSAGES[suggestion.matchedVariant.kind])})
-              </li>
-            ))}
-          </ul>
-        )
-      ) : wikidataDown ? (
-        <p role="status">{t(locale, "web.catalogue.search.wikidataUnavailable")}</p>
-      ) : wikidata.length === 0 ? (
-        <p>{t(locale, "web.catalogue.search.wikidataEmpty")}</p>
-      ) : (
-        <ul>
-          {wikidata.map((suggestion) => (
-            <li key={suggestion.qid}>
+          <div className="option-list">
+            {wikidata.map((suggestion) => (
               <button
+                key={suggestion.qid}
                 type="button"
+                className="option"
+                style={{ textAlign: "left", font: "inherit" }}
                 onClick={() => void selectWikidataSuggestion(suggestion)}
               >
-                {suggestion.label} ({suggestion.qid}
-                {suggestion.description !== undefined
-                  ? ` — ${suggestion.description}`
-                  : ""}
-                {suggestion.matchedAlias !== undefined
-                  ? ` — ${suggestion.matchedAlias}`
-                  : ""}
-                )
+                <span className="option-name">{suggestion.label}</span>
+                <span className="option-sub">
+                  {suggestion.qid}
+                  {suggestion.description !== undefined ? ` — ${suggestion.description}` : ""}
+                  {suggestion.matchedAlias !== undefined ? ` — ${suggestion.matchedAlias}` : ""}
+                </span>
               </button>
-            </li>
-          ))}
-        </ul>
-      )}
-      <form onSubmit={create}>
-        <h2>{t(locale, "web.catalogue.create.title")}</h2>
-        {error !== null && <p role="alert">{error}</p>}
-        <label>
-          {t(locale, "web.catalogue.create.groupLabel")}
-          <select value={groupId} onChange={(e) => setGroupId(e.target.value)}>
-            {groups.map((group) => (
-              <option key={group.id} value={group.id}>
-                {group.name}
-              </option>
             ))}
-          </select>
-        </label>
-        <label>
-          {t(locale, "web.catalogue.create.languageLabel")}
-          <input value={language} onChange={(e) => setLanguage(e.target.value)} required />
-        </label>
-        <label>
-          {t(locale, "web.catalogue.create.scriptLabel")}
-          <input value={script} onChange={(e) => setScript(e.target.value)} required />
-        </label>
-        <label>
-          {t(locale, "web.catalogue.create.yearLabel")}
-          <input
-            value={year}
-            onChange={(e) => setYear(e.target.value)}
-            required
-            inputMode="numeric"
-            pattern="\d{4}"
-          />
-        </label>
-        <label>
-          {t(locale, "web.catalogue.create.typeLabel")}
-          <select
-            value={titleType}
-            onChange={(e) =>
-              setTitleType(e.target.value as "film" | "series" | "miniseries" | "other")
-            }
-          >
-            {(["film", "series", "miniseries", "other"] as const).map((kind) => (
-              <option key={kind} value={kind}>
-                {t(locale, TITLE_TYPE_MESSAGES[kind])}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          {t(locale, "web.catalogue.create.runtimeLabel")}
-          <input value={runtime} onChange={(e) => setRuntime(e.target.value)} inputMode="numeric" />
-        </label>
-        <label>
-          {t(locale, "web.catalogue.create.sourceLabel")}
-          <select
-            value={source}
-            onChange={(e) =>
-              setSource(
-                e.target.value as
-                  | "rights_holder_record"
-                  | "operator_knowledge"
-                  | "wikidata",
-              )
-            }
-          >
-            {(["rights_holder_record", "operator_knowledge", "wikidata"] as const).map(
-              (origin) => (
-                <option key={origin} value={origin}>
-                  {t(locale, SOURCE_MESSAGES[origin])}
-                </option>
-              ),
-            )}
-          </select>
-        </label>
-        {variants.length > 0 && (
-          <fieldset>
-            <legend>{t(locale, "web.catalogue.detail.variants")}</legend>
-            <ul>
-              {variants.map((variant, index) => (
-                <li key={`${variant.text}/${variant.language}`}>
-                  {variant.text} ({variant.language}/{variant.script} —{" "}
-                  {t(locale, VARIANT_KIND_MESSAGES[variant.kind])}){" "}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setVariants((current) =>
-                        current.filter((_, at) => at !== index),
-                      )
-                    }
-                  >
-                    {t(locale, "web.common.remove")}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </fieldset>
+          </div>
         )}
-        {identifiers.map((identifier, index) => (
-          <fieldset key={index}>
-            <label>
-              {t(locale, "web.catalogue.create.identifierScheme")}
-              <select
-                value={identifier.scheme}
-                onChange={(e) => {
-                  const next = [...identifiers];
-                  next[index] = {
-                    ...identifier,
-                    scheme: e.target.value as "wikidata" | "imdb" | "kinopoisk",
-                  };
-                  setIdentifiers(next);
-                }}
+      </Panel>
+      <form onSubmit={create}>
+        <Panel title={t(locale, "web.catalogue.create.title")}>
+          {error !== null && (
+            <p className="banner" role="alert">
+              {error}
+            </p>
+          )}
+          <div className="form-grid">
+            <div className="form-row">
+              <label className="field">
+                <span>{t(locale, "web.catalogue.create.groupLabel")}</span>
+                <select
+                  className="select"
+                  value={groupId}
+                  onChange={(e) => setGroupId(e.target.value)}
+                >
+                  {groups.map((group) => (
+                    <option key={group.id} value={group.id}>
+                      {group.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                <span>{t(locale, "web.catalogue.create.languageLabel")}</span>
+                <input className="input" value={language} onChange={(e) => setLanguage(e.target.value)} required />
+              </label>
+              <label className="field">
+                <span>{t(locale, "web.catalogue.create.scriptLabel")}</span>
+                <input className="input" value={script} onChange={(e) => setScript(e.target.value)} required />
+              </label>
+              <label className="field">
+                <span>{t(locale, "web.catalogue.create.yearLabel")}</span>
+                <input
+                  className="input"
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                  required
+                  inputMode="numeric"
+                  pattern="\d{4}"
+                />
+              </label>
+              <label className="field">
+                <span>{t(locale, "web.catalogue.create.typeLabel")}</span>
+                <select
+                  className="select"
+                  value={titleType}
+                  onChange={(e) =>
+                    setTitleType(e.target.value as "film" | "series" | "miniseries" | "other")
+                  }
+                >
+                  {(["film", "series", "miniseries", "other"] as const).map((kind) => (
+                    <option key={kind} value={kind}>
+                      {t(locale, TITLE_TYPE_MESSAGES[kind])}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="field">
+                <span>{t(locale, "web.catalogue.create.runtimeLabel")}</span>
+                <input className="input" value={runtime} onChange={(e) => setRuntime(e.target.value)} inputMode="numeric" />
+              </label>
+              <label className="field">
+                <span>{t(locale, "web.catalogue.create.sourceLabel")}</span>
+                <select
+                  className="select"
+                  value={source}
+                  onChange={(e) =>
+                    setSource(
+                      e.target.value as
+                        | "rights_holder_record"
+                        | "operator_knowledge"
+                        | "wikidata",
+                    )
+                  }
+                >
+                  {(["rights_holder_record", "operator_knowledge", "wikidata"] as const).map(
+                    (origin) => (
+                      <option key={origin} value={origin}>
+                        {t(locale, SOURCE_MESSAGES[origin])}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </label>
+            </div>
+            {variants.length > 0 && (
+              <fieldset className="option-list" style={{ border: 0, padding: 0, margin: 0 }}>
+                <legend className="field-label">{t(locale, "web.catalogue.detail.variants")}</legend>
+                {variants.map((variant, index) => (
+                  <div key={`${variant.text}/${variant.language}`} className="option">
+                    <span className="option-name">
+                      {variant.text} ({variant.language}/{variant.script} —{" "}
+                      {t(locale, VARIANT_KIND_MESSAGES[variant.kind])})
+                    </span>
+                    <button
+                      type="button"
+                      className="btn btn-ghost btn-sm"
+                      onClick={() =>
+                        setVariants((current) =>
+                          current.filter((_, at) => at !== index),
+                        )
+                      }
+                    >
+                      {t(locale, "web.common.remove")}
+                    </button>
+                  </div>
+                ))}
+              </fieldset>
+            )}
+            {identifiers.map((identifier, index) => (
+              <fieldset key={index} className="form-row" style={{ border: 0, padding: 0, margin: 0 }}>
+                <label className="field">
+                  <span>{t(locale, "web.catalogue.create.identifierScheme")}</span>
+                  <select
+                    className="select"
+                    value={identifier.scheme}
+                    onChange={(e) => {
+                      const next = [...identifiers];
+                      next[index] = {
+                        ...identifier,
+                        scheme: e.target.value as "wikidata" | "imdb" | "kinopoisk",
+                      };
+                      setIdentifiers(next);
+                    }}
+                  >
+                    <option value="wikidata">wikidata</option>
+                    <option value="imdb">imdb</option>
+                    <option value="kinopoisk">kinopoisk</option>
+                  </select>
+                </label>
+                <label className="field">
+                  <span>{t(locale, "web.catalogue.create.identifierValue")}</span>
+                  <input
+                    className="input"
+                    value={identifier.value}
+                    onChange={(e) => {
+                      const next = [...identifiers];
+                      next[index] = { ...identifier, value: e.target.value };
+                      setIdentifiers(next);
+                    }}
+                  />
+                </label>
+              </fieldset>
+            ))}
+            <div className="form-actions">
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() =>
+                  setIdentifiers([...identifiers, { scheme: "wikidata", value: "" }])
+                }
               >
-                <option value="wikidata">wikidata</option>
-                <option value="imdb">imdb</option>
-                <option value="kinopoisk">kinopoisk</option>
-              </select>
-            </label>
-            <label>
-              {t(locale, "web.catalogue.create.identifierValue")}
-              <input
-                value={identifier.value}
-                onChange={(e) => {
-                  const next = [...identifiers];
-                  next[index] = { ...identifier, value: e.target.value };
-                  setIdentifiers(next);
-                }}
-              />
-            </label>
-          </fieldset>
-        ))}
-        <button
-          type="button"
-          onClick={() =>
-            setIdentifiers([...identifiers, { scheme: "wikidata", value: "" }])
-          }
-        >
-          {t(locale, "web.catalogue.create.addIdentifier")}
-        </button>
-        <button type="submit" disabled={busy}>
-          {t(locale, "web.catalogue.search.createPrefix")} “{text.trim()}”
-        </button>
+                <Icon name="plus" size="sm" />
+                <span>{t(locale, "web.catalogue.create.addIdentifier")}</span>
+              </button>
+              <button type="submit" className="btn btn-primary" disabled={busy}>
+                <Icon name="plus" size="sm" />
+                <span>{t(locale, "web.catalogue.search.createPrefix")} “{text.trim()}”</span>
+              </button>
+            </div>
+          </div>
+        </Panel>
       </form>
     </main>
   );

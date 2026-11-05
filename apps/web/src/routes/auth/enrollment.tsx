@@ -5,6 +5,7 @@ import { api } from "../../lib/api/client";
 import { fetchCsrfToken } from "../../lib/api/auth";
 import { resolveLocale } from "../../lib/i18n";
 import { EnrollmentCeremony } from "../../lib/enrollment-ceremony";
+import { Icon } from "../../components/icons";
 
 /**
  * The invitation link's landing page (contract InvitationAcceptance): the
@@ -59,29 +60,46 @@ function Enrollment() {
   }
 
   return (
-    <main>
-      <h1>{t(locale, "web.auth.enrollment.title")}</h1>
-      {enrollmentToken === null ? (
-        <form onSubmit={accept}>
-          {error !== null && <p role="alert">{error}</p>}
-          <label>
-            {t(locale, "web.auth.enrollment.passwordLabel")}
-            <input
-              type="password"
-              value={password}
-              autoComplete="new-password"
-              minLength={12}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
-          </label>
-          <button type="submit" disabled={busy || token === ""}>
-            {t(locale, "web.auth.enrollment.passwordSubmit")}
-          </button>
-        </form>
-      ) : (
-        <EnrollmentCeremony enrollmentToken={enrollmentToken} locale={locale} />
-      )}
+    <main className="page">
+      <div className="auth-card panel">
+        <div className="panel-head">
+          <h2>{t(locale, "web.auth.enrollment.title")}</h2>
+        </div>
+        <div className="panel-body">
+          <div className="auth-brand">
+            <span className="brand-mark" aria-hidden="true">
+              <Icon name="shield" />
+            </span>
+            Patrol
+          </div>
+          {enrollmentToken === null ? (
+            <form className="form-grid" onSubmit={accept}>
+              {error !== null && (
+                <p className="banner" role="alert">
+                  {error}
+                </p>
+              )}
+              <label className="field">
+                <span>{t(locale, "web.auth.enrollment.passwordLabel")}</span>
+                <input
+                  className="input"
+                  type="password"
+                  value={password}
+                  autoComplete="new-password"
+                  minLength={12}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                />
+              </label>
+              <button type="submit" className="btn btn-primary" disabled={busy || token === ""}>
+                {t(locale, "web.auth.enrollment.passwordSubmit")}
+              </button>
+            </form>
+          ) : (
+            <EnrollmentCeremony enrollmentToken={enrollmentToken} locale={locale} />
+          )}
+        </div>
+      </div>
     </main>
   );
 }

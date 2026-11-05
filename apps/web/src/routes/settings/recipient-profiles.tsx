@@ -5,6 +5,7 @@ import { api } from "../../lib/api/client";
 import { fetchSessionCsrfToken } from "../../lib/api/auth";
 import { useSession } from "../../lib/session";
 import { CHANNEL_MESSAGES, TRIGGER_MESSAGES } from "../../lib/messages";
+import { Chip, EngineBadge, PageHead, Panel, Skeleton } from "../../components/ui";
 
 /**
  * The recipient profiles: one row per recipient with its version, pause
@@ -107,40 +108,65 @@ function RecipientProfiles() {
   }
 
   return (
-    <main>
-      <h1>{t(locale, "web.settings.profiles.title")}</h1>
-      <p>
-        <Link to="/settings">{t(locale, "web.settings.title")}</Link>
-      </p>
-      {error !== null && <p role="alert">{error}</p>}
-      {!isAdmin && <p>{t(locale, "web.common.adminOnly")}</p>}
+    <main className="page stack">
+      <PageHead
+        eyebrow={t(locale, "web.nav.settings")}
+        title={t(locale, "web.settings.profiles.title")}
+        actions={
+          <Link className="btn btn-ghost btn-sm" to="/settings">
+            {t(locale, "web.settings.title")}
+          </Link>
+        }
+      />
+      {error !== null && (
+        <p className="banner" role="alert">
+          {error}
+        </p>
+      )}
+      {!isAdmin && <p className="page-note">{t(locale, "web.common.adminOnly")}</p>}
       {profiles === null ? (
-        <p>{t(locale, "web.common.loading")}</p>
+        <div aria-busy="true">
+          {[0, 1, 2].map((index) => (
+            <div key={index} style={{ padding: "10px 0" }}>
+              <Skeleton variant="wide" />
+            </div>
+          ))}
+        </div>
       ) : (
         profiles.map((profile) => (
-          <section key={profile.id}>
-            <h2>
-              {profile.recipient}{" "}
-              {profile.paused ? `— ${t(locale, "web.settings.profiles.paused")}` : ""}
-            </h2>
-            <dl>
+          <Panel
+            key={profile.id}
+            title={
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
+                <EngineBadge engine={profile.recipient} />
+                {profile.recipient}
+                {profile.paused && (
+                  <Chip tone="amber" dot>
+                    {t(locale, "web.settings.profiles.paused")}
+                  </Chip>
+                )}
+              </span>
+            }
+          >
+            <dl className="kv" style={{ marginBottom: isAdmin ? 16 : 0 }}>
               <dt>{t(locale, "web.settings.profiles.version")}</dt>
               <dd>{profile.version}</dd>
               <dt>{t(locale, "web.settings.profiles.channel")}</dt>
               <dd>{t(locale, CHANNEL_MESSAGES[profile.channel])}</dd>
               <dt>{t(locale, "web.settings.profiles.account")}</dt>
-              <dd>{profile.account}</dd>
+              <dd className="mono">{profile.account}</dd>
               <dt>{t(locale, "web.settings.profiles.trigger")}</dt>
               <dd>
                 {t(locale, TRIGGER_MESSAGES[profile.compositionTrigger])}
                 {profile.windowTime !== undefined ? ` ${profile.windowTime}` : ""}
               </dd>
               <dt>{t(locale, "web.settings.profiles.territories")}</dt>
-              <dd>{profile.eligibleTerritories.join(", ")}</dd>
+              <dd className="mono">{profile.eligibleTerritories.join(", ")}</dd>
             </dl>
             {isAdmin && (
               <>
                 <form
+                  className="form-row"
                   onSubmit={(event) => {
                     event.preventDefault();
                     void patch(profile, {
@@ -151,9 +177,10 @@ function RecipientProfiles() {
                     });
                   }}
                 >
-                  <label>
-                    {t(locale, "web.settings.profiles.account")}
+                  <label className="field">
+                    <span>{t(locale, "web.settings.profiles.account")}</span>
                     <input
+                      className="input mono"
                       value={profile.account}
                       onChange={(e) =>
                         setProfiles(
@@ -166,9 +193,10 @@ function RecipientProfiles() {
                       }
                     />
                   </label>
-                  <label>
-                    {t(locale, "web.settings.profiles.territories")}
+                  <label className="field" style={{ flex: "1 1 240px" }}>
+                    <span>{t(locale, "web.settings.profiles.territories")}</span>
                     <input
+                      className="input mono"
                       value={profile.eligibleTerritories.join(", ")}
                       onChange={(e) =>
                         setProfiles(
@@ -187,33 +215,36 @@ function RecipientProfiles() {
                       }
                     />
                   </label>
-                  <button type="submit" disabled={busy}>
+                  <button type="submit" className="btn btn-primary btn-sm" disabled={busy}>
                     {t(locale, "web.settings.profiles.save")}
                   </button>
                 </form>
                 {profile.paused && (
                   <form
+                    className="form-row"
+                    style={{ marginTop: 12 }}
                     onSubmit={(event) => {
                       event.preventDefault();
                       void clearPause(profile);
                     }}
                   >
-                    <label>
-                      {t(locale, "web.settings.profiles.clearanceReason")}
+                    <label className="field" style={{ flex: "1 1 260px" }}>
+                      <span>{t(locale, "web.settings.profiles.clearanceReason")}</span>
                       <input
+                        className="input"
                         value={clearanceReason}
                         onChange={(e) => setClearanceReason(e.target.value)}
                         required
                       />
                     </label>
-                    <button type="submit" disabled={busy}>
+                    <button type="submit" className="btn btn-sm" disabled={busy}>
                       {t(locale, "web.settings.profiles.clearPause")}
                     </button>
                   </form>
                 )}
               </>
             )}
-          </section>
+          </Panel>
         ))
       )}
     </main>

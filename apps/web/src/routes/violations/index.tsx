@@ -4,6 +4,9 @@ import { t } from "@patrol/i18n";
 import { api } from "../../lib/api/client";
 import { fetchSessionCsrfToken } from "../../lib/api/auth";
 import { useSession } from "../../lib/session";
+import { Chip, EmptyState, PageHead, Skeleton } from "../../components/ui";
+import { Icon } from "../../components/icons";
+import { useToast } from "../../components/toast";
 
 /**
  * The violations screen (docs/design/dashboard-ui.md "Violations"): rows
@@ -53,6 +56,7 @@ const STATUS_KEYS = {
 
 function ViolationsIndex() {
   const { locale } = useSession();
+  const toast = useToast();
   const navigate = useNavigate();
   const [rows, setRows] = useState<ViolationRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -117,6 +121,7 @@ function ViolationsIndex() {
       });
       if (response.ok && data) {
         setSelected(new Set());
+        toast(t(locale, "web.violations.cart.drafted"), "green");
         await navigate({ to: "/notices" });
         return;
       }
@@ -208,110 +213,130 @@ function ViolationsIndex() {
   };
 
   return (
-    <main>
-      <h1>{t(locale, "web.violations.title")}</h1>
-      {error !== null && <p role="alert">{error}</p>}
-      {rows === null ? (
-        <p>{t(locale, "web.common.loading")}</p>
-      ) : rows.length === 0 ? (
-        <p>
-          {t(locale, "web.violations.empty")}{" "}
-          <Link to="/review">{t(locale, "web.violations.goToReview")}</Link>
+    <main className="page">
+      <PageHead
+        eyebrow={t(locale, "web.violations.eyebrow")}
+        title={t(locale, "web.violations.title")}
+        note={t(locale, "web.violations.note")}
+      />
+      {error !== null && (
+        <p className="banner" role="alert">
+          {error}
         </p>
+      )}
+      {rows === null ? (
+        <div aria-busy="true" className="stack">
+          {[0, 1, 2].map((index) => (
+            <div key={index} className="violation" aria-hidden="true">
+              <Skeleton variant="score" />
+              <Skeleton variant="wide" />
+              <Skeleton variant="short" />
+            </div>
+          ))}
+        </div>
+      ) : rows.length === 0 ? (
+        <EmptyState
+          title={t(locale, "web.violations.empty.title")}
+          action={
+            <Link className="btn btn-primary" to="/review">
+              <Icon name="radar" size="sm" />
+              <span>{t(locale, "web.violations.goToReview")}</span>
+            </Link>
+          }
+        >
+          {t(locale, "web.violations.empty")}
+        </EmptyState>
       ) : (
         <>
-          <label>
-            {t(locale, "web.violations.filter.title")}
-            <select
-              value={titleFilter}
-              onChange={(event) => setTitleFilter(event.target.value)}
-            >
-              <option value="">{t(locale, "web.violations.filter.all")}</option>
-              {titleOptions.map(([id, displayTitle]) => (
-                <option key={id} value={id}>
-                  {displayTitle}
-                </option>
-              ))}
-            </select>
-          </label>
+          <div className="filter-bar" style={{ marginBottom: 18 }}>
+            <label className="field" style={{ gap: 4 }}>
+              <span className="field-label">{t(locale, "web.violations.filter.title")}</span>
+              <select
+                className="select"
+                value={titleFilter}
+                onChange={(event) => setTitleFilter(event.target.value)}
+              >
+                <option value="">{t(locale, "web.violations.filter.all")}</option>
+                {titleOptions.map(([id, displayTitle]) => (
+                  <option key={id} value={id}>
+                    {displayTitle}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
           {groups.map((group) => (
-            <section key={group.trackedTitleId}>
-              <h2>
-                {group.displayTitle}{" "}
-                <small>
+            <section key={group.trackedTitleId} className="v-group" aria-label={group.displayTitle}>
+              <div className="v-group-head">
+                <h2 className="v-group-title">{group.displayTitle}</h2>
+                <span className="v-group-meta">
                   {t(locale, "web.violations.group.openOfTotal")
                     .replace("{open}", String(group.open))
                     .replace("{total}", String(group.total))}
-                </small>
-              </h2>
-              <table>
-                <thead>
-                  <tr>
-                    <th scope="col" aria-label="select" />
-                    <th scope="col">{t(locale, "web.violations.column.host")}</th>
-                    <th scope="col">{t(locale, "web.violations.column.url")}</th>
-                    <th scope="col">{t(locale, "web.violations.column.evidence")}</th>
-                    <th scope="col">{t(locale, "web.violations.column.status")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {group.rows.map((row) => {
-                    const open = row.violation.lifecycle.state === "open";
-                    return (
-                      <tr key={row.violation.id}>
-                        <td>
-                          {open && (
-                            <input
-                              type="checkbox"
-                              checked={selected.has(row.violation.id)}
-                              onChange={() => toggle(row)}
-                            />
-                          )}
-                        </td>
-                        <td>{row.violation.host}</td>
-                        <td>
-                          <a
-                            href={row.violation.url}
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            {row.violation.url}
-                          </a>
-                        </td>
-                        <td>
-                          {row.newestEvidence === undefined ? (
-                            <small>{t(locale, "web.violations.evidence.none")}</small>
-                          ) : (
-                            <code>{row.newestEvidence.id.slice(0, 8)}</code>
-                          )}
-                        </td>
-                        <td>{t(locale, STATUS_KEYS[row.violation.lifecycle.state])}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                </span>
+              </div>
+              {group.rows.map((row) => {
+                const open = row.violation.lifecycle.state === "open";
+                const picked = selected.has(row.violation.id);
+                return (
+                  <div
+                    key={row.violation.id}
+                    className={[
+                      "violation",
+                      picked ? "is-picked" : "",
+                      open ? "" : "is-removed",
+                    ]
+                      .filter(Boolean)
+                      .join(" ")}
+                  >
+                    {open && (
+                      <input
+                        type="checkbox"
+                        className="check"
+                        checked={picked}
+                        onChange={() => toggle(row)}
+                        aria-label={row.violation.url}
+                      />
+                    )}
+                    <div className="violation-main">
+                      <a className="url v-title" href={row.violation.url} target="_blank" rel="noreferrer">
+                        {row.violation.url}
+                      </a>
+                      <span className="v-host">
+                        <Icon name="link" size="sm" />
+                        {row.violation.host}
+                      </span>
+                    </div>
+                    <span className="v-evidence">
+                      {row.newestEvidence === undefined ? (
+                        t(locale, "web.violations.evidence.none")
+                      ) : (
+                        <code>{row.newestEvidence.id.slice(0, 8)}</code>
+                      )}
+                    </span>
+                    <span className="v-status">
+                      <Chip tone={open ? "danger" : row.violation.lifecycle.state === "removed" ? "green" : "muted"} dot={open}>
+                        {t(locale, STATUS_KEYS[row.violation.lifecycle.state])}
+                      </Chip>
+                    </span>
+                  </div>
+                );
+              })}
             </section>
           ))}
         </>
       )}
       {selected.size > 0 && (
-        <footer
-          style={{
-            position: "fixed",
-            bottom: 0,
-            left: 0,
-            right: 0,
-            padding: "0.5rem 1rem",
-          }}
-        >
-          <strong>
+        <footer className="cart">
+          <span className="cart-count">
+            <b aria-hidden="true">{selected.size}</b>
             {t(locale, "web.violations.cart.count").replace(
               "{count}",
               String(selected.size),
             )}
-          </strong>{" "}
+          </span>
           <select
+            className="select"
             value={profileId}
             aria-label={t(locale, "web.violations.cart.recipient")}
             onChange={(event) => setProfileId(event.target.value)}
@@ -321,19 +346,21 @@ function ViolationsIndex() {
                 {t(locale, `web.notices.recipient.${profile.recipient}` as never)}
               </option>
             ))}
-          </select>{" "}
+          </select>
           <button
             type="button"
+            className="btn btn-primary btn-sm"
             disabled={drafting || profileId === ""}
             onClick={() => void draftNotice()}
           >
-            {t(locale, "web.violations.cart.draft")}
-          </button>{" "}
-          <button type="button" onClick={() => setSelected(new Set())}>
+            {drafting ? <span className="spinner" aria-hidden="true" /> : <Icon name="send" size="sm" />}
+            <span>{t(locale, "web.violations.cart.draft")}</span>
+          </button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={() => setSelected(new Set())}>
             {t(locale, "web.violations.cart.clear")}
           </button>
           {draftError !== null && (
-            <p role="alert" style={{ margin: "0.25rem 0 0" }}>
+            <p className="cart-error" role="alert">
               {draftError}
             </p>
           )}

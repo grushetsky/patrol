@@ -4,6 +4,7 @@ import { t } from "@patrol/i18n";
 import { api } from "../../lib/api/client";
 import { fetchCsrfToken } from "../../lib/api/auth";
 import { resolveLocale } from "../../lib/i18n";
+import { Icon } from "../../components/icons";
 
 /**
  * The two-step sign-in (contract Authentication): the password produces a
@@ -84,65 +85,87 @@ function SignIn() {
   }
 
   return (
-    <main>
-      <h1>{t(locale, "web.auth.signIn.title")}</h1>
-      {error !== null && <p role="alert">{error}</p>}
-      {step === "password" ? (
-        <form onSubmit={submitPassword}>
-          <label>
-            {t(locale, "web.auth.signIn.emailLabel")}
-            <input
-              type="email"
-              value={email}
-              autoComplete="username"
-              onChange={(event) => setEmail(event.target.value)}
-              required
-            />
-          </label>
-          <label>
-            {t(locale, "web.auth.signIn.passwordLabel")}
-            <input
-              type="password"
-              value={password}
-              autoComplete="current-password"
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
-          </label>
-          <button type="submit" disabled={busy}>
-            {t(locale, "web.auth.signIn.submit")}
-          </button>
-        </form>
-      ) : (
-        <form onSubmit={submitSecondFactor}>
-          <h2>{t(locale, "web.auth.signIn.secondFactorTitle")}</h2>
-          <label>
-            {method === "totp"
-              ? t(locale, "web.auth.signIn.codeLabel")
-              : t(locale, "web.auth.signIn.recoveryCodeLabel")}
-            <input
-              inputMode={method === "totp" ? "numeric" : "text"}
-              value={code}
-              onChange={(event) => setCode(event.target.value)}
-              required
-            />
-          </label>
-          <button
-            type="button"
-            onClick={() => {
-              setMethod(method === "totp" ? "recovery_code" : "totp");
-              setCode("");
-            }}
-          >
-            {method === "totp"
-              ? t(locale, "web.auth.signIn.useRecoveryCode")
-              : t(locale, "web.auth.signIn.useTotp")}
-          </button>
-          <button type="submit" disabled={busy}>
-            {t(locale, "web.auth.signIn.submitSecondFactor")}
-          </button>
-        </form>
-      )}
+    <main className="page">
+      <div className="auth-card panel">
+        <div className="panel-head">
+          <h2>{t(locale, "web.auth.signIn.title")}</h2>
+        </div>
+        <div className="panel-body">
+          <div className="auth-brand">
+            <span className="brand-mark" aria-hidden="true">
+              <Icon name="shield" />
+            </span>
+            Patrol
+          </div>
+          {error !== null && (
+            <p className="banner" role="alert">
+              {error}
+            </p>
+          )}
+          {step === "password" ? (
+            <form className="form-grid" onSubmit={submitPassword}>
+              <label className="field">
+                <span>{t(locale, "web.auth.signIn.emailLabel")}</span>
+                <input
+                  className="input"
+                  type="email"
+                  value={email}
+                  autoComplete="username"
+                  onChange={(event) => setEmail(event.target.value)}
+                  required
+                />
+              </label>
+              <label className="field">
+                <span>{t(locale, "web.auth.signIn.passwordLabel")}</span>
+                <input
+                  className="input"
+                  type="password"
+                  value={password}
+                  autoComplete="current-password"
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                />
+              </label>
+              <button type="submit" className="btn btn-primary" disabled={busy}>
+                {t(locale, "web.auth.signIn.submit")}
+              </button>
+            </form>
+          ) : (
+            <form className="form-grid" onSubmit={submitSecondFactor}>
+              <h2>{t(locale, "web.auth.signIn.secondFactorTitle")}</h2>
+              <label className="field">
+                <span>
+                  {method === "totp"
+                    ? t(locale, "web.auth.signIn.codeLabel")
+                    : t(locale, "web.auth.signIn.recoveryCodeLabel")}
+                </span>
+                <input
+                  className="input"
+                  inputMode={method === "totp" ? "numeric" : "text"}
+                  value={code}
+                  onChange={(event) => setCode(event.target.value)}
+                  required
+                />
+              </label>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm"
+                onClick={() => {
+                  setMethod(method === "totp" ? "recovery_code" : "totp");
+                  setCode("");
+                }}
+              >
+                {method === "totp"
+                  ? t(locale, "web.auth.signIn.useRecoveryCode")
+                  : t(locale, "web.auth.signIn.useTotp")}
+              </button>
+              <button type="submit" className="btn btn-primary" disabled={busy}>
+                {t(locale, "web.auth.signIn.submitSecondFactor")}
+              </button>
+            </form>
+          )}
+        </div>
+      </div>
     </main>
   );
 }

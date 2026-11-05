@@ -5,6 +5,7 @@ import { api } from "../../lib/api/client";
 import { fetchCsrfToken } from "../../lib/api/auth";
 import { resolveLocale } from "../../lib/i18n";
 import { EnrollmentCeremony } from "../../lib/enrollment-ceremony";
+import { Icon } from "../../components/icons";
 
 /**
  * The bootstrap administrator's first visit (contract Authentication.setup):
@@ -57,38 +58,56 @@ function Setup() {
   }
 
   return (
-    <main>
-      <h1>{t(locale, "web.auth.setup.title")}</h1>
-      {enrollmentToken === null ? (
-        <form onSubmit={submit}>
-          {error !== null && <p role="alert">{error}</p>}
-          <label>
-            {t(locale, "web.auth.setup.tokenLabel")}
-            <input
-              value={setupToken}
-              autoComplete="off"
-              onChange={(event) => setSetupToken(event.target.value)}
-              required
-            />
-          </label>
-          <label>
-            {t(locale, "web.auth.enrollment.passwordLabel")}
-            <input
-              type="password"
-              value={password}
-              autoComplete="new-password"
-              minLength={12}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-            />
-          </label>
-          <button type="submit" disabled={busy}>
-            {t(locale, "web.auth.enrollment.passwordSubmit")}
-          </button>
-        </form>
-      ) : (
-        <EnrollmentCeremony enrollmentToken={enrollmentToken} locale={locale} />
-      )}
+    <main className="page">
+      <div className="auth-card panel">
+        <div className="panel-head">
+          <h2>{t(locale, "web.auth.setup.title")}</h2>
+        </div>
+        <div className="panel-body">
+          <div className="auth-brand">
+            <span className="brand-mark" aria-hidden="true">
+              <Icon name="shield" />
+            </span>
+            Patrol
+          </div>
+          {enrollmentToken === null ? (
+            <form className="form-grid" onSubmit={submit}>
+              {error !== null && (
+                <p className="banner" role="alert">
+                  {error}
+                </p>
+              )}
+              <label className="field">
+                <span>{t(locale, "web.auth.setup.tokenLabel")}</span>
+                <input
+                  className="input mono"
+                  value={setupToken}
+                  autoComplete="off"
+                  onChange={(event) => setSetupToken(event.target.value)}
+                  required
+                />
+              </label>
+              <label className="field">
+                <span>{t(locale, "web.auth.enrollment.passwordLabel")}</span>
+                <input
+                  className="input"
+                  type="password"
+                  value={password}
+                  autoComplete="new-password"
+                  minLength={12}
+                  onChange={(event) => setPassword(event.target.value)}
+                  required
+                />
+              </label>
+              <button type="submit" className="btn btn-primary" disabled={busy}>
+                {t(locale, "web.auth.enrollment.passwordSubmit")}
+              </button>
+            </form>
+          ) : (
+            <EnrollmentCeremony enrollmentToken={enrollmentToken} locale={locale} />
+          )}
+        </div>
+      </div>
     </main>
   );
 }

@@ -8,7 +8,9 @@ The prototype is the basis of the dashboard UI, inseparably linked to it: its in
 
 Six sections form the interface, each a hash route: Dashboard, Review, Violations, Notices, Titles, and Settings. The tab bar holds the first five; Settings is reached from the footer. Review, Violations, and Notices carry a badge with their pending count, where pending is candidates awaiting review, open violations, and draft notices respectively.
 
-A persistent top bar holds the section tabs, the language switch, the theme toggle, and Run scans. The footer carries Settings and the reset control.
+A persistent top bar holds the section tabs, the language switch, the theme toggle, and Run scans. The footer carries Settings.
+
+The footer's reset control is not carried over: in the prototype it resets the in-memory demo state, which the built service does not have — its state is server-side, and the only client-held state (theme, and the language before it is persisted) is reset where it is set.
 
 ## Language
 
@@ -94,4 +96,17 @@ Dialogs cover evidence detail, candidate evidence, the composed notice, and cata
 
 - The DeepSeek brief card, the siren toggle, and the prototype-state bar are demonstration aids. None is adopted by this design.
 - The KinoPoisk import was a prototype shortcut and is superseded by the catalogue entry decision: the add path searches the local catalogue and Wikidata, and KinoPoisk is not a browsing reference.
-- Breakpoints, spacing, and the component library's theme tokens are left to the build effort, constrained by `shadcn/ui` and TanStack Start conventions.
+- Breakpoints, spacing, and the component library's theme tokens are left to the build effort, constrained by `shadcn/ui` and TanStack Start conventions — the build ended up carrying the visual language through CSS custom properties rather than `shadcn/ui`, as "Deviations recorded by the build" records.
+
+## Deviations recorded by the build
+
+The build carries the prototype's visual language over as-is — palette, glass surfaces, type scale, density, chips, steppers, the paper document, skeletons, empty states, toasts, and the floating top bar — through CSS custom properties rather than `shadcn/ui`, which the deliberately-not-specified note permits. Where the built surface departs from the prototype, the departure and its reason are:
+
+- **The dashboard's radar visual is not carried.** The prototype's radar card animates a decorative sweep; it plots no data. The dashboard's specified content — counters, the engine row, the activity feed, the chart — is complete without it, so the engine row stands without the ornament.
+- **Run scans opens a group picker instead of scanning everything.** The prototype's button simulates a full scan instantly. The contract's manual scan (`POST /scans`) takes a title group and queues one scan per enabled engine, answering 202; the honest surface is a multi-select of title groups, one request per group, and a toast per outcome. The scans themselves run server-side, so no candidate count is available to toast at request time.
+- **Review rows are a semantic table, not the prototype's CSS-grid rows.** The column set, ordering, score bar, and chips follow the prototype at the same density; the markup stays a real `<table>` with column headers so screen readers keep the row/column structure.
+- **The notices list card carries the status chip; the stepper lives on the notice detail.** The prototype renders the stepper inside every list card. The built lifecycle actions (approval, delivery, acknowledgement) live on the detail, so that is where the stepper marks progress; the list card keeps identifier, recipient, violation count, signatory, drafting time, and status chip as specified.
+- **The titles card shows a paused chip instead of an active/paused switch, and no allowlist count.** The contract's titles list carries no allowlist count (a read-model gap to amend if the card needs it), and the pause action is a `PATCH` on the title, so the switch lives on the title detail where the write happens; the list marks the paused state.
+- **The chart's series palette.** The prototype's chart draws fixed semantic series (detected, resolved, notices). The built chart's series are data-driven groupings, so each series takes the next colour of the prototype's own accent set (red, green, blue, violet, amber), and a lone series draws as the prototype's filled area chart in red.
+- **Auth screens extend the language rather than translate it.** The prototype has no signed-out surface; the sign-in, setup, enrolment, and preferences screens render as centred cards on the same tokens, so the visual language holds before a session exists. The language switch persists through `PATCH /auth/preferences` when signed in and applies locally otherwise.
+- **Theming follows the OS before a choice exists.** The prototype defaults to dark unconditionally. The build keeps dark as the default look but lets an unchosen theme follow `prefers-color-scheme`, with the explicit toggle persisted in `localStorage` and applied before first paint; light remains the prototype's Gruvbox counterpart.

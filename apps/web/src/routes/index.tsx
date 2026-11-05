@@ -4,6 +4,8 @@ import { interpolate, t, type MessageKey } from "@patrol/i18n";
 import { axisStep } from "../lib/chart";
 import { api } from "../lib/api/client";
 import { useSession } from "../lib/session";
+import { Chip, EmptyState, EngineBadge, PageHead, Panel, Skeleton, Stat } from "../components/ui";
+import { Icon, type IconName } from "../components/icons";
 
 /**
  * The dashboard (docs/design/dashboard-ui.md "Dashboard" and "Title chart"):
@@ -125,6 +127,16 @@ const ENGINE_NAME_KEYS: Record<EngineQuota["engine"], MessageKey> = {
   yandex: "dashboard.chart.engine.yandex",
 };
 
+/** The activity feed's icon and tint, keyed by the wire's event kind. */
+const ACTIVITY_LOOK: Record<string, { icon: IconName; tone: "red" | "green" | "blue" }> = {
+  scan_succeeded: { icon: "radar", tone: "blue" },
+  scan_partial: { icon: "radar", tone: "red" },
+  scan_failed: { icon: "radar", tone: "red" },
+  review_decision: { icon: "eye", tone: "blue" },
+  notice_approved: { icon: "file", tone: "green" },
+  submission_acknowledged: { icon: "check", tone: "green" },
+};
+
 /** The tiles' (label key, value) pairs, destructured per metric so the
  *  rendering never depends on the tiles object's key order. */
 function tileEntries(
@@ -156,8 +168,11 @@ function tileEntries(
   ];
 }
 
-/** The stroke palette for a multi-series plot, one colour per series. */
-const SERIES_COLORS = ["#2563eb", "#dc2626", "#16a34a", "#9333ea", "#ea580c", "#0d9488"];
+/**
+ * The multi-series stroke palette: the prototype's own accent set, one colour
+ * per series; a lone series draws as the prototype's filled area in red.
+ */
+const SERIES_COLORS = ["--red", "--green", "--blue", "--violet", "--amber", "--blue-soft"];
 
 /** The plot's geometry, shared by the axis and the series. */
 const PLOT = { width: 640, height: 240, left: 48, right: 616, top: 12, bottom: 200 };
@@ -258,250 +273,334 @@ function Dashboard() {
     counters.candidatesToReview === 0 &&
     counters.noticesOnFile === 0 &&
     chartEmpty;
+  const exhaustedEngine = summary?.engines.find((engine) => engine.exhausted);
 
   return (
-    <main>
-      <h1>{t(locale, "web.dashboard.title")}</h1>
-      {error !== null && <p role="alert">{error}</p>}
-
-      {dashboardEmpty ? (
-        <p>
-          {t(locale, "web.dashboard.empty")}{" "}
-          <Link to="/review">{t(locale, "web.review.runScans")}</Link>
+    <main className="page">
+      <PageHead
+        eyebrow={t(locale, "web.dashboard.eyebrow")}
+        title={t(locale, "web.dashboard.title")}
+        note={t(locale, "web.dashboard.note")}
+      />
+      {error !== null && (
+        <p className="banner" role="alert">
+          {error}
         </p>
-      ) : (
-        <>
-          <section aria-label={t(locale, "web.dashboard.title")}>
-            {summary === null ? (
-              <ul aria-busy="true">
-                {[0, 1, 2, 3].map((index) => (
-                  <li key={index} style={{ opacity: 0.4 }}>
-                    {t(locale, "web.common.loading")}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <ul>
-                <li>
-                  <strong>{summary.counters.openViolations}</strong>{" "}
-                  {t(locale, "web.dashboard.counter.openViolations")}
-                </li>
-                <li>
-                  <strong>{summary.counters.candidatesToReview}</strong>{" "}
-                  {t(locale, "web.dashboard.counter.candidatesToReview")}
-                </li>
-                <li>
-                  <strong>{summary.counters.noticesOnFile}</strong>{" "}
-                  {t(locale, "web.dashboard.counter.noticesOnFile")}
-                </li>
-                <li>
-                  <strong>{summary.counters.acknowledgedSubmissions}</strong>{" "}
-                  {t(locale, "web.dashboard.counter.acknowledgedSubmissions")}
-                </li>
-              </ul>
-            )}
-          </section>
-
-          <section aria-label={t(locale, "web.dashboard.engines.title")}>
-            <h2>{t(locale, "web.dashboard.engines.title")}</h2>
-            {summary === null ? (
-              <p aria-busy="true" style={{ opacity: 0.4 }}>
-                {t(locale, "web.common.loading")}
-              </p>
-            ) : (
-              <ul>
-                {summary.engines.map((engine) => {
-                  const used =
-                    engine.scanReserved + engine.scanCommitted + engine.recheckReserved + engine.recheckCommitted;
-                  return (
-                    <li key={engine.engine}>
-                      <strong>{t(locale, ENGINE_NAME_KEYS[engine.engine])}</strong>{" "}
-                      {interpolate(t(locale, "web.dashboard.engines.allowance"), {
-                        allowance: String(engine.allowanceUnits),
-                      })}{" "}
-                      —{" "}
-                      {interpolate(t(locale, "web.dashboard.engines.used"), {
-                        used: String(used),
-                        percent: String(engine.percentUsed),
-                      })}
-                      {engine.exhausted && (
-                        <strong role="status"> · {t(locale, "web.dashboard.engines.exhausted")}</strong>
-                      )}
-                      {engine.routeDisabled && (
-                        <strong role="status"> · {t(locale, "web.dashboard.engines.routeDisabled")}</strong>
-                      )}
-                      {engine.alertLevel !== "normal" && (
-                        <span>
-                          {" "}
-                          ·{" "}
-                          {t(
-                            locale,
-                            engine.alertLevel === "critical"
-                              ? "web.dashboard.engines.alert.critical"
-                              : "web.dashboard.engines.alert.warning",
-                          )}
-                        </span>
-                      )}
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
-
-          <section aria-label={t(locale, "web.dashboard.activity.title")}>
-            <h2>{t(locale, "web.dashboard.activity.title")}</h2>
-            {summary === null ? (
-              <ul aria-busy="true">
-                {[0, 1, 2].map((index) => (
-                  <li key={index} style={{ opacity: 0.4 }}>
-                    {t(locale, "web.common.loading")}
-                  </li>
-                ))}
-              </ul>
-            ) : summary.activity.length === 0 ? (
-              <p>{t(locale, "web.dashboard.empty")}</p>
-            ) : (
-              <ul>
-                {summary.activity.map((entry) => (
-                  <li key={entry.id}>
-                    {entry.summary} · {relativeTime(entry.occurredAt)}{" "}
-                    {/* The design gives every feed entry the link to Notices;
-                        an entry that concerns a notice deep-links to it. */}
-                    {entry.noticeId !== undefined ? (
-                      <Link params={{ noticeId: entry.noticeId }} to="/notices/$noticeId">
-                        {t(locale, "web.dashboard.activity.goToNotices")}
-                      </Link>
-                    ) : (
-                      <Link to="/notices">{t(locale, "web.dashboard.activity.goToNotices")}</Link>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </section>
-        </>
       )}
 
-      <section aria-label={t(locale, "web.dashboard.chart.title")}>
-        <h2>{t(locale, "web.dashboard.chart.title")}</h2>
-        {/* The metric selector is a segmented filter over one shared panel
-            (the plot, tiles, and inspector below), not one tab panel per
-            metric — so it renders as a labelled group of pressed-state
-            buttons rather than an ARIA tablist it cannot honour. */}
-        <p role="group" aria-label={t(locale, "web.dashboard.chart.metric")}>
-          {(Object.keys(METRIC_KEYS) as Metric[]).map((value) => (
-            <button
-              key={value}
-              aria-pressed={metric === value}
-              onClick={() => setMetric(value)}
-            >
-              {t(locale, METRIC_KEYS[value])}
-            </button>
-          ))}
-        </p>
-        <p>
-          <label>
-            {t(locale, "web.dashboard.chart.window")}:{" "}
-            <select
-              value={windowDays}
-              onChange={(event) => setWindowDays(Number(event.target.value) as 7 | 14 | 30)}
-            >
-              {[7, 14, 30].map((value) => (
-                <option key={value} value={value}>
-                  {interpolate(t(locale, "web.dashboard.chart.window.days"), { count: String(value) })}
-                </option>
+      {dashboardEmpty ? (
+        <EmptyState
+          title={t(locale, "web.dashboard.empty.title")}
+          action={
+            <Link className="btn btn-primary" to="/review">
+              <Icon name="radar" size="sm" />
+              <span>{t(locale, "web.review.runScans")}</span>
+            </Link>
+          }
+        >
+          {t(locale, "web.dashboard.empty")}
+        </EmptyState>
+      ) : (
+        <div className="stack">
+          {/* The four counters, each deep-linking to the screen it counts. */}
+          {summary === null || counters === undefined ? (
+            <div className="stats" aria-busy="true">
+              {[0, 1, 2, 3].map((index) => (
+                <div key={index} className="stat">
+                  <span className="stat-icon" aria-hidden="true">
+                    <Icon name="clock" />
+                  </span>
+                  <Skeleton variant="stat" />
+                </div>
               ))}
-            </select>
-          </label>{" "}
-          <label>
-            {t(locale, "web.dashboard.chart.groupBy")}:{" "}
-            <select
-              value={groupBy}
-              onChange={(event) => setGroupBy(event.target.value as Grouping)}
-            >
-              {(Object.keys(GROUPING_KEYS) as Grouping[]).map((value) => (
-                <option key={value} value={value}>
-                  {t(locale, GROUPING_KEYS[value])}
-                </option>
-              ))}
-            </select>
-          </label>
-          {metric === "resolved_violations" && (
-            <label>
-              {" "}
-              {t(locale, "web.dashboard.chart.basis")}:{" "}
-              <select value={basis} onChange={(event) => setBasis(event.target.value as Basis)}>
-                {(Object.keys(BASIS_KEYS) as Basis[]).map((value) => (
-                  <option key={value} value={value}>
-                    {t(locale, BASIS_KEYS[value])}
-                  </option>
-                ))}
-              </select>
-            </label>
+            </div>
+          ) : (
+            <div className="stats">
+              <Stat
+                icon="shield"
+                tone="red"
+                value={counters.openViolations}
+                label={t(locale, "web.dashboard.counter.openViolations")}
+                href="/violations"
+              />
+              <Stat
+                icon="radar"
+                tone="amber"
+                value={counters.candidatesToReview}
+                label={t(locale, "web.dashboard.counter.candidatesToReview")}
+                href="/review"
+              />
+              <Stat
+                icon="file"
+                tone="blue"
+                value={counters.noticesOnFile}
+                label={t(locale, "web.dashboard.counter.noticesOnFile")}
+                href="/notices"
+              />
+              <Stat
+                icon="check"
+                tone="green"
+                value={counters.acknowledgedSubmissions}
+                label={t(locale, "web.dashboard.counter.acknowledgedSubmissions")}
+                href="/submissions"
+              />
+            </div>
           )}
-        </p>
 
-        {chartError !== null && <p role="alert">{chartError}</p>}
-        {chart === null ? (
-          <div aria-busy="true" style={{ opacity: 0.4, height: PLOT.height }}>
-            {t(locale, "web.common.loading")}
-          </div>
-        ) : (
-          <>
-            <TitlePlot
-              body={chart}
-              selectedDay={selectedDay}
-              onSelectDay={setSelectedDay}
-              dayLabel={dayLabel}
-              locale={locale}
-            />
-            {chart.groupingFallback && (
-              <p role="note">{t(locale, "web.dashboard.chart.fallbackHint")}</p>
-            )}
-            {chartEmpty ? (
-              <p>{t(locale, "web.dashboard.chart.empty")}</p>
-            ) : (
-              <Tiles metric={chart.metric} tiles={chart.tiles} locale={locale} />
-            )}
-            {selectedDay !== null && chart.days[selectedDay] !== undefined && (
-              <div>
-                <h3>{dayLabel(selectedDay, chart.days.length)}</h3>
-                <ul>
-                  {chart.series.map((series) => (
-                    <li key={series.key}>
-                      {series.label}: <strong>{series.values[selectedDay]}</strong>
-                    </li>
-                  ))}
-                </ul>
+          {/* The per-engine quota banner: one exhausted engine never blocks
+              the others (States: quota exhausted). */}
+          {exhaustedEngine !== undefined && (
+            <p className="banner" role="status">
+              <Icon name="bolt" size="sm" />
+              <span>
+                {interpolate(t(locale, "web.dashboard.engines.exhaustedBanner"), {
+                  engine: t(locale, ENGINE_NAME_KEYS[exhaustedEngine.engine]),
+                })}
+              </span>
+            </p>
+          )}
+
+          <div className="dash-grid">
+            {/* The title chart occupies the main panel. */}
+            <Panel title={t(locale, "web.dashboard.chart.title")}>
+              <div
+                role="group"
+                aria-label={t(locale, "web.dashboard.chart.metric")}
+                className="chart-toolbar"
+              >
+                {(Object.keys(METRIC_KEYS) as Metric[]).map((value) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className="chart-tab"
+                    aria-pressed={metric === value}
+                    onClick={() => setMetric(value)}
+                  >
+                    {t(locale, METRIC_KEYS[value])}
+                  </button>
+                ))}
               </div>
-            )}
-          </>
-        )}
-      </section>
+              <div className="chart-toolbar">
+                <div
+                  role="group"
+                  aria-label={t(locale, "web.dashboard.chart.window")}
+                  className="chart-toolbar"
+                  style={{ gap: 3, padding: 3, border: "1px solid var(--border-soft)", borderRadius: 999, background: "var(--surface-2)" }}
+                >
+                  {([7, 14, 30] as const).map((value) => (
+                    <button
+                      key={value}
+                      type="button"
+                      className="chart-tab"
+                      aria-pressed={windowDays === value}
+                      onClick={() => setWindowDays(value)}
+                    >
+                      {interpolate(t(locale, "web.dashboard.chart.window.days"), { count: String(value) })}
+                    </button>
+                  ))}
+                </div>
+                <label className="field" style={{ gap: 4 }}>
+                  <span className="field-label">{t(locale, "web.dashboard.chart.groupBy")}</span>
+                  <select
+                    className="select select--sm"
+                    value={groupBy}
+                    onChange={(event) => setGroupBy(event.target.value as Grouping)}
+                  >
+                    {(Object.keys(GROUPING_KEYS) as Grouping[]).map((value) => (
+                      <option key={value} value={value}>
+                        {t(locale, GROUPING_KEYS[value])}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                {metric === "resolved_violations" && (
+                  <div
+                    role="group"
+                    aria-label={t(locale, "web.dashboard.chart.basis")}
+                    className="chart-toolbar"
+                    style={{ gap: 3, padding: 3, border: "1px solid var(--border-soft)", borderRadius: 999, background: "var(--surface-2)" }}
+                  >
+                    {(Object.keys(BASIS_KEYS) as Basis[]).map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        className="chart-tab"
+                        aria-pressed={basis === value}
+                        onClick={() => setBasis(value)}
+                      >
+                        {t(locale, BASIS_KEYS[value])}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {chartError !== null && (
+                <p className="banner" role="alert">
+                  {chartError}
+                </p>
+              )}
+              {chart === null ? (
+                <div aria-busy="true" style={{ marginTop: 12 }}>
+                  <Skeleton variant="chart" />
+                </div>
+              ) : (
+                <>
+                  <TitlePlot
+                    body={chart}
+                    selectedDay={selectedDay}
+                    onSelectDay={setSelectedDay}
+                    dayLabel={dayLabel}
+                    locale={locale}
+                  />
+                  {chart.groupingFallback && (
+                    <p className="chart-hint" role="note">
+                      {t(locale, "web.dashboard.chart.fallbackHint")}
+                    </p>
+                  )}
+                  {chartEmpty ? (
+                    <p className="chart-note">{t(locale, "web.dashboard.chart.empty")}</p>
+                  ) : (
+                    <div className="trend-kpis" style={{ marginTop: 14 }}>
+                      {tileEntries(chart.metric, chart.tiles).map(([key, value]) => (
+                        <div key={key} className="trend-kpi">
+                          <span className="trend-kpi-num">{value}</span>
+                          <span className="trend-kpi-label">{t(locale, key)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {/* The day inspector: every series value for the picked day. */}
+                  {selectedDay !== null && chart.days[selectedDay] !== undefined && (
+                    <div className="trend-inspector">
+                      <span className="trend-inspector-date">{dayLabel(selectedDay, chart.days.length)}</span>
+                      {chart.series.map((series, seriesIndex) => (
+                        <span key={series.key}>
+                          <span
+                            className="legend-dot"
+                            style={{
+                              background: `var(${SERIES_COLORS[seriesIndex % SERIES_COLORS.length]})`,
+                              marginRight: 6,
+                              verticalAlign: "middle",
+                            }}
+                            aria-hidden="true"
+                          />
+                          {series.label}: <strong>{series.values[selectedDay]}</strong>
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </Panel>
+
+            <div className="dash-col">
+              {/* The engine row: every engine's quota, independently. */}
+              <Panel title={t(locale, "web.dashboard.engines.title")}>
+                <div className="engines">
+                  {summary === null
+                    ? [0, 1, 2].map((index) => (
+                        <div key={index} className="engine-row">
+                          <Skeleton variant="short" />
+                        </div>
+                      ))
+                    : summary.engines.map((engine) => {
+                        const used =
+                          engine.scanReserved + engine.scanCommitted + engine.recheckReserved + engine.recheckCommitted;
+                        const usedText = interpolate(t(locale, "web.dashboard.engines.used"), {
+                          used: String(used),
+                          percent: String(engine.percentUsed),
+                        });
+                        return (
+                          <div key={engine.engine} className="engine-row">
+                            <EngineBadge engine={engine.engine} />
+                            <span className="name">{t(locale, ENGINE_NAME_KEYS[engine.engine])}</span>
+                            <span className="engine-quota">
+                              {engine.exhausted ? (
+                                <Chip tone="danger" dot>
+                                  {t(locale, "web.dashboard.engines.exhausted")}
+                                </Chip>
+                              ) : engine.alertLevel !== "normal" ? (
+                                <Chip tone="amber" dot>
+                                  {usedText} ·{" "}
+                                  {t(
+                                    locale,
+                                    engine.alertLevel === "critical"
+                                      ? "web.dashboard.engines.alert.critical"
+                                      : "web.dashboard.engines.alert.warning",
+                                  )}
+                                </Chip>
+                              ) : (
+                                <Chip tone="live" dot>
+                                  {usedText}
+                                </Chip>
+                              )}
+                            </span>
+                            <span className="meta">
+                              {interpolate(t(locale, "web.dashboard.engines.allowance"), {
+                                allowance: String(engine.allowanceUnits),
+                              })}
+                              {engine.routeDisabled && ` · ${t(locale, "web.dashboard.engines.routeDisabled")}`}
+                            </span>
+                          </div>
+                        );
+                      })}
+                </div>
+              </Panel>
+
+              {/* The five-entry activity feed. */}
+              <Panel
+                title={t(locale, "web.dashboard.activity.title")}
+                actions={
+                  <Link to="/notices">{t(locale, "web.dashboard.activity.goToNotices")}</Link>
+                }
+              >
+                <div className="activity">
+                  {summary === null
+                    ? [0, 1, 2].map((index) => (
+                        <div key={index} className="act">
+                          <Skeleton variant="wide" />
+                        </div>
+                      ))
+                    : summary.activity.length === 0
+                      ? <p className="page-note">{t(locale, "web.dashboard.empty")}</p>
+                      : summary.activity.slice(0, 5).map((entry) => {
+                          const look = ACTIVITY_LOOK[entry.kind] ?? { icon: "clock" as IconName, tone: "blue" as const };
+                          return (
+                            <div key={entry.id} className="act" data-tone={look.tone}>
+                              <span className="act-icon">
+                                <Icon name={look.icon} />
+                              </span>
+                              <span className="act-main">
+                                <span className="act-text">{entry.summary}</span>
+                                {/* The design gives every feed entry the link to
+                                    Notices; an entry that concerns a notice
+                                    deep-links to it. */}
+                                <div className="act-link">
+                                  {entry.noticeId !== undefined ? (
+                                    <Link params={{ noticeId: entry.noticeId }} to="/notices/$noticeId">
+                                      {t(locale, "web.dashboard.activity.goToNotices")}
+                                    </Link>
+                                  ) : (
+                                    <Link to="/notices">{t(locale, "web.dashboard.activity.goToNotices")}</Link>
+                                  )}
+                                </div>
+                              </span>
+                              <span className="act-time">{relativeTime(entry.occurredAt)}</span>
+                            </div>
+                          );
+                        })}
+                </div>
+              </Panel>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
 
-/** The chart's three tiles, whatever the metric. */
-function Tiles(props: {
-  metric: Metric;
-  tiles: TrackedTiles | ViolationsTiles | ResolvedTiles;
-  locale: "en" | "ru";
-}) {
-  const { metric, tiles, locale } = props;
-  return (
-    <ul>
-      {tileEntries(metric, tiles).map(([key, value]) => (
-        <li key={key}>
-          <strong>{value}</strong> {t(locale, key)}
-        </li>
-      ))}
-    </ul>
-  );
-}
-
-/** The plot itself: axis, series, guide, and the clickable day columns. */
+/** The plot itself: axis, series, guide, legend, and the clickable days. */
 function TitlePlot(props: {
   body: ChartBody;
   selectedDay: number | null;
@@ -547,6 +646,7 @@ function TitlePlot(props: {
       <svg
         viewBox={`0 0 ${width} ${height}`}
         width="100%"
+        className="chart-svg"
         role="group"
         aria-label={t(locale, "web.dashboard.chart.title")}
       >
@@ -558,18 +658,17 @@ function TitlePlot(props: {
               x2={right}
               y1={y(tick * step)}
               y2={y(tick * step)}
-              stroke="#d1d5db"
-              strokeWidth={1}
+              className="trend-grid-line"
             />
-            <text x={left - 6} y={y(tick * step) + 4} textAnchor="end" fontSize={11}>
+            <text x={left - 6} y={y(tick * step) + 4} textAnchor="end" className="trend-axis">
               {tick * step}
             </text>
           </g>
         ))}
-        <line x1={left} x2={right} y1={bottom} y2={bottom} stroke="#9ca3af" strokeWidth={1} />
+        <line x1={left} x2={right} y1={bottom} y2={bottom} className="trend-grid-line" />
         {/* The X labels: first, middle, last — the last reads Today. */}
         {labelIndexes.map((index) => (
-          <text key={index} x={x(index)} y={bottom + 18} textAnchor="middle" fontSize={11}>
+          <text key={index} x={x(index)} y={bottom + 18} textAnchor="middle" className="trend-axis">
             {dayLabel(index, days)}
           </text>
         ))}
@@ -580,23 +679,39 @@ function TitlePlot(props: {
             x2={x(selectedDay)}
             y1={topEdge}
             y2={bottom}
-            stroke="#6b7280"
-            strokeWidth={1}
-            strokeDasharray="4 3"
+            className="trend-guide"
           />
         )}
-        {/* A single series fills its area; several series are lines. */}
+        {/* A single series fills its area; several series are lines with
+            points, per the chart definition. */}
         {areaPath !== null ? (
-          <path d={areaPath} fill="#93c5fd" stroke={SERIES_COLORS[0]} strokeWidth={2} />
+          <>
+            <path d={areaPath} className="trend-area" style={{ fill: "var(--red)" }} />
+            <path
+              d={areaPath}
+              className="trend-line"
+              style={{ stroke: "var(--red)" }}
+            />
+          </>
         ) : (
           series.map((entry, seriesIndex) => (
-            <polyline
-              key={entry.key}
-              fill="none"
-              stroke={SERIES_COLORS[seriesIndex % SERIES_COLORS.length]}
-              strokeWidth={2}
-              points={entry.values.map((value, index) => `${x(index)},${y(value)}`).join(" ")}
-            />
+            <g key={entry.key}>
+              <polyline
+                className="trend-line"
+                style={{ stroke: `var(${SERIES_COLORS[seriesIndex % SERIES_COLORS.length]})` }}
+                points={entry.values.map((value, index) => `${x(index)},${y(value)}`).join(" ")}
+              />
+              {entry.values.map((value, index) => (
+                <circle
+                  key={index}
+                  cx={x(index)}
+                  cy={y(value)}
+                  r={2.6}
+                  className="trend-dot"
+                  style={{ fill: `var(${SERIES_COLORS[seriesIndex % SERIES_COLORS.length]})` }}
+                />
+              ))}
+            </g>
           ))
         )}
         {/* One invisible column per day: the day inspector's handle. The
@@ -610,6 +725,7 @@ function TitlePlot(props: {
             width={Math.max(6, plotWidth / Math.max(1, days - 1))}
             height={plotHeight}
             fill="transparent"
+            className="trend-hit"
             role="button"
             tabIndex={0}
             aria-label={dayLabel(index, days)}
@@ -625,24 +741,17 @@ function TitlePlot(props: {
         ))}
       </svg>
       {!singleSeries && (
-        <figcaption>
-          <ul style={{ listStyle: "none", padding: 0 }}>
-            {series.map((entry, seriesIndex) => (
-              <li key={entry.key} style={{ display: "inline-block", marginRight: "1rem" }}>
-                <span
-                  aria-hidden="true"
-                  style={{
-                    display: "inline-block",
-                    width: "0.75rem",
-                    height: "0.75rem",
-                    background: SERIES_COLORS[seriesIndex % SERIES_COLORS.length],
-                    marginRight: "0.25rem",
-                  }}
-                />
-                {entry.label}
-              </li>
-            ))}
-          </ul>
+        <figcaption className="trend-legend">
+          {series.map((entry, seriesIndex) => (
+            <span key={entry.key}>
+              <span
+                className="legend-dot"
+                style={{ background: `var(${SERIES_COLORS[seriesIndex % SERIES_COLORS.length]})`, marginRight: 6, verticalAlign: "middle" }}
+                aria-hidden="true"
+              />
+              {entry.label}
+            </span>
+          ))}
         </figcaption>
       )}
     </figure>

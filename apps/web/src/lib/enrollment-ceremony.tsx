@@ -65,55 +65,64 @@ export function EnrollmentCeremony(props: {
   }
 
   return (
-    <>
-      {error !== null && <p role="alert">{error}</p>}
+    <div className="form-grid">
+      {error !== null && (
+        <p className="banner" role="alert">
+          {error}
+        </p>
+      )}
       {recoveryCodes !== null ? (
-        <section>
+        <section className="form-grid">
           <h2>{t(locale, "web.auth.enrollment.recoveryTitle")}</h2>
-          <p>{t(locale, "web.auth.enrollment.recoveryOnce")}</p>
-          <ul>
+          <p className="settings-lede">{t(locale, "web.auth.enrollment.recoveryOnce")}</p>
+          <ul className="option-list mono">
             {recoveryCodes.map((recoveryCode) => (
-              <li key={recoveryCode}>
+              <li key={recoveryCode} className="option">
                 <code>{recoveryCode}</code>
               </li>
             ))}
           </ul>
-          <p>{t(locale, "web.auth.enrollment.done")}</p>
-          <button type="button" onClick={() => navigate({ to: "/" })}>
+          <p className="settings-lede">{t(locale, "web.auth.enrollment.done")}</p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => navigate({ to: "/" })}
+          >
             {t(locale, "web.auth.enrollment.done")}
           </button>
         </section>
       ) : secret === null ? (
-        <form onSubmit={begin}>
-          <button type="submit" disabled={busy}>
+        <form className="form-grid" onSubmit={begin}>
+          <button type="submit" className="btn btn-primary" disabled={busy}>
             {t(locale, "web.auth.enrollment.start")}
           </button>
         </form>
       ) : (
-        <form onSubmit={confirm}>
-          <p>
+        <form className="form-grid" onSubmit={confirm}>
+          <p className="settings-lede">
             {t(locale, "web.auth.enrollment.secretLabel")}: <code>{secret}</code>
           </p>
           {otpauthUri !== null && (
-            <p>
+            <p className="settings-lede">
               {t(locale, "web.auth.enrollment.uriLabel")}{" "}
               <a href={otpauthUri}>{otpauthUri}</a>
             </p>
           )}
-          <label>
-            {t(locale, "web.auth.enrollment.codeLabel")}
+          <label className="field">
+            <span>{t(locale, "web.auth.enrollment.codeLabel")}</span>
             <input
+              className="input"
               inputMode="numeric"
               value={code}
               onChange={(event) => setCode(event.target.value)}
               required
             />
           </label>
-          <button type="submit" disabled={busy}>
+          <button type="submit" className="btn btn-primary" disabled={busy}>
             {t(locale, "web.auth.enrollment.confirm")}
           </button>
         </form>
       )}
-    </>
+    </div>
   );
 }
