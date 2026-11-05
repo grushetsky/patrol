@@ -247,16 +247,33 @@ describe("the scans API", () => {
        values ($1, $2, 'https://www.Example.com/watch/', 'example.com/watch', 1, 'T', 's', 'en', $3, 'fake:google:q', 'example.com', 'example.com')`,
       [scan.rows[0].id, query.rows[0].id, FROZEN_NOW],
     );
-    // A row the matching step paired into a candidate carries the id; the
-    // pairing arrives with slice 5, but the field is emitted the day it
-    // stands on the row.
+    // A row the matching step paired into a candidate carries the id: the
+    // candidates table stands since slice 5a, so seed the pair for real.
+    const candidate = await world.pool.query<{ id: string }>(
+      `insert into candidates
+         (tracked_title_id, url, normalized_url, host, registrable_domain, source, engine,
+          engines, best_rank, matched_variant_id, matched_variant, score, band,
+          score_components, reputation, first_seen_at, last_observed_at)
+       select $1, 'https://www.Example.com/download', 'example.com/download', 'example.com',
+              'example.com', 'serp', 'google', '{google}', 2, v.id,
+              jsonb_build_object('id', v.id, 'text', v.text, 'kind', v.kind,
+                                 'language', v.language, 'script', v.script),
+              0.6, 'c',
+              '{"titleMatch":0.6,"signals":[],"reputation":0}'::jsonb,
+              '{"registrableDomain":"example.com","confirmedViolations":0,"bonus":0,"blocklisted":false}'::jsonb,
+              $2, $2
+         from title_variants v
+        where v.id = (select original_variant_id from tracked_titles where id = $1)
+       returning id`,
+      [catalogue.titleId, FROZEN_NOW],
+    );
     await world.pool.query(
       `insert into search_results
          (scan_id, query_id, url, normalized_url, rank, title, snippet, locale, observed_at,
           raw_payload_ref, host, registrable_domain, candidate_id)
        values ($1, $2, 'https://www.Example.com/download', 'example.com/download', 2, 'D', 's', 'en', $3, 'fake:google:q', 'example.com', 'example.com',
-               '00000000-0000-7000-8000-0000000000c0')`,
-      [scan.rows[0].id, query.rows[0].id, FROZEN_NOW],
+               $4)`,
+      [scan.rows[0].id, query.rows[0].id, FROZEN_NOW, candidate.rows[0].id],
     );
 
     const results = await world.app.inject({
@@ -271,11 +288,12 @@ describe("the scans API", () => {
       normalizedUrl: "example.com/watch",
       host: "example.com",
     });
-    // An unpaired row omits the field entirely.
+    // An unpaired row omits the field entirely; a paired row names the
+    // standing candidate.
     expect(results.json().items[0]).not.toHaveProperty("candidateId");
     expect(results.json().items[1]).toMatchObject({
       url: "https://www.Example.com/download",
-      candidateId: "00000000-0000-7000-8000-0000000000c0",
+      candidateId: candidate.rows[0].id,
     });
     expect(getValidator("SearchResultPage")(results.json())).toBe(true);
 

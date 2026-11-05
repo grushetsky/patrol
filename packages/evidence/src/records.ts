@@ -1,9 +1,11 @@
 import type { Pool } from "pg";
 import {
+  entryAppliesInTitleContext,
   findAllowlistHit,
   hostForUrl,
   normalizeUrlKey,
   registrableDomainFor,
+  type AllowlistTitleContext,
 } from "@patrol/domain";
 import type { EvidenceArtifactKind } from "./store.js";
 
@@ -135,8 +137,11 @@ export interface EnqueueCaptureDeps {
  *
  * 1. **Allowlist before the fetch.** A URL matching a rights-holder-scoped
  *    entry is never fetched: the capture row records the skip and no
- *    evidence row is ever created. (Scoped entries need a candidate's
- *    title context and join the guard with slice 5.)
+ *    evidence row is ever created. When the caller passes the candidate's
+ *    title context (formation does), the title-group and tracked-title
+ *    entries scoped to that pair join the check, and a licensed destination
+ *    additionally needs the observation's territory — the same rule the
+ *    formation check applies.
  * 2. **An individualized objection stops capture.** A host under an active
  *    objection refuses the enqueue — the 409 host_objection semantics the
  *    contract carries — until an operator clears it.
@@ -152,12 +157,18 @@ export interface EnqueueCaptureDeps {
  */
 export async function enqueueCapture(
   deps: EnqueueCaptureDeps,
-  input: { url: string; reason: CaptureReason; pointKey?: string },
+  input: {
+    url: string;
+    reason: CaptureReason;
+    pointKey?: string;
+    /** The candidate's title context, when the enqueue is a candidate's. */
+    context?: AllowlistTitleContext;
+  },
 ): Promise<EnqueueCaptureResult> {
   const normalizedUrl = normalizeUrlKey(input.url);
   const pointKey = input.pointKey ?? defaultPointKey(input.reason, deps.now);
 
-  const allowlisted = await allowlistHitForUrl(deps.pool, input.url);
+  const allowlisted = await allowlistHitForUrl(deps.pool, input.url, input.context);
   if (allowlisted !== null) {
     const id = await insertCaptureRow(deps, input, normalizedUrl, pointKey, {
       state: "skipped",
@@ -245,29 +256,53 @@ async function insertCaptureRow(
 
 /**
  * The allowlist guard's answer for a URL: the winning entry among the
- * rights-holder-scoped rows, or null. Scoped entries (a group's or title's)
- * need the candidate's title context to apply and join with slice 5.
+ * applicable rows, or null. Without a title context only the rights-holder
+ * entries apply; with one — the candidate's, passed by formation — the
+ * title-group and tracked-title entries scoped to that pair join, and a
+ * licensed destination additionally needs the context's territory, the
+ * same rule the candidate store's formation check applies. TODO(slice-5b):
+ * the run-time re-check still passes no context — the capture row carries
+ * no title pairing — so a scoped entry landing between the enqueue and the
+ * fetch is seen only once 5b carries the pair onto the capture itself.
  */
 export async function allowlistHitForUrl(
   pool: Pool,
   url: string,
+  context?: AllowlistTitleContext,
 ): Promise<{ kind: string; matchKind: string; value: string } | null> {
   const result = await pool.query<{
     kind: "official_domain" | "licensed_destination" | "neutral_source";
     match_kind: "host" | "url_prefix";
     value: string;
+    scope: "rights_holder" | "title_group" | "tracked_title";
+    title_group_id: string | null;
+    tracked_title_id: string | null;
+    territory: string | null;
   }>(
-    "select kind, match_kind, value from allowlist_entries where scope = 'rights_holder'",
+    `select kind, match_kind, value, scope, title_group_id, tracked_title_id, territory
+       from allowlist_entries
+      where scope = 'rights_holder'
+         or (scope = 'title_group' and title_group_id = $1)
+         or (scope = 'tracked_title' and tracked_title_id = $2)`,
+    [context?.titleGroupId ?? null, context?.trackedTitleId ?? null],
   );
-  const hit = findAllowlistHit(
-    result.rows.map((row) => ({
-      kind: row.kind,
-      matchKind: row.match_kind,
-      value: row.value,
-    })),
-    url,
-  );
-  return hit;
+  const applicable = result.rows
+    .filter((row) =>
+      context === undefined
+        ? row.scope === "rights_holder"
+        : entryAppliesInTitleContext(
+            {
+              scope: row.scope,
+              titleGroupId: row.title_group_id,
+              trackedTitleId: row.tracked_title_id,
+              kind: row.kind,
+              territory: row.territory,
+            },
+            context,
+          ),
+    )
+    .map((row) => ({ kind: row.kind, matchKind: row.match_kind, value: row.value }));
+  return findAllowlistHit(applicable, url);
 }
 
 /** One evidence row (the contract's Evidence). */

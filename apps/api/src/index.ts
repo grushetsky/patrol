@@ -42,6 +42,7 @@ async function boot(): Promise<void> {
     mail: new ConsoleMailTransport(),
     schemaStamp: () => readSchemaStamp(pool),
     dispatcher: producer.dispatcher,
+    captureDispatch: producer.captureDispatch,
   });
 
   const shutdown = async (signal: string) => {

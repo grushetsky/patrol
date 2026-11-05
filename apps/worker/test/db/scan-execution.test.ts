@@ -149,7 +149,7 @@ describe("a group scan end to end", () => {
     await pool.end();
   });
 
-  it("refuses every update to stored search results", async () => {
+  it("refuses every update to stored search results but the candidate pairing", async () => {
     const pool = testPool();
     const clock = controlledClock("2026-03-02T10:00:00.000Z");
     const world = await seedWorld(pool);
@@ -163,7 +163,25 @@ describe("a group scan end to end", () => {
     await runNextScan(executor(pool, clock, fake), "google");
     await expect(
       pool.query("update search_results set rank = 99 where scan_id = $1", [scan.id]),
-    ).rejects.toThrow(/never updated/i);
+    ).rejects.toThrow(/never edited/i);
+    // The pairing link alone is writable: candidate formation attaches the
+    // candidate a row paired into, which the insert could not know.
+    const candidate = await pool.query<{ id: string }>(
+      "select id from candidates limit 1",
+    );
+    await expect(
+      pool.query("update search_results set candidate_id = $1 where scan_id = $2", [
+        candidate.rows[0].id,
+        scan.id,
+      ]),
+    ).resolves.toBeTruthy();
+    // And writable one-way: a paired row never unpairs, because the pairing
+    // is as much provenance as the rank beside it.
+    await expect(
+      pool.query("update search_results set candidate_id = null where scan_id = $1", [
+        scan.id,
+      ]),
+    ).rejects.toThrow(/never edited/i);
     await pool.end();
   });
 

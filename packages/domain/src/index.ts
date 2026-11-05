@@ -45,6 +45,7 @@ export type { EngineQueueName } from "./queues.js";
 export {
   ALLOWLIST_TIER_ORDER,
   allowlistTier,
+  entryAppliesInTitleContext,
   entryMatchesUrl,
   findAllowlistHit,
   normalizeAllowlistValue,
@@ -56,4 +57,68 @@ export type {
   AllowlistOrigin,
   AllowlistScope,
   AllowlistTier,
+  AllowlistTitleContext,
 } from "./allowlist.js";
+export { matchingKey, normalizeForMatching } from "./matching/normalizer.js";
+export {
+  EXACT_MATCH_SCORE,
+  NO_MATCH_SCORE,
+  PARTIAL_MATCH_SCORE,
+  bestVariantMatch,
+  containsCompleteTokenSequence,
+  matchVariant,
+  urlSlugKey,
+} from "./matching/matcher.js";
+export type {
+  MatchablePage,
+  MatchableVariant,
+  TitleMatch,
+  TitleMatchKind,
+} from "./matching/matcher.js";
+export { isoDurationSeconds, isPlayerFrameUrl, parseSidecar } from "./matching/sidecar.js";
+export type { PageFacts } from "./matching/sidecar.js";
+export {
+  DURATION_TOLERANCE,
+  SEASON_EPISODE_THRESHOLD,
+  evaluateSignals,
+} from "./matching/signals.js";
+export type {
+  FiredSignal,
+  SignalEvaluationInput,
+  SignalKind,
+} from "./matching/signals.js";
+export {
+  BLOCKLIST_BONUS,
+  REPUTATION_CAP,
+  reputationContribution,
+  reputationSnapshot,
+} from "./matching/reputation.js";
+export type { ReputationSnapshot } from "./matching/reputation.js";
+export {
+  ADDITIONAL_SIGNAL_WEIGHT,
+  DEFAULT_BAND_BOUNDARIES,
+  FIRST_SIGNAL_WEIGHT,
+  SIGNALS_CAP,
+  assembleScore,
+  bandForScore,
+  roundScore,
+} from "./matching/score.js";
+export type {
+  AssembledScore,
+  BandBoundaries,
+  ScoreBand,
+  ScoreComponents,
+} from "./matching/score.js";
+export {
+  candidateDedupKey,
+  initialCandidateScore,
+  scoreFromPage,
+  variantSnapshot,
+} from "./matching/formation.js";
+export type {
+  FormationTitle,
+  FormationVariant,
+  ReputationFacts,
+  ScoredCandidate,
+  VariantSnapshot,
+} from "./matching/formation.js";

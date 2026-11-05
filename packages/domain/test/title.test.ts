@@ -26,7 +26,10 @@ describe("normalizeTitleText", () => {
   });
 
   it("case folds non-latin scripts", () => {
-    expect(normalizeTitleText("ΣΊΣΥΦΟΣ")).toBe("σισυφος");
+    // The final-sigma fold runs after the lowercase, so the uppercase and
+    // the typed-lowercase word end on the same medial σ.
+    expect(normalizeTitleText("ΣΊΣΥΦΟΣ")).toBe("σισυφοσ");
+    expect(normalizeTitleText("ΣΟΦΟΣ")).toBe(normalizeTitleText("σοφος"));
     // Ы is not a mark, but Ё decomposes to е + diaeresis and the fold drops
     // the diaeresis: the key loses the mark, the native string keeps it.
     expect(normalizeTitleText("Ёлка")).toBe("елка");

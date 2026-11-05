@@ -3,7 +3,7 @@ import { Pool } from "pg";
 import pino from "pino";
 import PgBoss from "pg-boss";
 import { assertSchema, expectedSchemaStamp } from "@patrol/db";
-import { S3EvidenceStore, s3ConfigFromEnv } from "@patrol/evidence";
+import { S3EvidenceStore, enqueueCapture, s3ConfigFromEnv } from "@patrol/evidence";
 import { loadWorkerConfig, packageVersion } from "./config.js";
 import { FakeSerpAcquisitor } from "./acquisition/fake.js";
 import { DataForSeoAdapter } from "./acquisition/dataforseo.js";
@@ -187,6 +187,15 @@ async function boot(): Promise<void> {
     adapters,
     retryDelaysMs: config.retryDelaysMs,
     sleep: (ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
+    // Candidate formation's detection captures ride the same enqueue port
+    // the HTTP surface uses: its guards (allowlist, objection, freshness)
+    // run before any fetch, and the dispatch wakes the capture queue.
+    enqueueCapture: (input) =>
+      enqueueCapture(
+        { pool, now: config.now, dispatch: dispatchCapture },
+        input,
+      ),
+    log: (message, extra) => log.info({ ...extra, worker: "scan" }, message),
   };
 
   await boss.work<{ engine?: "google" | "yandex" }>(

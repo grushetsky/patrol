@@ -57,8 +57,8 @@ export declare function readLadder(pool: Pool, input: {
  * - Any other scan whose completion served a rung that was due ADVANCES
  *   the ladder: rung two at +7, rung three at +14, then +14 per rung while
  *   `shouldContinue` holds. When it does not — no violation from the pair
- *   is open — the ladder stops and the pair returns to its ordinary scan
- *   cadence.
+ *   is open, whatever the rung — the ladder stops and the pair returns to
+ *   its ordinary scan cadence.
  * - A scan that starts the pair's first ladder (`shouldStart`) creates it
  *   at rung one, due three days after the scan.
  */

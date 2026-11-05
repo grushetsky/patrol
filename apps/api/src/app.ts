@@ -12,10 +12,11 @@ import { operatorRoutes } from "./routes/operators.js";
 import { catalogueRoutes } from "./routes/catalogue.js";
 import { settingsRoutes } from "./routes/settings.js";
 import { scansRoutes } from "./routes/scans.js";
+import { candidatesRoutes } from "./routes/candidates.js";
 import { readSetupState } from "./domain/bootstrap.js";
 import type { MailTransport } from "./mail/transport.js";
 import { noopScanDispatcher, type ScanDispatcher } from "./queue/dispatch.js";
-import { S3EvidenceStore, s3ConfigFromEnv } from "@patrol/evidence";
+import { S3EvidenceStore, enqueueCapture, s3ConfigFromEnv } from "@patrol/evidence";
 import { evidenceRoutes } from "./routes/evidence.js";
 import type { EvidencePresigner } from "./domain/evidence.js";
 
@@ -32,6 +33,13 @@ export interface AppDeps {
    * entry wires the pg-boss producer; tests inject a recorder or the no-op.
    */
   dispatcher?: ScanDispatcher;
+  /**
+   * How a capture the API enqueues wakes the worker's capture queue — the
+   * dispatch behind the evidence enqueue port, which the manual candidate
+   * pair creation uses for its detection capture. The server entry wires
+   * the pg-boss producer; tests inject a recorder or omit it.
+   */
+  captureDispatch?: (captureId: string) => Promise<void>;
   /**
    * The presigner behind evidence downloads: the S3-compatible store in
    * production, a recording fake in tests. Absent builds the store from
@@ -113,6 +121,22 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
       pool: deps.pool,
       presigner:
         deps.evidencePresigner ?? new S3EvidenceStore(s3ConfigFromEnv(process.env)),
+    }),
+    { prefix: "/api" },
+  );
+  await app.register(
+    candidatesRoutes({
+      config: deps.config,
+      pool: deps.pool,
+      ...(deps.captureDispatch === undefined
+        ? {}
+        : {
+            enqueueCapture: (input) =>
+              enqueueCapture(
+                { pool: deps.pool, now: deps.config.now, dispatch: deps.captureDispatch! },
+                input,
+              ),
+          }),
     }),
     { prefix: "/api" },
   );

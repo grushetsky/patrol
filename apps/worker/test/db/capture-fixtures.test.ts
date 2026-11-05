@@ -2,6 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { Pool } from "pg";
 import { ListObjectVersionsCommand, S3Client } from "@aws-sdk/client-s3";
 import { artifactKey, enqueueCapture, readCapture, readEvidence } from "@patrol/evidence";
+import { parseSidecar } from "@patrol/domain";
 import { capturePage, launchCaptureBrowser } from "../../src/capture/browser.js";
 import type { Browser } from "playwright";
 import { runCapture } from "../../src/capture/runner.js";
@@ -152,6 +153,47 @@ describe("the capture worker over fixture pages (seam 1)", () => {
     expect(names).not.toContain("cookie");
     expect(names).not.toContain("authorization");
     expect(names).toContain("content-type");
+  }, 120_000);
+
+  it("extracts magnet hrefs as download affordances and only player-oriented iframes as player sources", async () => {
+    const { evidenceId } = await runOne("/normal");
+    const record = (await readEvidence(pool, evidenceId))!;
+    const sidecarArtifact = record.artifacts.find((a) => a.kind === "extraction_sidecar")!;
+    const store = testStore(bucket);
+    const rawClient = new S3Client({
+      endpoint: new URL("http://127.0.0.1:9002").toString(),
+      region: "us-east-1",
+      credentials: { accessKeyId: "patrolminio", secretAccessKey: "patrolminio" },
+      forcePathStyle: true,
+    });
+    const object = await rawClient.send(
+      new (await import("@aws-sdk/client-s3")).GetObjectCommand({
+        Bucket: bucket,
+        Key: artifactKey("extraction_sidecar", sidecarArtifact.sha256),
+      }),
+    );
+    const sidecar = JSON.parse(
+      new TextDecoder().decode(await object.Body!.transformToByteArray()),
+    ) as Record<string, unknown>;
+
+    // A magnet link names a copy by scheme, not by extension: the download
+    // affordance filter accepts `magnet:` alongside the document-named
+    // .torrent/.mkv/.mp4 hrefs.
+    expect(sidecar.downloadAffordances).toContain(
+      `magnet:?xt=urn:btih:fixture0000000000000000000000&dn=fixture`,
+    );
+    expect(sidecar.downloadAffordances).toContain(`${fixtures.url}/download/fixture.mkv`);
+
+    // The raw iframe list records every frame; the player-oriented set the
+    // matcher reads carries the embed and not the advertising frame.
+    expect(sidecar.iframes).toEqual([
+      `${fixtures.url}/embed`,
+      `${fixtures.url}/ad-frame`,
+    ]);
+    expect(sidecar.playerFrames).toEqual([`${fixtures.url}/embed`]);
+    expect(parseSidecar(JSON.stringify(sidecar)).playerCandidates).not.toContain(
+      `${fixtures.url}/ad-frame`,
+    );
   }, 120_000);
 
   it("records the redirect chain verbatim and derives the landing host (seam 2)", async () => {

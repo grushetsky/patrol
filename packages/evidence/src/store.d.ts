@@ -89,15 +89,15 @@ export interface S3StoreConfig {
  * chain, and flexible checksums ride the PUT.
  */
 export declare class S3EvidenceStore implements EvidenceStore {
+    private readonly client;
+    private readonly bucket;
+    private ready;
     constructor(config: S3StoreConfig);
     ensureReady(): Promise<void>;
-    putArtifact(upload: ArtifactUpload): Promise<StoredObject>;
-    presignDownload(request: PresignRequest): Promise<PresignedDownload>;
-    private client;
-    private bucket;
-    private ready;
     private prepare;
+    putArtifact(upload: ArtifactUpload): Promise<StoredObject>;
     private readAll;
+    presignDownload(request: PresignRequest): Promise<PresignedDownload>;
 }
 /**
  * Reads the PATROL_OBJECT_STORE_* environment into a store configuration —
@@ -106,4 +106,3 @@ export declare class S3EvidenceStore implements EvidenceStore {
  * absent credentials fall back to the SDK's own chain (IAM in production).
  */
 export declare function s3ConfigFromEnv(env?: NodeJS.ProcessEnv): S3StoreConfig;
-export {};

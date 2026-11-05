@@ -13,6 +13,7 @@ import {
   looksLikeChallenge,
   type NavigationFailure,
 } from "./outcomes.js";
+import { isPlayerFrameUrl } from "@patrol/domain";
 import type { CaptureProfileJson, RedirectHopRow } from "@patrol/evidence";
 
 /**
@@ -96,7 +97,15 @@ function shouldBlockRequest(request: {
   return isBlockedHost(url) || isMediaUrl(url);
 }
 
-/** The deterministic extraction sidecar (minimal; slice 5 deepens the parser). */
+/**
+ * The deterministic extraction sidecar. Slice 4 carried the minimal set;
+ * slice 5 deepens it with the facts the matching signals read: the episode
+ * selector's anchor labels with their per-episode links, every anchor text,
+ * where a file size or a resolution paired with a release-source token
+ * states a download affordance no URL suffix reveals, and the player-
+ * oriented subset of the page's iframes, so an advertising or analytics
+ * frame never reads as a player downstream.
+ */
 async function extractSidecar(page: Page): Promise<string> {
   const extracted = await page.evaluate(() => {
     const meta: Record<string, string> = {};
@@ -114,6 +123,14 @@ async function extractSidecar(page: Page): Promise<string> {
         // A malformed blob stays out; the sidecar records what parsed.
       }
     }
+    const anchors = [...document.querySelectorAll("a[href]")]
+      .map((a) => ({
+        text: (a as HTMLAnchorElement).textContent?.trim() ?? "",
+        href: (a as HTMLAnchorElement).href,
+      }))
+      .filter(({ href }) => href !== "");
+    const episodeLabel =
+      /(s\d{1,2}\s?[ex-]\s?\d{1,3})|((?:episode|ep\.?|серия)\s*\d{1,3})|(\d{1,3}\s*серия)/i;
     return {
       title: document.title,
       h1: [...document.querySelectorAll("h1")].map((h1) => h1.textContent?.trim() ?? ""),
@@ -124,12 +141,31 @@ async function extractSidecar(page: Page): Promise<string> {
         src: video.src || video.querySelector("source")?.src || "",
         duration: Number.isFinite(video.duration) ? video.duration : null,
       })),
+      // An explicit download affordance: a `magnet:` link (a scheme, so no
+      // dot-and-extension suffix can ever name it) or a document-named
+      // `.torrent`/`.mkv`/`.mp4` href. Archives and legacy containers
+      // (.zip/.rar/.7z/.avi) are not copies a rights holder names and stay
+      // out; a size or resolution pair in the anchor texts covers the rest.
       downloadAffordances: [...document.querySelectorAll("a[download], a[href]")]
         .map((a) => (a as HTMLAnchorElement).href)
-        .filter((href) => /\.(zip|rar|7z|torrent|magnet|mp4|mkv|avi)([?#].*)?$/i.test(href)),
+        .filter(
+          (href) =>
+            href.startsWith("magnet:") ||
+            /\.(torrent|mkv|mp4)([?#].*)?$/i.test(href),
+        ),
+      episodeLinks: anchors
+        .filter(({ text }) => episodeLabel.test(text))
+        .map(({ text, href }) => ({ label: text, href })),
+      linkTexts: anchors.map(({ text }) => text).filter((text) => text !== ""),
     };
   });
-  return JSON.stringify(extracted);
+  return JSON.stringify({
+    ...extracted,
+    // The player-oriented iframes, decided where the raw list is already in
+    // hand: the extractor's judgment is part of the evidence, and the
+    // matcher never re-litigates an advertising frame.
+    playerFrames: (extracted.iframes as string[]).filter(isPlayerFrameUrl),
+  });
 }
 
 async function contextFor(

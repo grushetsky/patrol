@@ -24,4 +24,4 @@ export type EngineQueueName = (typeof ENGINE_QUEUE_NAMES)[keyof typeof ENGINE_QU
  * capture requests) and the worker's consumer share the name the way the
  * engine queues do.
  */
-export declare const CAPTURE_QUEUE_NAME: "capture.run";
+export declare const CAPTURE_QUEUE_NAME = "capture.run";

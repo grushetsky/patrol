@@ -1,4 +1,5 @@
 import type { Pool } from "pg";
+import { type AllowlistTitleContext } from "@patrol/domain";
 import type { EvidenceArtifactKind } from "./store.js";
 /**
  * The evidence records (docs/design/evidence-capture.md): the captures
@@ -7,7 +8,8 @@ import type { EvidenceArtifactKind } from "./store.js";
  * slice 5 wires into candidate formation, review opens, and notice
  * approval; its guards run in the design's order — the allowlist before
  * any fetch, an individualized objection before any fetch, the freshness
- * window before another row.
+ * window before another row — so a refused or fresh URL never reaches a
+ * queue and never costs a fetch.
  */
 /** Why a capture was taken (the contract's CaptureReason). */
 export type CaptureReason = "detection" | "review" | "pre_handoff";
@@ -89,25 +91,49 @@ export interface EnqueueCaptureDeps {
     dispatch: (captureId: string) => Promise<void>;
 }
 /**
- * The capture enqueue port — the one door captures enter through. Guards,
- * in the design's order: the allowlist before the fetch (a matching URL is
- * never fetched, the capture row records the skip, no evidence row is ever
- * created); an individualized objection refuses the enqueue (the 409
- * host_objection semantics the contract carries); the freshness window
- * returns the existing live capture for review and pre_handoff. Then the
- * one-per-point insert. Throws on an unparseable URL.
+ * The capture enqueue port — the one door captures enter through.
+ *
+ * Guards, in the design's order:
+ *
+ * 1. **Allowlist before the fetch.** A URL matching a rights-holder-scoped
+ *    entry is never fetched: the capture row records the skip and no
+ *    evidence row is ever created. When the caller passes the candidate's
+ *    title context (formation does), the title-group and tracked-title
+ *    entries scoped to that pair join the check, and a licensed destination
+ *    additionally needs the observation's territory — the same rule the
+ *    formation check applies.
+ * 2. **An individualized objection stops capture.** A host under an active
+ *    objection refuses the enqueue — the 409 host_objection semantics the
+ *    contract carries — until an operator clears it.
+ * 3. **Freshness.** A review or pre_handoff capture whose newest live
+ *    capture is inside the window is not taken; the caller pins the
+ *    existing capture instead.
+ *
+ * Then the one-per-point insert: UNIQUE (normalized_url, reason,
+ * point_key) makes a duplicate wake-up return the row that already stands.
+ *
+ * Throws on an unparseable URL; the caller decides how that reaches an
+ * operator.
  */
 export declare function enqueueCapture(deps: EnqueueCaptureDeps, input: {
     url: string;
     reason: CaptureReason;
     pointKey?: string;
+    /** The candidate's title context, when the enqueue is a candidate's. */
+    context?: AllowlistTitleContext;
 }): Promise<EnqueueCaptureResult>;
 /**
  * The allowlist guard's answer for a URL: the winning entry among the
- * rights-holder-scoped rows, or null. Scoped entries (a group's or title's)
- * need the candidate's title context to apply and join with slice 5.
+ * applicable rows, or null. Without a title context only the rights-holder
+ * entries apply; with one — the candidate's, passed by formation — the
+ * title-group and tracked-title entries scoped to that pair join, and a
+ * licensed destination additionally needs the context's territory, the
+ * same rule the candidate store's formation check applies. TODO(slice-5b):
+ * the run-time re-check still passes no context — the capture row carries
+ * no title pairing — so a scoped entry landing between the enqueue and the
+ * fetch is seen only once 5b carries the pair onto the capture itself.
  */
-export declare function allowlistHitForUrl(pool: Pool, url: string): Promise<{
+export declare function allowlistHitForUrl(pool: Pool, url: string, context?: AllowlistTitleContext): Promise<{
     kind: string;
     matchKind: string;
     value: string;
@@ -244,14 +270,18 @@ export interface HostObjectionRow {
 }
 /**
  * The active objection covering a URL, or null. An objection suspends the
- * host it names and every host under it; it does not reach sideways to
- * sibling subdomains, because the host said what it said and no more.
+ * host it names and every host under it: a cease-and-desist naming a
+ * platform covers the platform's subdomains, and continued access after a
+ * personal objection is exactly the conduct the design refuses. It does
+ * not reach sideways — an objection on one subdomain of a domain does not
+ * suspend its siblings, because the host said what it said and no more.
  */
 export declare function activeObjectionForUrl(pool: Pool, url: string): Promise<HostObjectionRow | null>;
 /**
  * Records an objection — the worker's reading of a host's 451 or its page
- * naming Patrol in a cease-and-desist, or a letter an operator enters.
- * Idempotent per host while active.
+ * naming Patrol in a cease-and-desist, or (slice 5+ via the operator
+ * surface) a letter an operator enters. Idempotent per host while active:
+ * a second signal returns the standing objection rather than a second row.
  */
 export declare function recordHostObjection(pool: Pool, now: () => Date, input: {
     host: string;
@@ -284,7 +314,8 @@ export type ClearObjectionResult = {
 /**
  * An operator's explicit decision to reopen a host to capture. The
  * objection is never deleted: the clearance trio (who, when, why) is
- * recorded on the row the guards' update trigger permits.
+ * recorded on the row the guards' update trigger permits, and the row
+ * stays in the history the list serves.
  */
 export declare function clearHostObjection(pool: Pool, now: () => Date, input: {
     hostObjectionId: string;
@@ -294,6 +325,7 @@ export declare function clearHostObjection(pool: Pool, now: () => Date, input: {
 /**
  * How many distinct URLs Patrol has surfaced on a host — the objection's
  * affected-candidate count. Candidates arrive with slice 5; until then the
- * search results Patrol already stores are the surfaced set.
+ * search results Patrol already stores are the surfaced set, which is the
+ * same population the review queue will form candidates from.
  */
 export declare function affectedSurfaceCount(pool: Pool, host: string): Promise<number>;

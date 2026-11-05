@@ -20,6 +20,53 @@ export type AllowlistMatchKind = "host" | "url_prefix";
 export type AllowlistScope = "rights_holder" | "title_group" | "tracked_title";
 export type AllowlistOrigin = "operator" | "review_decision";
 
+/**
+ * The candidate's title context a scoped allowlist check needs: a
+ * title-group- or tracked-title-scoped entry applies only inside the ids it
+ * names, and a licensed destination additionally needs the observation's
+ * territory to match its own. Both the candidate store's formation check
+ * and the capture enqueue guard read it.
+ */
+export interface AllowlistTitleContext {
+  titleGroupId?: string | null;
+  trackedTitleId?: string | null;
+  territory?: string | null;
+}
+
+/**
+ * The entries among `entries` that apply under one title context: every
+ * rights-holder-scoped entry, plus the title-group and tracked-title
+ * entries whose ids the context names, with a licensed destination further
+ * requiring the context's territory to match its own. The SQL callers
+ * pre-filter by scope; this is the shared in-memory half.
+ */
+export function entryAppliesInTitleContext(
+  entry: {
+    scope: AllowlistScope;
+    titleGroupId?: string | null;
+    trackedTitleId?: string | null;
+    kind: AllowlistKind;
+    territory?: string | null;
+  },
+  context: AllowlistTitleContext,
+): boolean {
+  if (entry.scope === "title_group" && entry.titleGroupId !== context.titleGroupId) {
+    return false;
+  }
+  if (entry.scope === "tracked_title" && entry.trackedTitleId !== context.trackedTitleId) {
+    return false;
+  }
+  if (
+    entry.kind === "licensed_destination" &&
+    (context.territory === undefined ||
+      context.territory === null ||
+      entry.territory !== context.territory)
+  ) {
+    return false;
+  }
+  return true;
+}
+
 /** The precedence tiers, most specific and authoritative first. */
 export type AllowlistTier = "official" | "neutral" | "learned" | "blocklist";
 

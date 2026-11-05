@@ -29,9 +29,11 @@ const NORMAL_PAGE = `<!doctype html>
 <h1>Fixture Work</h1>
 <p>A deterministic fixture body.</p>
 <iframe src="/embed" width="640" height="360"></iframe>
+<iframe src="/ad-frame" width="300" height="250" title="advertisement"></iframe>
 <video src="/media/fixture.mp4" controls></video>
 <img src="/poster.png" alt="poster">
 <a href="/download/fixture.mkv">Download</a>
+<a href="magnet:?xt=urn:btih:fixture0000000000000000000000&dn=fixture">Magnet</a>
 </body>
 </html>`;
 
@@ -108,6 +110,13 @@ export async function startFixtureServer(): Promise<FixtureServer> {
       case path === "/embed":
         response.setHeader("Content-Type", "text/html");
         response.end("<!doctype html><html><body>embed</body></html>");
+        return;
+      case path === "/ad-frame":
+        // A generic (non-player) iframe: an advertising frame the page
+        // carries besides its player, which the sidecar must not read as
+        // a player source.
+        response.setHeader("Content-Type", "text/html");
+        response.end("<!doctype html><html><body>ad</body></html>");
         return;
       case path === "/hop1":
         response.statusCode = 302;

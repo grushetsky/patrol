@@ -35,15 +35,19 @@ export function normalizeTitleText(text: string): string {
     .replace(COMBINING_MARK, "")
     .normalize("NFC")
     // Case fold (lowercase approximates the full fold once the folds that
-    // lowercase alone misses are applied first: the Greek final sigma to its
-    // medial form, the sharp s to "ss", and the long s to "s" — full case
-    // folding expands ß and maps ſ, and so "Straße" and "STRASSE" share a
-    // key).
-    .replace(/ς/g, "σ")
+    // lowercase alone misses are applied: the sharp s expands to "ss" and
+    // the long s maps to "s" — full case folding expands ß and maps ſ, and
+    // so "Straße" and "STRASSE" share a key).
     .replace(/ß/g, "ss")
     .replace(/ẞ/g, "ss")
     .replace(/ſ/g, "s")
     .toLowerCase()
+    // The Greek final sigma folds onto the medial form after the
+    // lowercase, mirroring the matching normalizer: a word-final Σ
+    // lowercases to ς, so folding before the lowercase would leave an
+    // uppercase "ΣΟΦΟΣ" on ς while a typed "σοφος" (medial ending) sat on
+    // σ — two keys for one word.
+    .replace(/ς/g, "σ")
     .replace(SEPARATOR_RUN, " ")
     .trim();
 }

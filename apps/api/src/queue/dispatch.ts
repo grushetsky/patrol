@@ -1,5 +1,5 @@
 import PgBoss from "pg-boss";
-import { ENGINE_QUEUE_NAMES } from "@patrol/domain";
+import { CAPTURE_QUEUE_NAME, ENGINE_QUEUE_NAMES } from "@patrol/domain";
 
 /**
  * How the API tells the worker a scan wants to run: one scan.run picker
@@ -36,12 +36,20 @@ export function bossScanDispatcher(boss: PgBoss): ScanDispatcher {
  * producer's errors go to `logError` — a producer that cannot reconnect is
  * a silent scan delay otherwise, and a send failure surfaces at the route
  * only when a request is actually in flight.
+ *
+ * The producer also wakes the capture queue: a detection capture the API
+ * enqueues (a manually paired candidate) dispatches through it, the same
+ * queue the worker's own enqueues use.
  */
 export async function startScanDispatcher(input: {
   databaseUrl: string;
   bossSchema: string;
   logError?: (error: Error) => void;
-}): Promise<{ dispatcher: ScanDispatcher; stop: () => Promise<void> }> {
+}): Promise<{
+  dispatcher: ScanDispatcher;
+  captureDispatch: (captureId: string) => Promise<void>;
+  stop: () => Promise<void>;
+}> {
   const logError =
     input.logError ??
     ((error: Error) => console.error("pg-boss producer error:", error));
@@ -60,8 +68,16 @@ export async function startScanDispatcher(input: {
     const name = ENGINE_QUEUE_NAMES[engine];
     await boss.createQueue(name, { name, expireInSeconds: 7_200, retentionMinutes: 60 * 24 });
   }
+  await boss.createQueue(CAPTURE_QUEUE_NAME, {
+    name: CAPTURE_QUEUE_NAME,
+    expireInSeconds: 300,
+    retentionMinutes: 60 * 24,
+  });
   return {
     dispatcher: bossScanDispatcher(boss),
+    captureDispatch: async (captureId: string) => {
+      await boss.send(CAPTURE_QUEUE_NAME, { captureId });
+    },
     stop: async () => {
       await boss.stop({ close: false, graceful: true, timeout: 10_000 }).catch(
         () => undefined,

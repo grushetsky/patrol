@@ -26,6 +26,7 @@ import {
   attachReservation,
   claimScan,
   finishScan,
+  formCandidatesForQuery,
   heldReservationFor,
   loadPlanInputs,
   loadScanFailures,
@@ -36,6 +37,7 @@ import {
   storePlan,
   storeQueryFailure,
   storeResults,
+  type EnqueueDetectionCapture,
 } from "./store.js";
 
 /**
@@ -74,7 +76,18 @@ export interface ExecutorDeps {
   sleep: (ms: number) => Promise<void>;
   /** The ladder's violation predicates; defaults see none until slice 5. */
   predicates?: LadderPredicates;
+  /**
+   * The detection-capture enqueue port for newly formed candidates. Absent
+   * in tests that assert formation without captures; production wires the
+   * evidence package's enqueue with the capture queue's dispatcher.
+   */
+  enqueueCapture?: EnqueueDetectionCapture;
+  /** The structured log; absent means silent (tests), never a thrown log. */
+  log?: (message: string, extra?: Record<string, unknown>) => void;
 }
+
+/** The silent log a test's executor runs with. */
+const noopLog = (): void => undefined;
 
 /** What one picker round on an engine's queue produced. */
 export type PickerOutcome =
@@ -294,6 +307,38 @@ async function attemptScan(
       rawPayloadRef: result.rawPayloadRef,
       rows: result.rows,
     });
+  }
+
+  // Candidate formation (docs/design/matching-and-classification-rules.md
+  // "Candidate formation"): every query's stored results pair their URLs
+  // with the tracked title the query targeted, deduplicating across queries
+  // and engines on the upsert. Formation runs at completion over every
+  // query of the scan — not only the ones this attempt issued — so a scan
+  // resumed after a crash forms the pairs its earlier attempt already
+  // stored; the upsert makes the pass idempotent either way. A newly formed
+  // candidate without an allowlist hit enqueues its detection capture
+  // through the injected port, which re-checks the allowlist before any
+  // fetch. One query's formation failing — a database refusal mid-pairing,
+  // a refused enqueue — is logged and never fails the scan or its other
+  // queries, mirroring the capture runner: the scan answered its queries,
+  // and the next scan of the title forms what this pass could not.
+  const log = deps.log ?? noopLog;
+  for (const query of queries) {
+    try {
+      await formCandidatesForQuery(pool, now, {
+        queryId: query.id,
+        log,
+        ...(deps.enqueueCapture === undefined
+          ? {}
+          : { enqueueCapture: deps.enqueueCapture }),
+      });
+    } catch (error) {
+      log("scan.run failed forming candidates for one query; walking on", {
+        scanId: entry.scanId,
+        queryId: query.id,
+        err: error instanceof Error ? error.message : String(error),
+      });
+    }
   }
 
   // The terminal state: every query answered, some answered and some

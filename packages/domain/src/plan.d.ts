@@ -136,7 +136,8 @@ export declare const YANDEX_GROUP_MODE = "flat";
  * "Locale mapping"): ru defaults to Russia, SEARCH_TYPE_RU, region 225; en
  * to the United States, SEARCH_TYPE_COM, no region; desktop; no freshness
  * filter. A locale outside the supported set maps like en — same territory
- * defaults, its own language code — until the design extends the set.
+ * defaults (United States, "US"), its own language code — until the design
+ * extends the set.
  */
 export interface LocaleRequestParams {
     /** The locale's language, the primary subtag lowercased. */

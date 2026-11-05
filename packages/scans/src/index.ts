@@ -22,6 +22,25 @@ export {
 } from "./store.js";
 export type { ScanRow } from "./store.js";
 export {
+  REPUTATION_WINDOW_MS,
+  candidateForPair,
+  formCandidatesForQuery,
+  formManualCandidate,
+  knownBadPlayerHosts,
+  loadTitleForMatching,
+  mapCandidate,
+  readCandidate,
+  readReputationFacts,
+  rescoreCandidatesFromSidecar,
+} from "./candidates.js";
+export type {
+  CandidateEngine,
+  CandidateRow,
+  EnqueueDetectionCapture,
+  FormationOutcome,
+  RawCandidateRow,
+} from "./candidates.js";
+export {
   noViolationsPredicates,
   onScanCompleted,
   readLadder,

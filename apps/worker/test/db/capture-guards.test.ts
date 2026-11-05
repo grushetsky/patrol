@@ -9,7 +9,7 @@ import {
 } from "@patrol/evidence";
 import { runCapture } from "../../src/capture/runner.js";
 import type { PageObservation } from "../../src/capture/browser.js";
-import { controlledClock, seedWorld, testPool } from "./helpers.js";
+import { controlledClock, seedWorld, testPool, type SeededWorld } from "./helpers.js";
 import {
   MemoryStore,
   baseObservation,
@@ -28,10 +28,11 @@ import {
  */
 
 let pool: Pool;
+let world: SeededWorld;
 
 beforeAll(async () => {
   pool = testPool();
-  await seedWorld(pool);
+  world = await seedWorld(pool);
 });
 
 const CLOCK = "2026-05-01T10:00:00.000Z";
@@ -100,6 +101,77 @@ describe("the allowlist guard before any fetch (seam 4)", () => {
     const capture = await readCapture(pool, enqueued.captureId);
     expect(capture?.state).toBe("done");
     expect(capture?.skipReason).toBe("allowlist");
+  });
+
+  it("applies the pair's scoped entries when the enqueue carries the title context", async () => {
+    const operator = await pool.query<{ id: string }>(
+      "select id from operators limit 1",
+    );
+    // A licensed destination scoped to the seeded title, licensed for the
+    // US only, and a neutral source scoped to the seeded title group.
+    await pool.query(
+      `insert into allowlist_entries
+         (kind, match_kind, value, scope, tracked_title_id, territory, origin, confirmed_by, confirmed_at)
+       values ('licensed_destination', 'host', 'licensed-scoped.example.test', 'tracked_title', $1, 'US', 'operator', $2, $3)`,
+      [world.titleId, operator.rows[0].id, CLOCK],
+    );
+    await pool.query(
+      `insert into allowlist_entries
+         (kind, match_kind, value, scope, title_group_id, origin, confirmed_by, confirmed_at)
+       values ('neutral_source', 'host', 'neutral-scoped.example.test', 'title_group', $1, 'operator', $2, $3)`,
+      [world.groupId, operator.rows[0].id, CLOCK],
+    );
+    const clock = controlledClock(CLOCK);
+    const deps = { pool, now: clock.now, dispatch: noopDispatch };
+
+    // Without a title context only rights-holder entries apply: both
+    // scoped hosts enqueue.
+    const bareLicensed = await enqueueCapture(deps, {
+      url: "https://licensed-scoped.example.test/watch",
+      reason: "detection",
+    });
+    expect(bareLicensed.status).toBe("queued");
+    const bareNeutral = await enqueueCapture(deps, {
+      url: "https://neutral-scoped.example.test/watch",
+      reason: "detection",
+    });
+    expect(bareNeutral.status).toBe("queued");
+
+    // With the candidate's context the scoped entries join the guard: the
+    // licensed destination in its territory and the group's neutral source
+    // are never fetched.
+    const scopedLicensed = await enqueueCapture(deps, {
+      url: "https://licensed-scoped.example.test/other",
+      reason: "detection",
+      context: {
+        titleGroupId: world.groupId,
+        trackedTitleId: world.titleId,
+        territory: "US",
+      },
+    });
+    expect(scopedLicensed.status).toBe("skipped_allowlist");
+    const scopedNeutral = await enqueueCapture(deps, {
+      url: "https://neutral-scoped.example.test/other",
+      reason: "detection",
+      context: {
+        titleGroupId: world.groupId,
+        trackedTitleId: world.titleId,
+        territory: "US",
+      },
+    });
+    expect(scopedNeutral.status).toBe("skipped_allowlist");
+
+    // A licensed destination outside its territory does not apply.
+    const elsewhere = await enqueueCapture(deps, {
+      url: "https://licensed-scoped.example.test/third",
+      reason: "detection",
+      context: {
+        titleGroupId: world.groupId,
+        trackedTitleId: world.titleId,
+        territory: "DE",
+      },
+    });
+    expect(elsewhere.status).toBe("queued");
   });
 });
 

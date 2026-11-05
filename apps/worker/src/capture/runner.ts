@@ -1,5 +1,6 @@
 import type { Pool } from "pg";
 import { hostForUrl, normalizeUrlKey } from "@patrol/domain";
+import { rescoreCandidatesFromSidecar } from "@patrol/scans";
 import {
   affectedSurfaceCount,
   allowlistHitForUrl,
@@ -373,6 +374,31 @@ export async function runCapture(
   }
 
   if (terminal) {
+    // The score lifecycle (docs/design/matching-and-classification-rules.md
+    // "Score and bands"): a captured page's extraction sidecar deepens the
+    // pending candidates of the URL — the exact page-title match, the
+    // signals the page's facts fire, reputation alongside a strong signal.
+    // The evidence record already stands, so a rescore failure is logged
+    // and never fails the capture; the next capture of the URL catches up.
+    if (outcome === "captured" && observation.sidecar !== null) {
+      try {
+        const rescored = await rescoreCandidatesFromSidecar(deps.pool, deps.now, {
+          normalizedUrl: row.normalizedUrl,
+          sidecar: observation.sidecar,
+        });
+        if (rescored.length > 0) {
+          log("capture.run deepened candidate scores from the sidecar", {
+            captureId,
+            candidates: rescored.length,
+          });
+        }
+      } catch (error) {
+        log("capture.run failed rescoring candidates from the sidecar", {
+          captureId,
+          err: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
     log("capture.run finished a capture", {
       captureId,
       outcome,
