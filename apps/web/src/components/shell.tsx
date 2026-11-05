@@ -27,6 +27,7 @@ export function AppShell({
   const router = useRouter();
   const [language, setLanguage] = useState<Language>(initialLanguage);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [siren, setSiren] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,6 +36,7 @@ export function AppShell({
     if (saved === "light" || saved === "dark") {
       setTheme(saved);
     }
+    setSiren(localStorage.getItem("patrol.siren") === "on");
   }, []);
 
   useEffect(() => {
@@ -45,6 +47,11 @@ export function AppShell({
   useEffect(() => {
     document.documentElement.lang = language;
   }, [language]);
+
+  useEffect(() => {
+    document.body.dataset.siren = siren ? "true" : "false";
+    localStorage.setItem("patrol.siren", siren ? "on" : "off");
+  }, [siren]);
 
   const t = (key: MessageKey) => translate(language, key);
   const badgeValue = (badge: "review" | "violations" | "notices") => {
@@ -89,6 +96,10 @@ export function AppShell({
 
   return (
     <div className="min-h-screen">
+      <div className="siren-bar" aria-hidden="true">
+        <span className="siren-bar-red" />
+        <span className="siren-bar-blue" />
+      </div>
       <header className="topbar-glass">
         <div className="flex flex-wrap items-center gap-3 px-4 py-3 md:px-5">
           <Link to="/dashboard" className="flex items-center gap-2 text-sm font-semibold tracking-tight">
@@ -122,6 +133,19 @@ export function AppShell({
           </nav>
 
           <div className="ml-auto flex items-center gap-1.5">
+            <Button
+              variant="ghost"
+              className="px-2"
+              title={siren ? t("sirenOff") : t("sirenOn")}
+              aria-pressed={siren}
+              onClick={() => setSiren(!siren)}
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="currentColor" strokeWidth="1.7">
+                <path d="M7 18v-4.6a5 5 0 0 1 10 0V18" />
+                <path d="M4.4 18h15.2" />
+                <path d="M12 3v2.1M5.1 6.1l1.5 1.5M18.9 6.1l-1.5 1.5" />
+              </svg>
+            </Button>
             <RunScansButton csrfToken={session.csrfToken} language={language} />
             <div className="flex rounded-lg border border-[var(--border)] p-0.5 text-xs">
               {(["en", "ru"] as const).map((code) => (
