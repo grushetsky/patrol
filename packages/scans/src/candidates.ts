@@ -1,4 +1,5 @@
 import type { Pool, PoolClient } from "pg";
+import { openViolationForPair } from "./violations.js";
 import {
   candidateDedupKey,
   entryAppliesInTitleContext,
@@ -69,14 +70,19 @@ export interface CandidateRow {
   confirmedAt: Date | null;
   dismissedAt: Date | null;
   dismissal: Record<string, unknown> | null;
+  /** The page facts the worker's last rescore saw (episode count, landing domain). */
+  lastPageFacts: Record<string, unknown> | null;
+  /** The snapshot a dismissal froze for the material-change detector. */
+  materialSnapshot: Record<string, unknown> | null;
   createdBy: string | null;
 }
 
-const CANDIDATE_COLUMNS = `id, tracked_title_id, url, normalized_url, host, registrable_domain,
+export const CANDIDATE_COLUMNS = `id, tracked_title_id, url, normalized_url, host, registrable_domain,
   source, engine, engines, query_id, query_text, locale, territory, best_rank,
   matched_variant_id, matched_variant, score, band, score_components, reputation,
   allowlist_entry_id, allowlist_kind, first_seen_at, last_observed_at, state,
-  review_decision_id, violation_id, confirmed_at, dismissed_at, dismissal, created_by`;
+  review_decision_id, violation_id, confirmed_at, dismissed_at, dismissal,
+  last_page_facts, material_snapshot, created_by`;
 
 /** A candidates-table row in its snake-case shape, as the store reads it. */
 export type RawCandidateRow = {
@@ -110,6 +116,8 @@ export type RawCandidateRow = {
   confirmed_at: Date | null;
   dismissed_at: Date | null;
   dismissal: Record<string, unknown> | null;
+  last_page_facts: Record<string, unknown> | null;
+  material_snapshot: Record<string, unknown> | null;
   created_by: string | null;
 };
 
@@ -145,6 +153,8 @@ export function mapCandidate(row: RawCandidateRow): CandidateRow {
     confirmedAt: row.confirmed_at === null ? null : new Date(row.confirmed_at),
     dismissedAt: row.dismissed_at === null ? null : new Date(row.dismissed_at),
     dismissal: row.dismissal,
+    lastPageFacts: row.last_page_facts,
+    materialSnapshot: row.material_snapshot,
     createdBy: row.created_by,
   };
 }
@@ -161,7 +171,13 @@ export async function readCandidate(
   return result.rows.length === 0 ? null : mapCandidate(result.rows[0]);
 }
 
-/** The candidate for one (URL, tracked title) pair, when one stands. */
+/**
+ * The candidate for one (URL, tracked title) pair, when one stands. A pair
+ * accumulates one confirmed row per violation in its reappearance chain
+ * (ADR 0001); the live row — pending or dismissed — is the pair's current
+ * candidate, and a pair with no live row answers its newest confirmed row.
+ * Callers that must decide between the two check the state themselves.
+ */
 export async function candidateForPair(
   pool: Pool,
   input: { url: string; trackedTitleId: string },
@@ -169,7 +185,9 @@ export async function candidateForPair(
   const key = candidateDedupKey(input.url, input.trackedTitleId);
   const result = await pool.query<RawCandidateRow>(
     `select ${CANDIDATE_COLUMNS} from candidates
-      where normalized_url = $1 and tracked_title_id = $2`,
+      where normalized_url = $1 and tracked_title_id = $2
+      order by (state <> 'confirmed') desc, last_observed_at desc, id
+      limit 1`,
     [key.normalizedUrl, key.trackedTitleId],
   );
   return result.rows.length === 0 ? null : mapCandidate(result.rows[0]);
@@ -329,6 +347,17 @@ export interface FormationOutcome {
  * so a SERP re-observation of the operator's pair touches nothing but the
  * observation times — the SERP observation itself is recorded through the
  * search_results pairing link, not through the candidate row.
+ *
+ * The standing-wave guard runs first, the same rule `formManualCandidate`
+ * applies: a pair whose confirmed candidate's violation is still open is an
+ * existing pair (the partial pair index excludes confirmed rows, so the
+ * insert below would otherwise slide past it and mint a phantom pending
+ * row every resurfacing). The observation refreshes only the confirmed
+ * row's observation time and links its result rows; nothing is created and
+ * no capture is enqueued. A pair whose violation left the open state —
+ * removed or closed, both terminal — is reappearance history, not a
+ * standing pair: it falls through to the insert and starts the
+ * reappearance (ADR 0001).
  */
 async function upsertPair(
   client: PoolClient,
@@ -359,6 +388,22 @@ async function upsertPair(
 ): Promise<{ created: boolean; row: CandidateRow }> {
   const at = now();
   const key = candidateDedupKey(input.url, input.trackedTitleId);
+  const standingWave = await openViolationForPair(client, {
+    normalizedUrl: key.normalizedUrl,
+    trackedTitleId: key.trackedTitleId,
+  });
+  if (standingWave !== null) {
+    // The violation's candidate is the confirmed row of the standing wave;
+    // the observation reaches it the way a manual re-observation does.
+    const refreshed = await client.query<RawCandidateRow>(
+      `update candidates set last_observed_at = $2, updated_at = $2
+        where id = $1
+        returning ${CANDIDATE_COLUMNS}`,
+      [standingWave.candidateId, at],
+    );
+    await linkResultRows(client, refreshed.rows[0].id, input.resultIds);
+    return { created: false, row: mapCandidate(refreshed.rows[0]) };
+  }
   const inserted = await client.query<RawCandidateRow & { created: boolean }>(
     `insert into candidates
        (tracked_title_id, url, normalized_url, host, registrable_domain, source,
@@ -370,7 +415,7 @@ async function upsertPair(
              case when $7::text is null then '{}'::text[] else array[$7::text] end,
              $8, $9, $10, $11, $12, $13, $14::jsonb, $15, $16, $17::jsonb,
              $18::jsonb, $19, $20, $21, $21, $22, $21, $21)
-     on conflict (normalized_url, tracked_title_id) do update set
+     on conflict (normalized_url, tracked_title_id) where state <> 'confirmed' do update set
        last_observed_at = excluded.last_observed_at,
        best_rank = case when candidates.source = 'manual' then candidates.best_rank
                         else least(candidates.best_rank, excluded.best_rank) end,
@@ -410,14 +455,24 @@ async function upsertPair(
     ],
   );
   const row = inserted.rows[0];
-  if (input.resultIds.length > 0) {
-    await client.query(
-      `update search_results set candidate_id = $1
-        where id = any($2::uuid[]) and candidate_id is null`,
-      [row.id, input.resultIds],
-    );
-  }
+  await linkResultRows(client, row.id, input.resultIds);
   return { created: row.created === true, row: mapCandidate(row) };
+}
+
+/** Links the result rows that observed the pair to the candidate row. */
+async function linkResultRows(
+  client: PoolClient,
+  candidateId: string,
+  resultIds: string[],
+): Promise<void> {
+  if (resultIds.length === 0) {
+    return;
+  }
+  await client.query(
+    `update search_results set candidate_id = $1
+      where id = any($2::uuid[]) and candidate_id is null`,
+    [candidateId, resultIds],
+  );
 }
 
 /** The scoped allowlist hit for one URL among pre-read entries, or null. */
@@ -653,11 +708,17 @@ async function engineOfQuery(
 /**
  * Creates (or returns) the candidate a manual entry names: the operator's
  * URL paired with the tracked title they selected, source `manual`, no
- * engine, and the operator as actor. An existing pair is returned unchanged
- * — the deduplication key already names it. The matched variant is the
- * title's original variant, and the score is the formation score (the URL
- * slug), exactly like a SERP-formed pair. Throws when the title does not
- * exist or was merged; the caller decides how that reaches the operator.
+ * engine, and the operator as actor. A standing pair is returned unchanged
+ * — the deduplication key already names it — where standing means a live
+ * row (pending or dismissed) or a confirmed pair whose violation is still
+ * open. A pair whose violation left the open state (removed or closed,
+ * both terminal) is reappearance history, not a standing pair: the manual
+ * entry starts the reappearance, a new candidate whose confirm is a new
+ * violation linked to its predecessor (ADR 0001). The matched variant is
+ * the title's
+ * original variant, and the score is the formation score (the URL slug),
+ * exactly like a SERP-formed pair. Throws when the title does not exist or
+ * was merged; the caller decides how that reaches the operator.
  */
 export async function formManualCandidate(
   pool: Pool,
@@ -678,11 +739,21 @@ export async function formManualCandidate(
     trackedTitleId: input.trackedTitleId,
   });
   if (existing !== null) {
-    return {
-      candidate: existing,
-      created: false,
-      allowlistEntryId: existing.allowlistEntryId,
-    };
+    const waveEnded =
+      existing.state === "confirmed" &&
+      (await openViolationForPair(pool, {
+        normalizedUrl: existing.normalizedUrl,
+        trackedTitleId: existing.trackedTitleId,
+      })) === null;
+    if (!waveEnded) {
+      return {
+        candidate: existing,
+        created: false,
+        allowlistEntryId: existing.allowlistEntryId,
+      };
+    }
+    // The pair's violation left the open state; the fall-through starts
+    // the reappearance under the partial pair index.
   }
 
   const scored = initialCandidateScore({
@@ -762,39 +833,36 @@ export async function formManualCandidate(
 export const REPUTATION_WINDOW_MS = 365 * 24 * 60 * 60 * 1000;
 
 /**
- * The reputation facts for one registrable domain: confirmed violations of
- * the last twelve months. A confirmed candidate is an operator-confirmed
- * violation — the violation row the decision creates (slice 5b) carries the
- * same confirmation — so the confirmed-candidate count is the domain's
- * standing until the violations table exists to read instead. Blocklists
- * have no stored source yet ("reputation blocklists" arrive with the review
- * slice's learning paths), so `blocklisted` reads false until one does.
+ * The reputation facts for one registrable domain: violations confirmed
+ * against the domain in the last twelve months, read from the violations
+ * table the review decision writes (slice 5b's swap away from the interim
+ * confirmed-candidate count — a violation is now a first-class row, so the
+ * aggregate reads the rows themselves and a closed violation keeps counting
+ * for its confirmation window). Blocklists still have no stored source:
+ * reputation blocklists remain a risk-register item (docs/plan/risks.md),
+ * so `blocklisted` stays seam-false until a real source lands here — never
+ * a hardcoded true.
  */
 export async function readReputationFacts(
   pool: Pool,
   now: () => Date,
   registrableDomain: string,
 ): Promise<ReputationFacts> {
-  // TODO(slice-5b): swap this interim source — the confirmed-candidate
-  // count — for the violations table the review decision writes, so the
-  // reputation aggregate reads the violation rows themselves.
   const cutoff = new Date(now().getTime() - REPUTATION_WINDOW_MS);
   const result = await pool.query<{ count: string }>(
-    `select count(*) as count from candidates
-      where registrable_domain = $1 and state = 'confirmed' and confirmed_at >= $2`,
+    `select count(*) as count from violations
+      where registrable_domain = $1 and confirmed_at >= $2`,
     [registrableDomain, cutoff],
   );
-  // TODO(slice-5b): wire a blocklist source. `blocklisted` is seam-false
-  // until the review slice's reputation blocklists exist to read; a real
-  // source must land here, not a hardcoded constant.
   return { confirmedViolations: Number(result.rows[0].count), blocklisted: false };
 }
 
 /**
  * The player hosts among a capture's facts that reputation knows: at least
  * one confirmed violation at the host's registrable domain in the last
- * twelve months. (A blocklist hit would qualify too; no blocklist source is
- * stored yet.)
+ * twelve months, read from the violations table. (A blocklist hit would
+ * qualify too; no blocklist source is stored yet — the same seam
+ * `readReputationFacts` documents.)
  */
 export async function knownBadPlayerHosts(
   pool: Pool,
@@ -818,12 +886,9 @@ export async function knownBadPlayerHosts(
     return () => false;
   }
   const cutoff = new Date(now().getTime() - REPUTATION_WINDOW_MS);
-  // TODO(slice-5b): this known-bad set reads the same interim source as
-  // readReputationFacts — confirmed candidates standing in for violations —
-  // and shares its blocklist seam (no blocklist source is stored yet).
   const result = await pool.query<{ registrable_domain: string }>(
-    `select distinct registrable_domain from candidates
-      where registrable_domain = any($1::text[]) and state = 'confirmed' and confirmed_at >= $2`,
+    `select distinct registrable_domain from violations
+      where registrable_domain = any($1::text[]) and confirmed_at >= $2`,
     [domains, cutoff],
   );
   const bad = new Set(result.rows.map((row) => row.registrable_domain));
@@ -844,12 +909,20 @@ export async function knownBadPlayerHosts(
  * a candidate explains the observation it was formed from, and the score
  * explains the latest captured evidence. Confirmed and dismissed candidates
  * keep their decision-time scores; their lifecycle is the review slice's.
- * Returns the candidates rescored.
+ * The same pass records the page facts a later dismissal freezes into its
+ * material snapshot: the episode count the sidecar lists and the landing
+ * registrable domain the capture resolved to. Returns the candidates
+ * rescored.
  */
 export async function rescoreCandidatesFromSidecar(
   pool: Pool,
   now: () => Date,
-  input: { normalizedUrl: string; sidecar: string | null },
+  input: {
+    normalizedUrl: string;
+    sidecar: string | null;
+    /** The capture's landing host, when it recorded one. */
+    landingHost?: string | null;
+  },
 ): Promise<CandidateRow[]> {
   const candidates = await pool.query<RawCandidateRow>(
     `select ${CANDIDATE_COLUMNS} from candidates
@@ -860,6 +933,14 @@ export async function rescoreCandidatesFromSidecar(
     return [];
   }
   const facts = parseSidecar(input.sidecar);
+  const landingRegistrableDomain =
+    input.landingHost === undefined || input.landingHost === null
+      ? null
+      : domainOrNull(input.landingHost);
+  const lastPageFacts = {
+    episodeCount: facts.episodeLinks.length,
+    landingRegistrableDomain,
+  };
   const playerHosts = [
     ...new Set(
       facts.playerCandidates
@@ -893,7 +974,7 @@ export async function rescoreCandidatesFromSidecar(
     await pool.query(
       `update candidates
           set score = $2, band = $3, score_components = $4::jsonb,
-              reputation = $5::jsonb, updated_at = $6
+              reputation = $5::jsonb, last_page_facts = $6::jsonb, updated_at = $7
         where id = $1`,
       [
         raw.id,
@@ -901,6 +982,7 @@ export async function rescoreCandidatesFromSidecar(
         scored.band,
         JSON.stringify(scored.components),
         JSON.stringify(scored.reputation),
+        JSON.stringify(lastPageFacts),
         now(),
       ],
     );
@@ -910,7 +992,16 @@ export async function rescoreCandidatesFromSidecar(
       band: scored.band,
       scoreComponents: scored.components as unknown as Record<string, unknown>,
       reputation: scored.reputation as unknown as Record<string, unknown>,
+      lastPageFacts,
     });
   }
   return rescored;
+}
+
+function domainOrNull(host: string): string | null {
+  try {
+    return registrableDomainFor(host);
+  } catch {
+    return null;
+  }
 }

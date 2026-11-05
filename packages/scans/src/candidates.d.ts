@@ -52,8 +52,13 @@ export interface CandidateRow {
     confirmedAt: Date | null;
     dismissedAt: Date | null;
     dismissal: Record<string, unknown> | null;
+    /** The page facts the worker's last rescore saw (episode count, landing domain). */
+    lastPageFacts: Record<string, unknown> | null;
+    /** The snapshot a dismissal froze for the material-change detector. */
+    materialSnapshot: Record<string, unknown> | null;
     createdBy: string | null;
 }
+export declare const CANDIDATE_COLUMNS = "id, tracked_title_id, url, normalized_url, host, registrable_domain,\n  source, engine, engines, query_id, query_text, locale, territory, best_rank,\n  matched_variant_id, matched_variant, score, band, score_components, reputation,\n  allowlist_entry_id, allowlist_kind, first_seen_at, last_observed_at, state,\n  review_decision_id, violation_id, confirmed_at, dismissed_at, dismissal,\n  last_page_facts, material_snapshot, created_by";
 /** A candidates-table row in its snake-case shape, as the store reads it. */
 export type RawCandidateRow = {
     id: string;
@@ -86,12 +91,20 @@ export type RawCandidateRow = {
     confirmed_at: Date | null;
     dismissed_at: Date | null;
     dismissal: Record<string, unknown> | null;
+    last_page_facts: Record<string, unknown> | null;
+    material_snapshot: Record<string, unknown> | null;
     created_by: string | null;
 };
 export declare function mapCandidate(row: RawCandidateRow): CandidateRow;
 /** Reads one candidate by id; null when absent. */
 export declare function readCandidate(pool: Pool, candidateId: string): Promise<CandidateRow | null>;
-/** The candidate for one (URL, tracked title) pair, when one stands. */
+/**
+ * The candidate for one (URL, tracked title) pair, when one stands. A pair
+ * accumulates one confirmed row per violation in its reappearance chain
+ * (ADR 0001); the live row — pending or dismissed — is the pair's current
+ * candidate, and a pair with no live row answers its newest confirmed row.
+ * Callers that must decide between the two check the state themselves.
+ */
 export declare function candidateForPair(pool: Pool, input: {
     url: string;
     trackedTitleId: string;
@@ -140,11 +153,17 @@ export declare function formCandidatesForQuery(pool: Pool, now: () => Date, inpu
 /**
  * Creates (or returns) the candidate a manual entry names: the operator's
  * URL paired with the tracked title they selected, source `manual`, no
- * engine, and the operator as actor. An existing pair is returned unchanged
- * — the deduplication key already names it. The matched variant is the
- * title's original variant, and the score is the formation score (the URL
- * slug), exactly like a SERP-formed pair. Throws when the title does not
- * exist or was merged; the caller decides how that reaches the operator.
+ * engine, and the operator as actor. A standing pair is returned unchanged
+ * — the deduplication key already names it — where standing means a live
+ * row (pending or dismissed) or a confirmed pair whose violation is still
+ * open. A pair whose violation left the open state (removed or closed,
+ * both terminal) is reappearance history, not a standing pair: the manual
+ * entry starts the reappearance, a new candidate whose confirm is a new
+ * violation linked to its predecessor (ADR 0001). The matched variant is
+ * the title's
+ * original variant, and the score is the formation score (the URL slug),
+ * exactly like a SERP-formed pair. Throws when the title does not exist or
+ * was merged; the caller decides how that reaches the operator.
  */
 export declare function formManualCandidate(pool: Pool, now: () => Date, input: {
     url: string;
@@ -155,20 +174,23 @@ export declare function formManualCandidate(pool: Pool, now: () => Date, input: 
 /** Twelve months, the reputation window. */
 export declare const REPUTATION_WINDOW_MS: number;
 /**
- * The reputation facts for one registrable domain: confirmed violations of
- * the last twelve months. A confirmed candidate is an operator-confirmed
- * violation — the violation row the decision creates (slice 5b) carries the
- * same confirmation — so the confirmed-candidate count is the domain's
- * standing until the violations table exists to read instead. Blocklists
- * have no stored source yet ("reputation blocklists" arrive with the review
- * slice's learning paths), so `blocklisted` reads false until one does.
+ * The reputation facts for one registrable domain: violations confirmed
+ * against the domain in the last twelve months, read from the violations
+ * table the review decision writes (slice 5b's swap away from the interim
+ * confirmed-candidate count — a violation is now a first-class row, so the
+ * aggregate reads the rows themselves and a closed violation keeps counting
+ * for its confirmation window). Blocklists still have no stored source:
+ * reputation blocklists remain a risk-register item (docs/plan/risks.md),
+ * so `blocklisted` stays seam-false until a real source lands here — never
+ * a hardcoded true.
  */
 export declare function readReputationFacts(pool: Pool, now: () => Date, registrableDomain: string): Promise<ReputationFacts>;
 /**
  * The player hosts among a capture's facts that reputation knows: at least
  * one confirmed violation at the host's registrable domain in the last
- * twelve months. (A blocklist hit would qualify too; no blocklist source is
- * stored yet.)
+ * twelve months, read from the violations table. (A blocklist hit would
+ * qualify too; no blocklist source is stored yet — the same seam
+ * `readReputationFacts` documents.)
  */
 export declare function knownBadPlayerHosts(pool: Pool, now: () => Date, hosts: readonly string[]): Promise<(host: string) => boolean>;
 /**
@@ -179,9 +201,14 @@ export declare function knownBadPlayerHosts(pool: Pool, now: () => Date, hosts: 
  * a candidate explains the observation it was formed from, and the score
  * explains the latest captured evidence. Confirmed and dismissed candidates
  * keep their decision-time scores; their lifecycle is the review slice's.
- * Returns the candidates rescored.
+ * The same pass records the page facts a later dismissal freezes into its
+ * material snapshot: the episode count the sidecar lists and the landing
+ * registrable domain the capture resolved to. Returns the candidates
+ * rescored.
  */
 export declare function rescoreCandidatesFromSidecar(pool: Pool, now: () => Date, input: {
     normalizedUrl: string;
     sidecar: string | null;
+    /** The capture's landing host, when it recorded one. */
+    landingHost?: string | null;
 }): Promise<CandidateRow[]>;

@@ -85,6 +85,49 @@ async function seedCatalogue(
   };
 }
 
+/**
+ * Confirms the stream pair directly, the way a review decision leaves it:
+ * an immutable decision row, an open violation, and the candidate confirmed
+ * with both named. Returns the ids the assertions need.
+ */
+async function confirmStreamPair(
+  pool: ReturnType<typeof testPool>,
+  world: { operatorId: string; titleId: string },
+  input: { candidateId: string; at: Date },
+): Promise<string> {
+  const violationId = (
+    await pool.query<{ id: string }>("select uuidv7()::text as id")
+  ).rows[0].id;
+  const decision = await pool.query<{ id: string }>(
+    `insert into review_decisions (candidate_id, operator_id, action, decided_at, evidence_ids, violation_id)
+     values ($1, $2, 'violation', $3, '{}'::uuid[], $4) returning id`,
+    [input.candidateId, world.operatorId, input.at, violationId],
+  );
+  await pool.query(
+    `insert into violations
+       (id, tracked_title_id, candidate_id, review_decision_id, url, normalized_url, host,
+        host_source, registrable_domain, detected_at, confirmed_at, confirmed_by, opened_at)
+     values ($1, $2, $3, $4, $5, $6, 'stream.example.test', 'submitted_url', 'example.test',
+        $7, $7, $8, $7)`,
+    [
+      violationId,
+      world.titleId,
+      input.candidateId,
+      decision.rows[0].id,
+      STREAM_URL,
+      STREAM_KEY,
+      input.at,
+      world.operatorId,
+    ],
+  );
+  await pool.query(
+    `update candidates set state = 'confirmed', review_decision_id = $2,
+        violation_id = $3, confirmed_at = $4 where id = $1`,
+    [input.candidateId, decision.rows[0].id, violationId, input.at],
+  );
+  return violationId;
+}
+
 describe("candidate formation from a scan", () => {
   beforeEach(async () => {
     const pool = testPool();
@@ -400,6 +443,153 @@ describe("candidate formation from a scan", () => {
     await pool.end();
   });
 
+  it("re-observing a pair whose violation stands open creates no pending row and enqueues no capture", async () => {
+    const pool = testPool();
+    const clock = controlledClock("2026-03-02T10:00:00.000Z");
+    const world = await seedCatalogue(pool);
+
+    const enqueued: string[] = [];
+    const streamEnqueues = (): number => enqueued.filter((url) => url === STREAM_URL).length;
+    await insertManualScans(pool, clock.now, {
+      titleGroupId: world.groupId,
+      engines: ["google"],
+      trigger: "manual",
+      createdBy: world.operatorId,
+    });
+    await runNextScan(
+      executor(pool, clock, googleFixtures(), async ({ url }) => {
+        enqueued.push(url);
+      }),
+      "google",
+    );
+    expect(streamEnqueues()).toBe(1);
+
+    // The operator confirms the stream pair: an open violation stands and
+    // the candidate row is its confirmed record.
+    const firstScan = await pool.query<{ id: string; last_observed_at: Date }>(
+      "select id, last_observed_at from candidates where normalized_url = $1",
+      [STREAM_KEY],
+    );
+    const confirmedId = firstScan.rows[0].id;
+    const observedAtScan1 = firstScan.rows[0].last_observed_at;
+    await confirmStreamPair(pool, world, { candidateId: confirmedId, at: clock.now() });
+
+    // The next day's scan surfaces the same URL again.
+    clock.advance(24 * 60 * 60 * 1000);
+    await insertManualScans(pool, clock.now, {
+      titleGroupId: world.groupId,
+      engines: ["google"],
+      trigger: "manual",
+      createdBy: world.operatorId,
+    });
+    const second = await runNextScan(
+      executor(pool, clock, googleFixtures(), async ({ url }) => {
+        enqueued.push(url);
+      }),
+      "google",
+    );
+    expect(second).toMatchObject({ outcome: "ran", state: "succeeded" });
+
+    // No phantom pending row: the pair still answers its one confirmed row,
+    // only its observation time advanced to the resurfacing.
+    const rows = await pool.query<{
+      id: string;
+      state: string;
+      last_observed_at: Date;
+      score: string;
+    }>(
+      "select id, state, last_observed_at, score from candidates where normalized_url = $1",
+      [STREAM_KEY],
+    );
+    expect(rows.rows).toHaveLength(1);
+    expect(rows.rows[0].id).toBe(confirmedId);
+    expect(rows.rows[0].state).toBe("confirmed");
+    expect(rows.rows[0].last_observed_at.getTime()).toBeGreaterThan(
+      observedAtScan1.getTime(),
+    );
+    // The re-observation refreshed nothing else: the decision-time score
+    // stands (0.6, band c at formation), and no capture was enqueued for a
+    // pair whose violation already stands open.
+    expect(Number(rows.rows[0].score)).toBe(0.6);
+    expect(streamEnqueues()).toBe(1);
+
+    // The SERP observation is recorded through the pairing link instead:
+    // both scans' result rows of the pair point at the confirmed candidate.
+    const linked = await pool.query<{ candidate_id: string | null }>(
+      "select candidate_id from search_results where normalized_url = $1",
+      [STREAM_KEY],
+    );
+    expect(linked.rows).toHaveLength(4);
+    for (const result of linked.rows) {
+      expect(result.candidate_id).toBe(confirmedId);
+    }
+    await pool.end();
+  });
+
+  it("re-observing a pair whose violation ended terminally starts the reappearance row", async () => {
+    const pool = testPool();
+    const clock = controlledClock("2026-03-02T10:00:00.000Z");
+    const world = await seedCatalogue(pool);
+
+    const enqueued: string[] = [];
+    await insertManualScans(pool, clock.now, {
+      titleGroupId: world.groupId,
+      engines: ["google"],
+      trigger: "manual",
+      createdBy: world.operatorId,
+    });
+    await runNextScan(
+      executor(pool, clock, googleFixtures(), async ({ url }) => {
+        enqueued.push(url);
+      }),
+      "google",
+    );
+    const firstScan = await pool.query<{ id: string }>(
+      "select id from candidates where normalized_url = $1",
+      [STREAM_KEY],
+    );
+    const confirmedId = firstScan.rows[0].id;
+    const violationId = await confirmStreamPair(pool, world, {
+      candidateId: confirmedId,
+      at: clock.now(),
+    });
+    // The wave ends terminally: the URL was removed.
+    await pool.query(
+      `update violations set state = 'removed', closed_at = $2, closure_reason = 'url_removed',
+          closure_evidence_id = null, closed_by = null
+        where id = $1`,
+      [violationId, clock.now()],
+    );
+
+    // The URL reappears on the next day's scan: a NEW pending row is
+    // allowed — the reappearance the predecessor chain exists for — and its
+    // capture is enqueued like any new pair's.
+    clock.advance(24 * 60 * 60 * 1000);
+    await insertManualScans(pool, clock.now, {
+      titleGroupId: world.groupId,
+      engines: ["google"],
+      trigger: "manual",
+      createdBy: world.operatorId,
+    });
+    await runNextScan(
+      executor(pool, clock, googleFixtures(), async ({ url }) => {
+        enqueued.push(url);
+      }),
+      "google",
+    );
+
+    const rows = await pool.query<{ id: string; state: string; violation_id: string | null }>(
+      "select id, state, violation_id from candidates where normalized_url = $1 order by created_at",
+      [STREAM_KEY],
+    );
+    expect(rows.rows).toHaveLength(2);
+    expect(rows.rows[0]).toMatchObject({ id: confirmedId, state: "confirmed" });
+    expect(rows.rows[1]).toMatchObject({ state: "pending", violation_id: null });
+    expect(rows.rows[1].id).not.toBe(confirmedId);
+    expect(enqueued.filter((url) => url === STREAM_URL)).toHaveLength(2);
+    await pool.end();
+  });
+
   it("deepens a pending candidate's score from the capture's sidecar", async () => {
     const pool = testPool();
     const clock = controlledClock("2026-03-02T10:00:00.000Z");
@@ -412,11 +602,14 @@ describe("candidate formation from a scan", () => {
     });
     await runNextScan(executor(pool, clock, googleFixtures()), "google");
 
-    // Three confirmed candidates at the stream domain's registrable domain
+    // Three violations at the stream domain's registrable domain
     // (example.test — subdomains share reputation), twelve months fresh.
     // One seeding serves both reads: the domain's own reputation (3–9
     // confirmed violations earn 0.05) and the player host's known-bad answer
     // (the iframe's host cdn.stream.example.test aggregates at example.test).
+    // Since slice 5b the reputation aggregate reads the violations table the
+    // review decision writes, so the seed stands a confirmed pair with its
+    // decision and violation per count.
     const originalVariantId = (
       await pool.query<{ id: string }>(
         "select original_variant_id as id from tracked_titles where id = $1",
@@ -424,7 +617,8 @@ describe("candidate formation from a scan", () => {
       )
     ).rows[0].id;
     for (let index = 0; index < 3; index += 1) {
-      await pool.query(
+      const url = `https://cdn.stream.example.test/prev-${index}`;
+      const candidate = await pool.query<{ id: string }>(
         `insert into candidates
            (tracked_title_id, url, normalized_url, host, registrable_domain, source,
             engine, engines, best_rank, matched_variant_id, matched_variant, score, band,
@@ -432,13 +626,39 @@ describe("candidate formation from a scan", () => {
             state, review_decision_id, violation_id, confirmed_at)
          values ($1, $2, $3, 'cdn.stream.example.test', 'example.test', 'serp',
             'google', '{google}', 1, $4, '{}'::jsonb, 1, 'a', '{}'::jsonb, '{}'::jsonb, $5, $5,
-            'confirmed', uuidv7(), uuidv7(), $5)`,
+            'confirmed', uuidv7(), uuidv7(), $5)
+         returning id`,
         [
           world.titleId,
-          `https://cdn.stream.example.test/prev-${index}`,
+          url,
           `cdn.stream.example.test/prev-${index}`,
           originalVariantId,
           clock.now(),
+        ],
+      );
+      const violationId = (
+        await pool.query<{ id: string }>("select uuidv7()::text as id")
+      ).rows[0].id;
+      const decision = await pool.query<{ id: string }>(
+        `insert into review_decisions (candidate_id, operator_id, action, decided_at, evidence_ids, violation_id)
+         values ($1, $2, 'violation', $3, '{}'::uuid[], $4) returning id`,
+        [candidate.rows[0].id, world.operatorId, clock.now(), violationId],
+      );
+      await pool.query(
+        `insert into violations
+           (id, tracked_title_id, candidate_id, review_decision_id, url, normalized_url, host,
+            host_source, registrable_domain, detected_at, confirmed_at, confirmed_by, opened_at)
+         values ($1, $2, $3, $4, $5, $6, 'cdn.stream.example.test', 'submitted_url', 'example.test',
+            $7, $7, $8, $7)`,
+        [
+          violationId,
+          world.titleId,
+          candidate.rows[0].id,
+          decision.rows[0].id,
+          url,
+          `cdn.stream.example.test/prev-${index}`,
+          clock.now(),
+          world.operatorId,
         ],
       );
     }

@@ -1,6 +1,10 @@
 import type { Pool } from "pg";
 import { hostForUrl, normalizeUrlKey } from "@patrol/domain";
-import { rescoreCandidatesFromSidecar } from "@patrol/scans";
+import {
+  recordRemovalsForDeadCapture,
+  reopenDismissedOnCapture,
+  rescoreCandidatesFromSidecar,
+} from "@patrol/scans";
 import {
   affectedSurfaceCount,
   allowlistHitForUrl,
@@ -332,8 +336,9 @@ export async function runCapture(
   const nextAttemptAt =
     terminal || delay === null ? undefined : new Date(deps.now().getTime() + delay);
 
+  let evidenceId: string;
   try {
-    await appendEvidence(
+    evidenceId = await appendEvidence(
       deps.pool,
       deps.now,
       {
@@ -385,6 +390,7 @@ export async function runCapture(
         const rescored = await rescoreCandidatesFromSidecar(deps.pool, deps.now, {
           normalizedUrl: row.normalizedUrl,
           sidecar: observation.sidecar,
+          landingHost: observation.pageHost,
         });
         if (rescored.length > 0) {
           log("capture.run deepened candidate scores from the sidecar", {
@@ -394,6 +400,52 @@ export async function runCapture(
         }
       } catch (error) {
         log("capture.run failed rescoring candidates from the sidecar", {
+          captureId,
+          err: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+    // The review lifecycle's worker hooks, on the same evidence record:
+    // a captured page can reopen a dismissed pair (a `page_dead` pair whose
+    // URL serves content again, or a material change), and a dead capture
+    // records the removal of every open violation of the URL. Both run
+    // after the record stands, so a failure is logged and never fails the
+    // capture; the next capture of the URL catches up.
+    if (outcome === "captured") {
+      try {
+        const reopened = await reopenDismissedOnCapture(deps.pool, deps.now, {
+          normalizedUrl: row.normalizedUrl,
+          sidecar: observation.sidecar,
+          landingHost: observation.pageHost,
+        });
+        if (reopened.reopenedCandidateIds.length > 0) {
+          log("capture.run reopened dismissed pairs", {
+            captureId,
+            candidates: reopened.reopenedCandidateIds,
+            reasons: reopened.reasons,
+          });
+        }
+      } catch (error) {
+        log("capture.run failed reopening dismissed pairs", {
+          captureId,
+          err: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+    if (outcome === "dead") {
+      try {
+        const removed = await recordRemovalsForDeadCapture(deps.pool, deps.now, {
+          normalizedUrl: row.normalizedUrl,
+          evidenceId,
+        });
+        if (removed.length > 0) {
+          log("capture.run recorded removals of dead-URL violations", {
+            captureId,
+            violations: removed.map((violation) => violation.id),
+          });
+        }
+      } catch (error) {
+        log("capture.run failed recording removals", {
           captureId,
           err: error instanceof Error ? error.message : String(error),
         });

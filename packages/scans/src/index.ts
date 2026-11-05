@@ -23,6 +23,7 @@ export {
 export type { ScanRow } from "./store.js";
 export {
   REPUTATION_WINDOW_MS,
+  CANDIDATE_COLUMNS,
   candidateForPair,
   formCandidatesForQuery,
   formManualCandidate,
@@ -45,5 +46,43 @@ export {
   onScanCompleted,
   readLadder,
   resetLadderForManualRequest,
+  violationBackedLadderPredicates,
 } from "./ladder.js";
 export type { LadderPredicates, LadderRow } from "./ladder.js";
+export {
+  anyOpenViolationForGroup,
+  citationsForViolation,
+  citeViolationEvidence,
+  insertViolation,
+  latestTerminalViolationForPair,
+  mapViolation,
+  openViolationForPair,
+  openViolationsForUrl,
+  pinnedVersionsForEvidence,
+  readViolation,
+  recordOperatorClosure,
+  recordRemovalsForDeadCapture,
+  scanProducedViolation,
+} from "./violations.js";
+export type {
+  NewViolation,
+  ViolationCitation,
+  ViolationClosureReason,
+  ViolationClosureResult,
+  ViolationRow,
+  ViolationState,
+} from "./violations.js";
+export {
+  currentPageFactsFor,
+  isMaterialChange,
+  materialSnapshotFrom,
+  materialSnapshotOf,
+  reopenCandidate,
+  reopenDismissedOnCapture,
+} from "./reopen.js";
+export type {
+  CaptureReopenOutcome,
+  CurrentPageFacts,
+  MaterialSnapshot,
+  ReopenResult,
+} from "./reopen.js";

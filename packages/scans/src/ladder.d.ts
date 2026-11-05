@@ -9,12 +9,13 @@ import type { Pool } from "pg";
  *
  * The two decisions that depend on violations are pluggable predicates,
  * the same shape as the catalogue's merge guards: `shouldStart` answers
- * whether a completed scan produced the pair's first confirmed violation
- * (slice 5 wires the query), and `shouldContinue` answers whether any
- * violation from the pair is still open. Until slice 5 the defaults see
- * no violations — nothing can be open — so ladders stop after rung three
- * and no scan starts one; the wiring around the predicates is complete
- * and tested with injected ones.
+ * whether a completed scan produced the pair's first confirmed violation,
+ * and `shouldContinue` answers whether any violation from the pair is still
+ * open. Slice 5b ships the violations-backed pair
+ * (`violationBackedLadderPredicates`) and the worker wires it into its
+ * executor; the no-violation defaults remain for callers with no database,
+ * where nothing can be open, ladders stop after rung three, and no scan
+ * starts one.
  */
 /** The decisions about violations the ladder defers to its caller. */
 export interface LadderPredicates {
@@ -32,6 +33,17 @@ export interface LadderPredicates {
 }
 /** The defaults until slice 5's violation lifecycle lands. */
 export declare const noViolationsPredicates: LadderPredicates;
+/**
+ * The real predicates over the violations table slice 5b writes. `shouldStart`
+ * answers whether the completed scan produced a violation for its pair — the
+ * violation's candidate traces to a search result of the scan's plan — and is
+ * asked only while no ladder stands, so any violation it finds is the pair's
+ * first. `shouldContinue` answers whether any violation under the title group
+ * is still open; a violation is not engine-owned, so the group is the scope
+ * the open state answers for. The worker wires these into its executor; the
+ * no-violation defaults stay for callers with no database.
+ */
+export declare function violationBackedLadderPredicates(pool: Pool): LadderPredicates;
 /** One ladder row. */
 export interface LadderRow {
     id: string;

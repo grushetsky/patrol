@@ -4,6 +4,7 @@ import pino from "pino";
 import PgBoss from "pg-boss";
 import { assertSchema, expectedSchemaStamp } from "@patrol/db";
 import { S3EvidenceStore, enqueueCapture, s3ConfigFromEnv } from "@patrol/evidence";
+import { violationBackedLadderPredicates } from "@patrol/scans";
 import { loadWorkerConfig, packageVersion } from "./config.js";
 import { FakeSerpAcquisitor } from "./acquisition/fake.js";
 import { DataForSeoAdapter } from "./acquisition/dataforseo.js";
@@ -187,6 +188,11 @@ async function boot(): Promise<void> {
     adapters,
     retryDelaysMs: config.retryDelaysMs,
     sleep: (ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)),
+    // The re-check ladder's violation predicates, over the violations table
+    // the review decision writes: a ladder starts when its scan produced
+    // the pair's first violation and continues while any violation under
+    // the title group is open.
+    predicates: violationBackedLadderPredicates(pool),
     // Candidate formation's detection captures ride the same enqueue port
     // the HTTP surface uses: its guards (allowlist, objection, freshness)
     // run before any fetch, and the dispatch wakes the capture queue.

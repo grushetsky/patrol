@@ -1,6 +1,5 @@
 import type { Pool } from "pg";
 import {
-  candidateForPair,
   formManualCandidate,
   loadTitleForMatching,
   mapCandidate,
@@ -22,8 +21,11 @@ import { pageParams } from "../routes/support.js";
  */
 
 /** The contract's Candidate shape, with its lifecycle union. */
-export function candidateJson(row: CandidateRow): Record<string, unknown> {
-  const base = {
+export function candidateJson(
+  row: CandidateRow,
+  priorDecisionIds: string[] = [],
+): Record<string, unknown> {
+  return {
     id: row.id,
     trackedTitleId: row.trackedTitleId,
     url: row.url,
@@ -38,31 +40,9 @@ export function candidateJson(row: CandidateRow): Record<string, unknown> {
     ...(row.allowlistEntryId === null ? {} : { allowlistEntryId: row.allowlistEntryId }),
     firstObservedAt: row.firstSeenAt.toISOString(),
     lastObservedAt: row.lastObservedAt.toISOString(),
-    priorDecisionIds: [] as string[],
+    priorDecisionIds,
+    lifecycle: candidateLifecycleJson(row),
   };
-  switch (row.state) {
-    case "pending":
-      return { ...base, lifecycle: { state: "pending" } };
-    case "confirmed":
-      return {
-        ...base,
-        lifecycle: {
-          state: "confirmed",
-          reviewDecisionId: row.reviewDecisionId!,
-          violationId: row.violationId!,
-          confirmedAt: row.confirmedAt!.toISOString(),
-        },
-      };
-    case "dismissed":
-      return {
-        ...base,
-        lifecycle: {
-          state: "dismissed",
-          reviewDecisionId: row.reviewDecisionId!,
-          dismissal: row.dismissal ?? {},
-        },
-      };
-  }
 }
 
 /**
@@ -102,15 +82,11 @@ export async function createManualCandidate(
       fieldErrors: [{ path: "/trackedTitleId", message: "no such tracked title" }],
     });
   }
-  // The dedup answer is decided by the same key the store upserts under, so
-  // a raced second request can only return the row that already stands.
-  const existing = await candidateForPair(pool, {
-    url: input.url,
-    trackedTitleId: input.trackedTitleId,
-  });
-  if (existing !== null) {
-    return { candidate: existing, created: false };
-  }
+  // The standing-pair answer is the store's own (formManualCandidate): the
+  // deduplication key decides it there, including the confirmed pair whose
+  // violation still stands open and the ended wave whose reappearance this
+  // entry starts — a raced second request can only return the row that
+  // already stands.
   const outcome = await formManualCandidate(pool, now, {
     url: input.url,
     trackedTitleId: input.trackedTitleId,
@@ -135,15 +111,37 @@ interface ReviewRowColumns {
     scope: string;
     territory: string | null;
   } | null;
+  priorDecision: {
+    id: string;
+    action: string;
+    operatorId: string;
+    decidedAt: Date;
+    note: string | null;
+  } | null;
 }
 
 const REVIEW_SELECT = `select c.*, t.release_year, t.title_type, v.text as display_title,
     a.id as allowlist_id, a.kind as allowlist_kind, a.value as allowlist_value,
-    a.scope as allowlist_scope, a.territory as allowlist_territory
+    a.scope as allowlist_scope, a.territory as allowlist_territory,
+    pd.id as prior_decision_id, pd.action as prior_decision_action,
+    pd.operator_id as prior_decision_operator_id, pd.decided_at as prior_decision_decided_at,
+    pd.note as prior_decision_note
   from candidates c
   join tracked_titles t on t.id = c.tracked_title_id
   join title_variants v on v.id = t.original_variant_id
-  left join allowlist_entries a on a.id = c.allowlist_entry_id`;
+  left join allowlist_entries a on a.id = c.allowlist_entry_id
+  left join lateral (
+    -- The pair's most recent decision, across the pair's reappearance
+    -- surfaces — the history belongs to (normalized URL, tracked title),
+    -- not to one candidate row.
+    select d.id, d.action, d.operator_id, d.decided_at, d.note
+      from review_decisions d
+      join candidates pc on pc.id = d.candidate_id
+     where pc.normalized_url = c.normalized_url
+       and pc.tracked_title_id = c.tracked_title_id
+     order by d.decided_at desc, d.id
+     limit 1
+  ) pd on true`;
 
 type RawReviewRow = Record<string, unknown> & {
   release_year: number;
@@ -154,6 +152,11 @@ type RawReviewRow = Record<string, unknown> & {
   allowlist_value: string | null;
   allowlist_scope: string | null;
   allowlist_territory: string | null;
+  prior_decision_id: string | null;
+  prior_decision_action: string | null;
+  prior_decision_operator_id: string | null;
+  prior_decision_decided_at: Date | null;
+  prior_decision_note: string | null;
 };
 
 function mapReviewRow(row: RawReviewRow): ReviewRowColumns {
@@ -173,11 +176,22 @@ function mapReviewRow(row: RawReviewRow): ReviewRowColumns {
             scope: row.allowlist_scope!,
             territory: row.allowlist_territory ?? null,
           },
+    priorDecision:
+      row.prior_decision_id === null
+        ? null
+        : {
+            id: row.prior_decision_id,
+            action: row.prior_decision_action!,
+            operatorId: row.prior_decision_operator_id!,
+            decidedAt: new Date(row.prior_decision_decided_at!),
+            note: row.prior_decision_note ?? null,
+          },
   };
 }
 
 /** One EvidenceSummary row, the newest capture of one URL. */
-interface NewestEvidence {
+/** One EvidenceSummary row, the newest capture of one URL. */
+export interface NewestEvidence {
   normalizedUrl: string;
   id: string;
   reason: string;
@@ -217,7 +231,8 @@ async function thumbnailsByEvidenceId(
   return map;
 }
 
-async function newestEvidenceBy(
+/** The newest capture of each URL, keyed by normalized URL. */
+export async function newestEvidenceBy(
   pool: Pool,
   normalizedUrls: string[],
 ): Promise<Map<string, NewestEvidence>> {
@@ -252,7 +267,8 @@ async function newestEvidenceBy(
   return new Map([...byEvidence.values()].map((entry) => [entry.normalizedUrl, entry]));
 }
 
-function evidenceJson(entry: NewestEvidence): Record<string, unknown> {
+/** The contract's EvidenceSummary for one capture. */
+export function evidenceJson(entry: NewestEvidence): Record<string, unknown> {
   // Contract gap, frozen with slice 5a: EvidenceSummary carries only the
   // thumbnail among artifacts, so the rendered DOM's sha — recorded in
   // evidence_artifacts like every artifact — has no contract field to ride
@@ -282,6 +298,27 @@ function evidenceJson(entry: NewestEvidence): Record<string, unknown> {
         }),
     purged: entry.purgedAt !== null,
   };
+}
+
+/** The candidate lifecycle union, shared by the queue row and the record. */
+export function candidateLifecycleJson(row: CandidateRow): Record<string, unknown> {
+  switch (row.state) {
+    case "pending":
+      return { state: "pending" };
+    case "confirmed":
+      return {
+        state: "confirmed",
+        reviewDecisionId: row.reviewDecisionId!,
+        violationId: row.violationId!,
+        confirmedAt: row.confirmedAt!.toISOString(),
+      };
+    case "dismissed":
+      return {
+        state: "dismissed",
+        reviewDecisionId: row.reviewDecisionId!,
+        dismissal: row.dismissal ?? {},
+      };
+  }
 }
 
 /** The contract's CandidateReviewRow for one listed candidate. */
@@ -325,16 +362,24 @@ function reviewRowJson(
               : { territory: columns.allowlistEntry.territory }),
           },
         }),
-    // Slice 5b fills the pair's prior decisions; none can exist yet.
+    // The pair's most recent prior decision, the flag the queue shows.
+    ...(columns.priorDecision === null
+      ? {}
+      : {
+          priorDecision: {
+            id: columns.priorDecision.id,
+            action: columns.priorDecision.action,
+            operatorId: columns.priorDecision.operatorId,
+            decidedAt: columns.priorDecision.decidedAt.toISOString(),
+            ...(columns.priorDecision.note === null
+              ? {}
+              : { note: columns.priorDecision.note }),
+          },
+        }),
     ...(newest === undefined ? {} : { newestEvidence: evidenceJson(newest) }),
     firstObservedAt: row.firstSeenAt.toISOString(),
     lastObservedAt: row.lastObservedAt.toISOString(),
-    lifecycle:
-      row.state === "pending"
-        ? { state: "pending" }
-        : row.state === "confirmed"
-          ? { state: "confirmed" }
-          : { state: "dismissed" },
+    lifecycle: candidateLifecycleJson(row),
   };
 }
 
@@ -448,11 +493,99 @@ export async function listCandidates(
   };
 }
 
-/** The contract's CandidateDetail, with provenance and evidence. */
+/**
+ * The pair's review decisions, newest first — the shape every reader of the
+ * decision history shares (the detail's list, the record's priorDecisionIds).
+ */
+export interface ReviewDecisionRow {
+  id: string;
+  candidateId: string;
+  action: string;
+  operatorId: string;
+  decidedAt: Date;
+  note: string | null;
+  evidenceIds: string[];
+  violationId: string | null;
+  rematchedTrackedTitleId: string | null;
+  proposedAllowlistEntryId: string | null;
+}
+
+/**
+ * Reads every decision recorded on one pair, newest first. The contract
+ * scopes the decision history to the pair ("every review decision recorded
+ * on the pair"), not to one candidate row: a reappearance surface is a new
+ * candidate of the same (normalized URL, tracked title), and its history
+ * still names the decisions the pair's earlier surfaces received.
+ */
+export async function reviewDecisionsFor(
+  pool: Pool,
+  pair: { normalizedUrl: string; trackedTitleId: string },
+): Promise<ReviewDecisionRow[]> {
+  const result = await pool.query<{
+    id: string;
+    candidate_id: string;
+    action: string;
+    operator_id: string;
+    decided_at: Date;
+    note: string | null;
+    evidence_ids: string[];
+    violation_id: string | null;
+    rematched_tracked_title_id: string | null;
+    proposed_allowlist_entry_id: string | null;
+  }>(
+    `select d.id, d.candidate_id, d.action, d.operator_id, d.decided_at, d.note,
+            d.evidence_ids, d.violation_id, d.rematched_tracked_title_id,
+            d.proposed_allowlist_entry_id
+       from review_decisions d
+       join candidates c on c.id = d.candidate_id
+      where c.normalized_url = $1 and c.tracked_title_id = $2
+      order by d.decided_at desc, d.id`,
+    [pair.normalizedUrl, pair.trackedTitleId],
+  );
+  return result.rows.map((row) => ({
+    id: row.id,
+    candidateId: row.candidate_id,
+    action: row.action,
+    operatorId: row.operator_id,
+    decidedAt: new Date(row.decided_at),
+    note: row.note,
+    evidenceIds: row.evidence_ids ?? [],
+    violationId: row.violation_id,
+    rematchedTrackedTitleId: row.rematched_tracked_title_id,
+    proposedAllowlistEntryId: row.proposed_allowlist_entry_id,
+  }));
+}
+
+/** The contract's ReviewDecision for one recorded decision. */
+export function reviewDecisionJson(row: ReviewDecisionRow): Record<string, unknown> {
+  return {
+    id: row.id,
+    candidateId: row.candidateId,
+    action: row.action,
+    operatorId: row.operatorId,
+    decidedAt: row.decidedAt.toISOString(),
+    ...(row.note === null ? {} : { note: row.note }),
+    evidenceIds: row.evidenceIds,
+    ...(row.violationId === null ? {} : { violationId: row.violationId }),
+    ...(row.rematchedTrackedTitleId === null
+      ? {}
+      : { rematchedTrackedTitleId: row.rematchedTrackedTitleId }),
+    ...(row.proposedAllowlistEntryId === null
+      ? {}
+      : { proposedAllowlistEntryId: row.proposedAllowlistEntryId }),
+  };
+}
+
+/**
+ * The contract's CandidateDetail, with provenance, evidence, and the pair's
+ * decision history. The candidate row rides along so the caller can act on
+ * the pair (the detail read queues a review capture when the pair is
+ * pending and its newest live capture is stale).
+ */
 export async function readCandidateDetail(
   pool: Pool,
   candidateId: string,
-): Promise<Record<string, unknown>> {
+): Promise<{ body: Record<string, unknown>; candidate: CandidateRow }> {
   const row = await readCandidate(pool, candidateId);
   if (row === null) {
     throw new ApiError(404, "not_found");
@@ -485,47 +618,57 @@ export async function readCandidateDetail(
   const allowlist = row.allowlistEntryId === null
     ? null
     : await pool.query(`select * from allowlist_entries where id = $1`, [row.allowlistEntryId]);
+  const decisions = await reviewDecisionsFor(pool, {
+    normalizedUrl: row.normalizedUrl,
+    trackedTitleId: row.trackedTitleId,
+  });
 
   return {
-    candidate: candidateJson(row),
-    displayTitle: display.rows[0].text,
-    releaseYear: Number(title.rows[0].release_year),
-    titleType: title.rows[0].title_type,
-    observations: observations.rows.map((observation) => ({
-      id: observation.id,
-      scanId: observation.scan_id,
-      queryId: observation.query_id,
-      engine: observation.engine,
-      url: observation.url,
-      normalizedUrl: observation.normalized_url,
-      rank: Number(observation.rank),
-      title: observation.title,
-      snippet: observation.snippet,
-      locale: observation.locale,
-      ...(observation.territory === null ? {} : { territory: observation.territory }),
-      observedAt: new Date(observation.observed_at).toISOString(),
-      rawPayloadRef: observation.raw_payload_ref,
-      host: observation.host,
-      registrableDomain: observation.registrable_domain,
-    })),
-    evidence: (allEvidence.rows as Array<Record<string, unknown>>).map((entry) =>
-      evidenceJson({
-        normalizedUrl: row.normalizedUrl,
-        id: entry.id as string,
-        reason: entry.reason as string,
-        outcome: entry.outcome as string,
-        observedAt: entry.observed_at as Date,
-        httpStatus: (entry.http_status ?? null) as number | null,
-        finalUrl: (entry.final_url ?? null) as string | null,
-        host: (entry.host ?? null) as string | null,
-        purgedAt: (entry.purged_at ?? null) as Date | null,
-        thumbnail: thumbnails.get(entry.id as string) ?? null,
-      }),
-    ),
-    decisions: [],
-    ...(allowlist === null || allowlist.rows.length === 0
-      ? {}
-      : { allowlistEntry: allowlistEntryDetailJson(allowlist.rows[0]) }),
+    candidate: row,
+    body: {
+      candidate: candidateJson(
+        row,
+        decisions.map((decision) => decision.id),
+      ),
+      displayTitle: display.rows[0].text,
+      releaseYear: Number(title.rows[0].release_year),
+      titleType: title.rows[0].title_type,
+      observations: observations.rows.map((observation) => ({
+        id: observation.id,
+        scanId: observation.scan_id,
+        queryId: observation.query_id,
+        engine: observation.engine,
+        url: observation.url,
+        normalizedUrl: observation.normalized_url,
+        rank: Number(observation.rank),
+        title: observation.title,
+        snippet: observation.snippet,
+        locale: observation.locale,
+        ...(observation.territory === null ? {} : { territory: observation.territory }),
+        observedAt: new Date(observation.observed_at).toISOString(),
+        rawPayloadRef: observation.raw_payload_ref,
+        host: observation.host,
+        registrableDomain: observation.registrable_domain,
+      })),
+      evidence: (allEvidence.rows as Array<Record<string, unknown>>).map((entry) =>
+        evidenceJson({
+          normalizedUrl: row.normalizedUrl,
+          id: entry.id as string,
+          reason: entry.reason as string,
+          outcome: entry.outcome as string,
+          observedAt: entry.observed_at as Date,
+          httpStatus: (entry.http_status ?? null) as number | null,
+          finalUrl: (entry.final_url ?? null) as string | null,
+          host: (entry.host ?? null) as string | null,
+          purgedAt: (entry.purged_at ?? null) as Date | null,
+          thumbnail: thumbnails.get(entry.id as string) ?? null,
+        }),
+      ),
+      decisions: decisions.map(reviewDecisionJson),
+      ...(allowlist === null || allowlist.rows.length === 0
+        ? {}
+        : { allowlistEntry: allowlistEntryDetailJson(allowlist.rows[0]) }),
+    },
   };
 }
 

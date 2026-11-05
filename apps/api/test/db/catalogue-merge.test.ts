@@ -155,10 +155,13 @@ describe("merge", () => {
   it("refuses a merge a guard predicate blocks, naming the title", async () => {
     const survivor = await createTitle("Guarded Survivor", 1960);
     const duplicate = await createTitle("Guarded Duplicate", 1960);
-    // The route's default list is empty by design (slice 5 registers the
-    // candidate and violation predicates); the seam drives the mechanism
+    // Slice 5b registered the pair: any candidate or any violation on the
+    // duplicate blocks its merge. The seam still drives the mechanism
     // through the domain function with an injected blocking predicate.
-    expect(MERGE_GUARD_PREDICATES).toHaveLength(0);
+    expect(MERGE_GUARD_PREDICATES.map((predicate) => predicate.name)).toEqual([
+      "candidates",
+      "violations",
+    ]);
     await expect(
       mergeTitles(
         world.pool,

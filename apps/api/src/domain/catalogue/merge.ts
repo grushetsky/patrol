@@ -17,10 +17,9 @@ import { readTitleDetail, titleDetailJson } from "./tracked-titles.js";
 
 /**
  * One guard behind the merge refusal. The predicate list is pluggable so
- * slice 5 can register the candidate and violation guards when their tables
- * arrive — forward-only migrations mean 0002 cannot reference tables that
- * do not exist yet, so until then the structural checks below carry the
- * guard alone and this list is empty by design, not by omission.
+ * the guards stay declarative and testable; slice 5 registered the pair
+ * (any candidate on the duplicate blocks the merge, and any violation of
+ * the duplicate blocks it outright) the moment the tables existed.
  */
 export interface MergeGuardPredicate {
   /** The predicate's name, for logs and tests. */
@@ -29,10 +28,31 @@ export interface MergeGuardPredicate {
   blocks: (client: PoolClient, titleId: string) => Promise<boolean>;
 }
 
+async function existsAny(
+  client: PoolClient,
+  sql: string,
+  titleId: string,
+): Promise<boolean> {
+  const result = await client.query(sql, [titleId]);
+  return result.rows.length > 0;
+}
+
 export const MERGE_GUARD_PREDICATES: MergeGuardPredicate[] = [
-  // Slice 5 registers here:
-  // - candidates: any candidate referencing the duplicate blocks the merge;
-  // - violations: any violation of the duplicate blocks the merge outright.
+  {
+    // A duplicate with any candidate — pending, confirmed, or dismissed —
+    // is cleaned up first by resolving them as wrong work; the merge is
+    // offered only once none stands.
+    name: "candidates",
+    blocks: (client, titleId) =>
+      existsAny(client, `select 1 from candidates where tracked_title_id = $1 limit 1`, titleId),
+  },
+  {
+    // A violation is keyed by its URL and tracked title, and that identity
+    // is permanent: a duplicate with any violation is never merged.
+    name: "violations",
+    blocks: (client, titleId) =>
+      existsAny(client, `select 1 from violations where tracked_title_id = $1 limit 1`, titleId),
+  },
 ];
 
 export interface MergeTitlesInput {

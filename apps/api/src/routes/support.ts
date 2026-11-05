@@ -1,9 +1,12 @@
+import type { FastifyReply } from "fastify";
 import type { Pool } from "pg";
 import type { OperatorRecord, SessionWithOperator } from "../domain/session.js";
+import type { CaptureAnswer } from "../domain/review/captures.js";
+import { ApiError } from "../errors.js";
 
 /**
- * Mappers and request plumbing shared by the identity routes. Nothing here
- * exposes credential material: the contract's Operator, SessionView, and the
+ * Mappers and request plumbing shared by the routes. Nothing here exposes
+ * credential material: the contract's Operator, SessionView, and the
  * authenticated payloads never carry a hash, a secret, or a token.
  */
 
@@ -62,6 +65,28 @@ export function pageParams(query: Record<string, unknown>): {
       ? Math.min(requestedSize, 200)
       : 50;
   return { page, pageSize, limit: pageSize, offset: (page - 1) * pageSize };
+}
+
+/**
+ * The one answer every on-demand capture route gives: the port's refusal
+ * codes (an allowlisted URL is never captured; a host under an objection
+ * suspends captures) mapped onto their 409s, and the accepted answer as
+ * 202 with the queued reason — the same contract reply for the candidate
+ * and the violation capture endpoints alike.
+ */
+export function sendCaptureAnswer(
+  reply: FastifyReply,
+  now: () => Date,
+  answer: CaptureAnswer,
+): Record<string, unknown> {
+  if (answer.status === "allowlist") {
+    throw new ApiError(409, "allowlist_hit");
+  }
+  if (answer.status === "objection") {
+    throw new ApiError(409, "host_objection", { hostObjectionId: answer.hostObjectionId });
+  }
+  reply.status(202);
+  return { queuedAt: now().toISOString(), reason: answer.reason };
 }
 
 interface SessionPageRow {

@@ -13,6 +13,7 @@ import { catalogueRoutes } from "./routes/catalogue.js";
 import { settingsRoutes } from "./routes/settings.js";
 import { scansRoutes } from "./routes/scans.js";
 import { candidatesRoutes } from "./routes/candidates.js";
+import { violationsRoutes } from "./routes/violations.js";
 import { readSetupState } from "./domain/bootstrap.js";
 import type { MailTransport } from "./mail/transport.js";
 import { noopScanDispatcher, type ScanDispatcher } from "./queue/dispatch.js";
@@ -136,7 +137,18 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
                 { pool: deps.pool, now: deps.config.now, dispatch: deps.captureDispatch! },
                 input,
               ),
+            captureDispatch: deps.captureDispatch,
           }),
+    }),
+    { prefix: "/api" },
+  );
+  await app.register(
+    violationsRoutes({
+      config: deps.config,
+      pool: deps.pool,
+      ...(deps.captureDispatch === undefined
+        ? {}
+        : { captureDispatch: deps.captureDispatch }),
     }),
     { prefix: "/api" },
   );

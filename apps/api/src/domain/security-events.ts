@@ -5,8 +5,11 @@ import type { Pool, PoolClient } from "pg";
  * domain audit trail. The kinds are the ones the design names: sign-in
  * success and failure, invitation create/revoke/accept, credential changes,
  * session revocation including an administrator's disable, lockout, and
- * recovery-code use. `detail` never carries a password, a TOTP secret, a
- * session token, or a recovery code.
+ * recovery-code use. One deliberate extension beyond that authentication
+ * scope: `candidate_reopened`, the operator's overturn of a colleague's
+ * dismissal with their reason — the reopen has no row of its own anywhere
+ * else, and this log is where an audit wants a name on it. `detail` never
+ * carries a password, a TOTP secret, a session token, or a recovery code.
  */
 export type SecurityEventKind =
   | "sign_in_succeeded"
@@ -27,7 +30,8 @@ export type SecurityEventKind =
   | "operator_reinstated"
   | "session_revoked"
   | "recovery_code_used"
-  | "recovery_codes_issued";
+  | "recovery_codes_issued"
+  | "candidate_reopened";
 
 export interface SecurityEventInput {
   operatorId?: string | null;

@@ -44,6 +44,10 @@ export type ApiErrorCode =
   | "last_administrator"
   | "host_objection"
   | "bytes_purged"
+  | "allowlist_hit"
+  | "evidence_required"
+  | "wrong_work_requires_title"
+  | "note_required"
   | "setup_required"
   | "schema_mismatch"
   | "rate_limited"
@@ -69,6 +73,10 @@ const MESSAGE_KEYS: Record<ApiErrorCode, MessageKey> = {
   last_administrator: "errors.last_administrator",
   host_objection: "errors.host_objection",
   bytes_purged: "errors.bytes_purged",
+  allowlist_hit: "errors.allowlist_hit",
+  evidence_required: "errors.evidence_required",
+  wrong_work_requires_title: "errors.wrong_work_requires_title",
+  note_required: "errors.note_required",
   setup_required: "errors.setup_required",
   schema_mismatch: "errors.schema_mismatch",
   rate_limited: "errors.rate_limited",
@@ -96,6 +104,11 @@ export class ApiError extends Error {
    * host_objection (the contract's ConflictBody pointer).
    */
   readonly hostObjectionId?: string;
+  /**
+   * The record's state at the moment of the conflict, on a lifecycle
+   * conflict (the contract's ConflictBody.currentState).
+   */
+  readonly currentState?: string;
 
   constructor(
     statusCode: number,
@@ -106,6 +119,7 @@ export class ApiError extends Error {
       existingTitleId?: string;
       blockingTitleId?: string;
       hostObjectionId?: string;
+      currentState?: string;
     } = {},
   ) {
     super(`${statusCode} ${code}`);
@@ -117,6 +131,7 @@ export class ApiError extends Error {
     this.existingTitleId = options.existingTitleId;
     this.blockingTitleId = options.blockingTitleId;
     this.hostObjectionId = options.hostObjectionId;
+    this.currentState = options.currentState;
   }
 
   /** The catalogue key the display message resolves through. */
