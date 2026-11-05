@@ -41,6 +41,9 @@ export type ApiErrorCode =
   | "unprocessable"
   | "duplicate_title"
   | "duplicate_entity"
+  | "violation_reserved"
+  | "recipient_ineligible"
+  | "grouping_limit_exceeded"
   | "last_administrator"
   | "host_objection"
   | "bytes_purged"
@@ -70,6 +73,9 @@ const MESSAGE_KEYS: Record<ApiErrorCode, MessageKey> = {
   unprocessable: "errors.unprocessable",
   duplicate_title: "errors.duplicate_title",
   duplicate_entity: "errors.duplicate_entity",
+  violation_reserved: "errors.violation_reserved",
+  recipient_ineligible: "errors.recipient_ineligible",
+  grouping_limit_exceeded: "errors.grouping_limit_exceeded",
   last_administrator: "errors.last_administrator",
   host_objection: "errors.host_objection",
   bytes_purged: "errors.bytes_purged",
@@ -109,6 +115,13 @@ export class ApiError extends Error {
    * conflict (the contract's ConflictBody.currentState).
    */
   readonly currentState?: string;
+  /**
+   * The violations another active notice reserves, on a draft refused with
+   * 409 violation_reserved (the contract's ConflictBody pointer).
+   */
+  readonly conflictingViolationIds?: string[];
+  /** The notice that already reserves the violations or the pair. */
+  readonly existingNoticeId?: string;
 
   constructor(
     statusCode: number,
@@ -120,6 +133,8 @@ export class ApiError extends Error {
       blockingTitleId?: string;
       hostObjectionId?: string;
       currentState?: string;
+      conflictingViolationIds?: string[];
+      existingNoticeId?: string;
     } = {},
   ) {
     super(`${statusCode} ${code}`);
@@ -132,6 +147,8 @@ export class ApiError extends Error {
     this.blockingTitleId = options.blockingTitleId;
     this.hostObjectionId = options.hostObjectionId;
     this.currentState = options.currentState;
+    this.conflictingViolationIds = options.conflictingViolationIds;
+    this.existingNoticeId = options.existingNoticeId;
   }
 
   /** The catalogue key the display message resolves through. */

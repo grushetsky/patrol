@@ -1,0 +1,81 @@
+{
+  "fixtures": [
+    {
+      "identifier": "google-search.en.v1@ed9f34155836",
+      "recipient": "google",
+      "language": "en",
+      "major": 1,
+      "statements": [
+        {
+          "key": "good_faith_belief",
+          "text": "I have a good faith belief that use of the copyrighted materials described above as allegedly infringing is not authorized by the copyright owner, its agent, or the law."
+        },
+        {
+          "key": "accuracy_perjury_authority",
+          "text": "The information in this notification is accurate and I swear, under penalty of perjury, that I am the copyright owner or am authorized to act on behalf of the owner of an exclusive right that is allegedly infringed."
+        }
+      ],
+      "fields": [
+        {
+          "name": "signature",
+          "label": "Complete complaints require the physical or electronic signature of the copyright owner or a representative authorized to act on their behalf. To satisfy this requirement, you may type your full legal name to act as your signature at the bottom of your complaint.",
+          "required": true
+        }
+      ],
+      "expectedHash12": "ed9f34155836"
+    },
+    {
+      "identifier": "bing.en.v1@e36eaf64fd3c",
+      "recipient": "bing",
+      "language": "en",
+      "major": 1,
+      "statements": [
+        {
+          "key": "good_faith_belief",
+          "text": "By typing in my name (electronic signature), I state that I have a good faith belief that the use of the material is not authorized by the intellectual property owner, its agent, or the law (e.g., it is not fair use)."
+        },
+        {
+          "key": "authority_to_act",
+          "text": "I represent that the information in the notification is accurate and, under penalty of perjury, that I am authorized to act on behalf of the owner of an exclusive right that is allegedly infringed."
+        },
+        {
+          "key": "512f_acknowledgement",
+          "text": "As applicable under 17 U.S.C. 512(f), I acknowledge that I may be subject to liability for damages if I knowingly materially misrepresent that material or activity is infringing."
+        },
+        {
+          "key": "third_party_sharing",
+          "text": "I understand that the information submitted in this form may be shared with third parties or the public, including the alleged infringer about whom I am filing this complaint."
+        }
+      ],
+      "fields": [
+        { "name": "signature", "label": "Signature", "required": true }
+      ],
+      "expectedHash12": "e36eaf64fd3c"
+    },
+    {
+      "identifier": "yandex.en.v1@209722198e33",
+      "recipient": "yandex",
+      "language": "en",
+      "major": 1,
+      "statements": [
+        {
+          "key": "good_faith_belief",
+          "text": "By submitting this notice and signing with your digital signature below, you confirm that you have a good faith belief that the use of the material in the manner complained of is not authorized by the copyright owner, its agent, or the law."
+        },
+        {
+          "key": "accuracy_perjury_authority",
+          "text": "You further confirm that the information in this notification is accurate and, under penalty of perjury, that you are authorized to act on behalf of the owner of an exclusive right that is allegedly infringed."
+        },
+        {
+          "key": "data_processing_consent",
+          "text": "I hereby consent to the processing of the personal data provided above for the purpose of reviewing the application and getting feedback. I am aware of my right to withdraw the consent via address mentioned above."
+        }
+      ],
+      "fields": [
+        { "name": "signature", "label": "Signature (please provide your full name)", "required": true },
+        { "name": "date", "label": "Date (Format:DD.MM.YYYY)", "required": true }
+      ],
+      "expectedHash12": "209722198e33"
+    }
+  ]
+}

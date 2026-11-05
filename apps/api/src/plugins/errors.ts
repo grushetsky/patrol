@@ -70,6 +70,12 @@ export const errorsPlugin: FastifyPluginAsync = fp(async (app) => {
         ...(error.currentState !== undefined
           ? { currentState: error.currentState }
           : {}),
+        ...(error.conflictingViolationIds !== undefined
+          ? { conflictingViolationIds: error.conflictingViolationIds }
+          : {}),
+        ...(error.existingNoticeId !== undefined
+          ? { existingNoticeId: error.existingNoticeId }
+          : {}),
       });
       return;
     }

@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { t } from "@patrol/i18n";
 import { api } from "../../lib/api/client";
+import { fetchSessionCsrfToken } from "../../lib/api/auth";
 import { useSession } from "../../lib/session";
 
 /**
  * The violations screen (docs/design/dashboard-ui.md "Violations"): rows
  * grouped by tracked title, each group heading showing the open count
  * against the total, a title filter, and per-row host, URL, cited capture,
- * and status. Selecting open violations opens the cart fixed at the bottom
- * with the count; the recipient selector and Draft notice arrive with the
- * notices slice and render as disabled placeholders.
+ * and status. Selecting open violations opens the cart fixed at the bottom:
+ * the recipient selector addresses one recipient profile, and Draft notice
+ * composes the on-demand draft through POST /notices. A refusal — a
+ * reserved violation, an over-cap batch, an ineligible recipient — renders
+ * the error code's catalogue line beside the cart.
  */
 
 interface ViolationRow {
@@ -50,10 +53,15 @@ const STATUS_KEYS = {
 
 function ViolationsIndex() {
   const { locale } = useSession();
+  const navigate = useNavigate();
   const [rows, setRows] = useState<ViolationRow[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [titleFilter, setTitleFilter] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [profiles, setProfiles] = useState<Array<{ id: string; recipient: string }>>([]);
+  const [profileId, setProfileId] = useState("");
+  const [drafting, setDrafting] = useState(false);
+  const [draftError, setDraftError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     const { data, response } = await api.GET("/violations", {
@@ -67,9 +75,89 @@ function ViolationsIndex() {
     }
   }, [locale]);
 
+  const loadProfiles = useCallback(async () => {
+    const { data, response } = await api.GET("/settings/recipient-profiles");
+    if (response.ok && data) {
+      const loaded = (data.items as Array<{ id: string; recipient: string }>).map((item) => ({
+        id: item.id,
+        recipient: item.recipient,
+      }));
+      setProfiles(loaded);
+      setProfileId((current) => (current === "" && loaded.length > 0 ? loaded[0].id : current));
+    }
+  }, []);
+
   useEffect(() => {
     void load();
-  }, [load]);
+    void loadProfiles();
+  }, [load, loadProfiles]);
+
+  /** Composes the on-demand draft for the selection, then shows it. */
+  const draftNotice = async () => {
+    const profile = profiles.find((candidate) => candidate.id === profileId);
+    if (profile === undefined) {
+      setDraftError(t(locale, "web.violations.cart.noProfile"));
+      return;
+    }
+    setDrafting(true);
+    setDraftError(null);
+    try {
+      const csrfToken = await fetchSessionCsrfToken();
+      if (csrfToken === null) {
+        setDraftError(t(locale, "errors.unauthenticated"));
+        return;
+      }
+      const { data, response } = await api.POST("/notices", {
+        params: { header: { "X-Patrol-CSRF": csrfToken } },
+        body: {
+          recipient: profile.recipient as "google" | "bing" | "yandex",
+          recipientProfileId: profile.id,
+          violationIds: [...selected],
+        },
+      });
+      if (response.ok && data) {
+        setSelected(new Set());
+        await navigate({ to: "/notices" });
+        return;
+      }
+      const code = (data as { code?: string } | undefined)?.code;
+      if (code === "violation_reserved") {
+        // The contract's Violation read model carries no citation info, so
+        // the cart cannot know at render time which open violations a
+        // notice already reserves — a contract gap to amend when the
+        // notices slice lands its detail surface. Until then the honest
+        // fallback is the 409's own evidence: the conflict names the
+        // reserved violations, the cart deselects them and says so, and
+        // the operator re-drafts the rest.
+        const conflicting = (data as { conflictingViolationIds?: string[] }).conflictingViolationIds ?? [];
+        setSelected((current) => {
+          const next = new Set(current);
+          for (const id of conflicting) {
+            next.delete(id);
+          }
+          return next;
+        });
+        const urlOf = (id: string): string =>
+          rows?.find((row) => row.violation.id === id)?.violation.url ?? id.slice(0, 8);
+        setDraftError(
+          t(locale, "web.violations.cart.reserved").replace(
+            "{urls}",
+            conflicting.map(urlOf).join(", "),
+          ),
+        );
+        return;
+      }
+      setDraftError(
+        code !== undefined && code === "recipient_ineligible"
+          ? t(locale, "errors.recipient_ineligible")
+          : code !== undefined && code === "grouping_limit_exceeded"
+            ? t(locale, "errors.grouping_limit_exceeded")
+            : t(locale, "web.violations.cart.draftFailed"),
+      );
+    } finally {
+      setDrafting(false);
+    }
+  };
 
   const groups = useMemo<ViolationGroup[]>(() => {
     const filtered = rows ?? [];
@@ -219,15 +307,32 @@ function ViolationsIndex() {
               String(selected.size),
             )}
           </strong>{" "}
-          <select disabled aria-label={t(locale, "web.violations.cart.recipient")}>
-            <option>{t(locale, "web.violations.cart.recipientDisabled")}</option>
+          <select
+            value={profileId}
+            aria-label={t(locale, "web.violations.cart.recipient")}
+            onChange={(event) => setProfileId(event.target.value)}
+          >
+            {profiles.map((profile) => (
+              <option key={profile.id} value={profile.id}>
+                {t(locale, `web.notices.recipient.${profile.recipient}` as never)}
+              </option>
+            ))}
           </select>{" "}
-          <button type="button" disabled title={t(locale, "web.violations.cart.draftDisabled")}>
+          <button
+            type="button"
+            disabled={drafting || profileId === ""}
+            onClick={() => void draftNotice()}
+          >
             {t(locale, "web.violations.cart.draft")}
           </button>{" "}
           <button type="button" onClick={() => setSelected(new Set())}>
             {t(locale, "web.violations.cart.clear")}
           </button>
+          {draftError !== null && (
+            <p role="alert" style={{ margin: "0.25rem 0 0" }}>
+              {draftError}
+            </p>
+          )}
         </footer>
       )}
     </main>

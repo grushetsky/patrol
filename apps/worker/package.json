@@ -16,6 +16,7 @@
     "@patrol/db": "workspace:*",
     "@patrol/domain": "workspace:*",
     "@patrol/evidence": "workspace:*",
+    "@patrol/notices": "workspace:*",
     "@patrol/scans": "workspace:*",
     "pg": "^8.23.1",
     "pg-boss": "^10.4.2",

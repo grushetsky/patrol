@@ -569,6 +569,7 @@ describe("the cron table", () => {
     expect(CRON_JOBS["scan.schedule"]).toBe("*/15 * * * *");
     expect(CRON_JOBS["recheck.schedule"]).toBe("*/15 * * * *");
     expect(CRON_JOBS["capture.sweep"]).toBe("*/15 * * * *");
+    expect(CRON_JOBS["submission.draft"]).toBe("0 7 * * *");
     expect(CRON_JOBS["budget.rollover"]).toBe("0 0 1 * *");
     expect(CRON_JOBS["budget.balance"]).toBe("0 6 * * *");
     expect(CRON_JOBS["route.probe"]).toBe("0 * * * *");

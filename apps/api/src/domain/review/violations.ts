@@ -39,9 +39,9 @@ export interface ViolationListFilter {
 }
 
 /**
- * A page of violations, newest first. The `noticeId` filter returns an
- * empty page until the notices slice lands — no notice can cite a
- * violation yet, so the structure stands and the answer is honestly empty.
+ * A page of violations, newest first. The `noticeId` filter scopes the
+ * page to the violations one notice cites, through the citations the
+ * notice composer wrote.
  */
 export async function listViolations(
   pool: Pool,
@@ -67,12 +67,6 @@ export async function listViolations(
       typeof query.noticeId === "string" && query.noticeId !== "" ? query.noticeId : undefined,
   };
 
-  if (filter.noticeId !== undefined) {
-    // No notice exists to cite a violation until slice 6; the filter shape
-    // is contract-fixed, so an empty page is the truthful answer.
-    return { items: [], total: 0, page, pageSize };
-  }
-
   const conditions: string[] = [];
   const values: unknown[] = [];
   if (filter.trackedTitleId !== undefined) {
@@ -82,6 +76,12 @@ export async function listViolations(
   if (filter.state !== undefined) {
     values.push(filter.state);
     conditions.push(`v.state = $${values.length}`);
+  }
+  if (filter.noticeId !== undefined) {
+    values.push(filter.noticeId);
+    conditions.push(
+      `exists (select 1 from notice_citations c where c.notice_id = $${values.length} and c.violation_id = v.id)`,
+    );
   }
   const where = conditions.length === 0 ? "" : `where ${conditions.join(" and ")}`;
 

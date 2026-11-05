@@ -30,7 +30,8 @@ export async function dropPublicSchema(pool: Pool): Promise<void> {
  */
 export async function truncateDomainTables(pool: Pool): Promise<void> {
   const result = await pool.query<{ tablename: string }>(
-    "select tablename from pg_tables where schemaname = 'public' and tablename <> 'patrol_meta'",
+    `select tablename from pg_tables where schemaname = 'public'
+       and tablename <> 'patrol_meta' and tablename <> 'notice_templates'`,
   );
   const tables = result.rows.map((row) => row.tablename);
   if (tables.length === 0) {

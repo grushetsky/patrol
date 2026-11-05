@@ -15,6 +15,7 @@ import { Route as AuthPreferencesRouteImport } from './routes/auth/preferences'
 import { Route as AuthSetupRouteImport } from './routes/auth/setup'
 import { Route as AuthSignInRouteImport } from './routes/auth/sign-in'
 import { Route as CatalogueIndexRouteImport } from './routes/catalogue/index'
+import { Route as NoticesIndexRouteImport } from './routes/notices/index'
 import { Route as ReviewIndexRouteImport } from './routes/review/index'
 import { Route as SettingsIndexRouteImport } from './routes/settings/index'
 import { Route as SettingsAllowlistRouteImport } from './routes/settings/allowlist'
@@ -52,6 +53,11 @@ const AuthSignInRoute = AuthSignInRouteImport.update({
 const CatalogueIndexRoute = CatalogueIndexRouteImport.update({
   id: '/catalogue/',
   path: '/catalogue/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NoticesIndexRoute = NoticesIndexRouteImport.update({
+  id: '/notices/',
+  path: '/notices/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ReviewIndexRoute = ReviewIndexRouteImport.update({
@@ -105,6 +111,7 @@ export interface FileRoutesByFullPath {
   '/settings/allowlist': typeof SettingsAllowlistRoute
   '/settings/recipient-profiles': typeof SettingsRecipientProfilesRoute
   '/catalogue/': typeof CatalogueIndexRoute
+  '/notices/': typeof NoticesIndexRoute
   '/review/': typeof ReviewIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/violations/': typeof ViolationsIndexRoute
@@ -121,6 +128,7 @@ export interface FileRoutesByTo {
   '/settings/allowlist': typeof SettingsAllowlistRoute
   '/settings/recipient-profiles': typeof SettingsRecipientProfilesRoute
   '/catalogue': typeof CatalogueIndexRoute
+  '/notices': typeof NoticesIndexRoute
   '/review': typeof ReviewIndexRoute
   '/settings': typeof SettingsIndexRoute
   '/violations': typeof ViolationsIndexRoute
@@ -138,6 +146,7 @@ export interface FileRoutesById {
   '/settings/allowlist': typeof SettingsAllowlistRoute
   '/settings/recipient-profiles': typeof SettingsRecipientProfilesRoute
   '/catalogue/': typeof CatalogueIndexRoute
+  '/notices/': typeof NoticesIndexRoute
   '/review/': typeof ReviewIndexRoute
   '/settings/': typeof SettingsIndexRoute
   '/violations/': typeof ViolationsIndexRoute
@@ -156,6 +165,7 @@ export interface FileRouteTypes {
     | '/settings/allowlist'
     | '/settings/recipient-profiles'
     | '/catalogue/'
+    | '/notices/'
     | '/review/'
     | '/settings/'
     | '/violations/'
@@ -172,6 +182,7 @@ export interface FileRouteTypes {
     | '/settings/allowlist'
     | '/settings/recipient-profiles'
     | '/catalogue'
+    | '/notices'
     | '/review'
     | '/settings'
     | '/violations'
@@ -188,6 +199,7 @@ export interface FileRouteTypes {
     | '/settings/allowlist'
     | '/settings/recipient-profiles'
     | '/catalogue/'
+    | '/notices/'
     | '/review/'
     | '/settings/'
     | '/violations/'
@@ -205,6 +217,7 @@ export interface RootRouteChildren {
   SettingsAllowlistRoute: typeof SettingsAllowlistRoute
   SettingsRecipientProfilesRoute: typeof SettingsRecipientProfilesRoute
   CatalogueIndexRoute: typeof CatalogueIndexRoute
+  NoticesIndexRoute: typeof NoticesIndexRoute
   ReviewIndexRoute: typeof ReviewIndexRoute
   SettingsIndexRoute: typeof SettingsIndexRoute
   ViolationsIndexRoute: typeof ViolationsIndexRoute
@@ -255,6 +268,13 @@ declare module '@tanstack/react-router' {
       path: '/catalogue'
       fullPath: '/catalogue/'
       preLoaderRoute: typeof CatalogueIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notices/': {
+      id: '/notices/'
+      path: '/notices'
+      fullPath: '/notices/'
+      preLoaderRoute: typeof NoticesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/review/': {
@@ -325,6 +345,7 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsAllowlistRoute: SettingsAllowlistRoute,
   SettingsRecipientProfilesRoute: SettingsRecipientProfilesRoute,
   CatalogueIndexRoute: CatalogueIndexRoute,
+  NoticesIndexRoute: NoticesIndexRoute,
   ReviewIndexRoute: ReviewIndexRoute,
   SettingsIndexRoute: SettingsIndexRoute,
   ViolationsIndexRoute: ViolationsIndexRoute,

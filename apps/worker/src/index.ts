@@ -25,6 +25,7 @@ import {
   routeProbeJob,
   scanRunJob,
   scanScheduleJob,
+  submissionDraftJob,
 } from "./jobs.js";
 import type { ExecutorDeps } from "./scans/executor.js";
 import { capturePage, launchCaptureBrowser } from "./capture/browser.js";
@@ -246,6 +247,9 @@ async function boot(): Promise<void> {
             { pool, now: config.now, dispatch: dispatchCapture },
             jobLog,
           );
+          break;
+        case "submission.draft":
+          await submissionDraftJob({ pool, now: config.now }, jobLog);
           break;
         case "budget.rollover":
           await budgetRolloverJob({ pool, now: config.now }, jobLog);

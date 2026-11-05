@@ -9,6 +9,7 @@ import {
   duePendingCaptureIds,
   reapStaleRunningCaptures,
 } from "@patrol/evidence";
+import { runScheduledComposition } from "@patrol/notices";
 import { CAPTURE_QUEUE_NAME, ENGINE_QUEUE_NAMES } from "@patrol/domain";
 import type PgBoss from "pg-boss";
 import type { SerpAcquisitor } from "./acquisition/port.js";
@@ -27,10 +28,9 @@ import { runCapture, type CaptureRunnerDeps } from "./capture/runner.js";
  * The pg-boss wiring (docs/design/scan-scheduling.md "Jobs"; ADR 0005:
  * one PostgreSQL for jobs). One queue per engine holds concurrency at one
  * so a provider never sees a burst from Patrol, and the cron jobs drive
- * the schedule, the re-checks, the capture sweep, the rollover, the
- * balance probe, and the route probe. Submission drafting and retention
- * purging arrive with
- * their slices and are deliberately absent.
+ * the schedule, the re-checks, the capture sweep, the submission-draft
+ * windows, the rollover, the balance probe, and the route probe. Retention
+ * purging arrives with its slice and is deliberately absent.
  *
  * pg-boss keeps its tables in its own schema (PATROL_BOSS_SCHEMA,
  * `pgboss` by default), created and versioned by `boss.start()` — the
@@ -53,6 +53,7 @@ export const CRON_JOBS = {
   "scan.schedule": "*/15 * * * *",
   "recheck.schedule": "*/15 * * * *",
   "capture.sweep": "*/15 * * * *",
+  "submission.draft": "0 7 * * *",
   "budget.rollover": "0 0 1 * *",
   "budget.balance": "0 6 * * *",
   "route.probe": "0 * * * *",
@@ -212,6 +213,31 @@ export async function recheckScheduleJob(
   }
   for (const engine of SCHEDULED_ENGINES) {
     await dispatch(engine);
+  }
+}
+
+/**
+ * `submission.draft` (daily at the default 07:00 UTC window): compose the
+ * scheduled profiles' drafts. The cron wakes the runner once a day; each
+ * profile's OWN window time decides what composes — the runner takes the
+ * profile's most recent window occurrence at or before the run, so a
+ * profile whose window is later than the default composes at the next
+ * daily run with its own cut-off, and a window is composed at most once
+ * (`notice_composition_runs`). The window is a cut-off, not a rolling
+ * queue: violations confirmed inside (previous window, this window]
+ * compose, and one confirmed after the window waits for the next.
+ */
+export async function submissionDraftJob(
+  deps: { pool: Pool; now: () => Date },
+  log: (message: string, extra?: Record<string, unknown>) => void,
+): Promise<void> {
+  const outcomes = await runScheduledComposition(deps, log);
+  const composed = outcomes.reduce((total, outcome) => total + outcome.composedNotices, 0);
+  if (composed > 0 || outcomes.length > 0) {
+    log("submission.draft composed scheduled drafts", {
+      profiles: outcomes.length,
+      composed,
+    });
   }
 }
 
