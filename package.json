@@ -15,9 +15,9 @@
     "typecheck": "pnpm -r --if-present run typecheck",
     "test": "pnpm -r --if-present run test",
     "test:unit": "pnpm -r --if-present run test:unit",
-    "test:db": "pnpm -r --if-present run test:db",
+    "test:db": "pnpm -C apps/api run test:db && pnpm -C apps/worker run test:db",
     "lint": "hk check",
     "ci:local": "pnpm install --frozen-lockfile && pnpm -C contract run check && npm --prefix contract/verify ci && pnpm -C contract run verify && node scripts/check-generated-fresh.mjs && pnpm -r --if-present run typecheck && pnpm -r --if-present run test:unit",
-    "ci:local:db": "docker compose -f docker-compose.test.yml up --detach --wait && DATABASE_URL='postgres://patrol:patrol@localhost:5433/patrol' pnpm -r --if-present run test:db; status=$?; docker compose -f docker-compose.test.yml down; exit $status"
+    "ci:local:db": "docker compose -f docker-compose.test.yml up --detach --wait && pnpm run test:db; status=$?; docker compose -f docker-compose.test.yml down; exit $status"
   }
 }

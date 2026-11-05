@@ -20,10 +20,12 @@
   },
   "dependencies": {
     "@node-rs/argon2": "^2.2.2",
+    "@patrol/budget": "workspace:*",
     "@patrol/contract": "workspace:*",
     "@patrol/db": "workspace:*",
     "@patrol/domain": "workspace:*",
     "@patrol/i18n": "workspace:*",
+    "@patrol/scans": "workspace:*",
     "ajv": "8.20.0",
     "ajv-formats": "3.0.1",
     "drizzle-orm": "^0.45.4",
@@ -31,6 +33,7 @@
     "fastify-plugin": "^5.1.0",
     "otpauth": "^9.6.0",
     "pg": "^8.23.1",
+    "pg-boss": "^10.4.2",
     "pino": "^10.4.0",
     "yaml": "2.9.1"
   },

@@ -3,12 +3,18 @@ import { buildApp } from "./app.js";
 import { loadConfig } from "./config.js";
 import { createDb } from "./db/client.js";
 import { ConsoleMailTransport } from "./mail/transport.js";
+import { startScanDispatcher } from "./queue/dispatch.js";
 
 /**
  * Boot order (ADR 0028): the migrate task has already run, so the process
  * only checks the stamp and refuses to start when the database and the image
  * disagree, then listens on 0.0.0.0 for the load balancer. Mail goes through
  * the console transport until slice 9 wires the deployment's SMTP relay.
+ *
+ * The pg-boss producer starts after the stamp check: manual scan requests
+ * send scan.run picker jobs into the worker's engine queues through it.
+ * pg-boss owns and versions its schema itself; it is deliberately absent
+ * from the drizzle migrations.
  */
 async function boot(): Promise<void> {
   const config = loadConfig();
@@ -24,15 +30,23 @@ async function boot(): Promise<void> {
     process.exit(1);
   }
 
+  const producer = await startScanDispatcher({
+    databaseUrl: config.databaseUrl,
+    bossSchema: process.env.PATROL_BOSS_SCHEMA ?? "pgboss",
+    logError: (error) => console.error("pg-boss producer error:", error),
+  });
+
   const app = await buildApp({
     config,
     pool,
     mail: new ConsoleMailTransport(),
     schemaStamp: () => readSchemaStamp(pool),
+    dispatcher: producer.dispatcher,
   });
 
   const shutdown = async (signal: string) => {
     await app.close();
+    await producer.stop();
     await pool.end();
     console.log(`api stopped on ${signal}`);
     process.exit(0);

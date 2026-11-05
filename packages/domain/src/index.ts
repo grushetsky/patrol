@@ -1,2 +1,44 @@
 export { normalizeTitleText } from "./title.js";
-export { hostForUrl, normalizeUrlKey } from "./url.js";
+export { hostForUrl, normalizeUrlKey, registrableDomainFor, registrableDomainForUrl } from "./url.js";
+export {
+  DEFAULT_INTENT_PHRASES,
+  GOOGLE_DEPTH,
+  QUERY_LENGTH_CAPS,
+  UNITS_PER_QUERY,
+  YANDEX_DOCS_IN_GROUP,
+  YANDEX_GROUP_MODE,
+  YANDEX_GROUPS_ON_PAGE,
+  buildPlan,
+  eligibleVariants,
+  languageOf,
+  localeRequestParams,
+  pricePlan,
+  sanitizeQueryText,
+  truncateAtWordBoundary,
+} from "./plan.js";
+export type {
+  BuiltPlan,
+  IntentPhraseConfig,
+  PlanEngine,
+  PlanTitle,
+  PlanVariant,
+  PlannableVariantKind,
+  PlannedQuery,
+  PlannedQueryKind,
+  LocaleRequestParams,
+} from "./plan.js";
+export {
+  LADDER_RUNG_DAYS,
+  degradationPolicy,
+  orderQueue,
+  rungDueAt,
+  utcDate,
+} from "./scheduling.js";
+export type {
+  DegradationPolicy,
+  GroupPriorityName,
+  QueueEntry,
+  ScanTriggerName,
+} from "./scheduling.js";
+export { ENGINE_QUEUE_NAMES } from "./queues.js";
+export type { EngineQueueName } from "./queues.js";

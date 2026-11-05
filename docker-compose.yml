@@ -89,6 +89,10 @@ services:
       NODE_ENV: production
       DATABASE_URL: postgres://patrol:patrol@db:5432/patrol
       PATROL_OBJECT_STORE_ENDPOINT: http://minio:9000
+      # The local topology has no provider credentials, so the worker boots
+      # with the fixture-driven fake adapter by default — real routes need
+      # DATAFORSEO_*/YANDEX_* credentials and this variable unset (or "0").
+      PATROL_FAKE_ADAPTER: "1"
     depends_on:
       db:
         condition: service_healthy
@@ -98,8 +102,8 @@ services:
         condition: service_completed_successfully
     # Process-alive probe: the worker touches a heartbeat file every 30 s and
     # the check fails once the file is older than 90 s.
-    # TODO(slice 3): switch to the queue heartbeat (pg-boss) the deployment
-    # topology specifies for the worker.
+    # TODO(slice 9): switch to the queue heartbeat (pg-boss worker state)
+    # the deployment topology specifies for the worker.
     healthcheck:
       test: ["CMD-SHELL", "node -e \"try { const s = require('node:fs').statSync(process.env.PATROL_WORKER_HEARTBEAT_FILE ?? '/tmp/patrol-worker-heartbeat'); process.exit(Date.now() - s.mtimeMs < 90_000 ? 0 : 1) } catch { process.exit(1) }\""]
       interval: 10s

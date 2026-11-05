@@ -3,28 +3,32 @@
  * below is quoted from that document; the projection is derived, never
  * stored — the settings screen recomputes titles, locales, and cadence
  * against the current cap and shows the shortfall when the plan exceeds it.
+ *
+ * The pricing primitives moved behind `@patrol/budget` in slice 3b (the
+ * worker prices plans with them); they are re-exported here so the API's
+ * callers keep one import path.
  */
 
 /** The engines a cap can cover. */
-export type EngineName = "google" | "bing" | "yandex";
+export type { EngineName } from "@patrol/budget";
+
+export {
+  GOOGLE_UNITS_PER_QUERY,
+  UNIT_PRICE_MINOR_PER_THOUSAND,
+  allowanceUnits,
+  queriesForUnits,
+} from "@patrol/budget";
+
+import {
+  GOOGLE_UNITS_PER_QUERY,
+  UNIT_PRICE_MINOR_PER_THOUSAND,
+  allowanceUnits,
+  queriesForUnits,
+} from "@patrol/budget";
+import type { EngineName } from "@patrol/budget";
 
 /** The scanning cadence a projection assumes (contract Patrol.Http.Cadence). */
 export type Cadence = "daily" | "every_other_day" | "weekly";
-
-/** The billable-unit price of an engine, in minor units per thousand. */
-export const UNIT_PRICE_MINOR_PER_THOUSAND: Record<
-  Exclude<EngineName, "bing">,
-  number
-> = {
-  // DataForSEO's standard SERP queue at $0.60 per 1,000; Yandex Search API
-  // v2 deferred mode at $0.25 per 1,000. Priority, live, and synchronous
-  // modes are not bought in v1.
-  google: 60,
-  yandex: 25,
-};
-
-/** One Google depth-20 query bills as two SERP units; a Yandex request is one. */
-export const GOOGLE_UNITS_PER_QUERY = 2;
 
 /** The design-point $60 envelope: $48 Google, $12 Yandex, $0 deferred Bing, 30% re-checks. */
 export const DESIGN_POINT_BUDGET: {
@@ -39,27 +43,6 @@ const MONTH_DAYS = 30;
 
 /** The planning granularity a projection rounds down to, in titles. */
 const PLANNING_GRANULARITY_TITLES = 50;
-
-/** The billable units a monthly cap buys at the engine's price. */
-export function allowanceUnits(engine: EngineName, monthlyCapMinor: number): number {
-  if (engine === "bing") {
-    // Bing is deferred and carries a zero cap until it is added; no route
-    // is bought, so no allowance exists whatever the column says.
-    return 0;
-  }
-  const price = UNIT_PRICE_MINOR_PER_THOUSAND[engine];
-  return Math.floor((monthlyCapMinor * 1000) / price);
-}
-
-/** The depth-20 queries an allowance of units issues. */
-export function queriesForUnits(engine: EngineName, units: number): number {
-  if (engine === "google") {
-    return Math.floor(units / GOOGLE_UNITS_PER_QUERY);
-  }
-  // A Yandex request answers thirty results in one call and bills as one
-  // unit; its count is not reduced by Google's depth-20 billing.
-  return units;
-}
 
 /** The queries left for scheduled scans once the re-check share is reserved. */
 export function scanShareQueries(units: number, recheckSharePercent: number): number {

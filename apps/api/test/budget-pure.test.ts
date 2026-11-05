@@ -269,8 +269,11 @@ describe("provider balance thresholds", () => {
 });
 
 describe("ledger immutability", () => {
+  // The budget core moved behind @patrol/budget in slice 3b; the
+  // API-local facades re-export it, so the grep covers the package's
+  // sources plus every budget-bearing migration.
   const budgetDir = fileURLToPath(
-    new URL("../src/domain/budget/", import.meta.url),
+    new URL("../../../packages/budget/src/", import.meta.url),
   );
   const migration = readFileSync(
     fileURLToPath(new URL("../../../packages/db/drizzle/0003_budget.sql", import.meta.url)),

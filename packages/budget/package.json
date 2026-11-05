@@ -1,0 +1,26 @@
+{
+  "name": "@patrol/budget",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The acquisition budget domain shared by the API and the worker: pricing, caps, the quota ledger with its reservations, rollover, alerts, and the balance-probe thresholds.",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@patrol/domain": "workspace:*",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "@types/pg": "^8.23.1",
+    "typescript": "5.9.3"
+  }
+}

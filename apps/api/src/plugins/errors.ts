@@ -1,6 +1,7 @@
 import type { FastifyError, FastifyPluginAsync, FastifyReply } from "fastify";
 import fp from "fastify-plugin";
 import { t } from "@patrol/i18n";
+import { BudgetError } from "@patrol/budget";
 import { requestLocale } from "../i18n.js";
 import { ApiError, ValidationError, type FieldError } from "../errors.js";
 
@@ -18,6 +19,20 @@ function sendError(
   body: ErrorBody,
 ): void {
   reply.status(statusCode).send(body);
+}
+
+/** The catalogue key a budget rejection's code renders through. */
+function budgetMessageKey(code: BudgetError["code"]) {
+  switch (code) {
+    case "unprocessable":
+      return "errors.unprocessable" as const;
+    case "not_found":
+      return "errors.not_found" as const;
+    case "state_conflict":
+      return "errors.state_conflict" as const;
+    case "setup_required":
+      return "errors.setup_required" as const;
+  }
 }
 
 /**
@@ -48,6 +63,20 @@ export const errorsPlugin: FastifyPluginAsync = fp(async (app) => {
           : {}),
         ...(error.blockingTitleId !== undefined
           ? { blockingTitleId: error.blockingTitleId }
+          : {}),
+      });
+      return;
+    }
+
+    // The shared budget domain raises its own rejection (the worker and the
+    // API both call it); it carries the same wire-facing facts and maps
+    // onto the same ErrorBody codes.
+    if (error instanceof BudgetError) {
+      sendError(reply, error.statusCode, {
+        code: error.code,
+        message: t(locale, budgetMessageKey(error.code)),
+        ...(error.fieldErrors !== undefined
+          ? { fieldErrors: error.fieldErrors }
           : {}),
       });
       return;

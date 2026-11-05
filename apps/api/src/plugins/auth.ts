@@ -45,6 +45,7 @@ const SETUP_GATED_PREFIXES = [
   "allowlist",
   "settings",
   "scans",
+  "rechecks",
   "review",
   "violations",
   "evidence",

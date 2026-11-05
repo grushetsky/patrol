@@ -1,13 +1,19 @@
 import type { Locale, MessageKey } from "@patrol/i18n";
 import { t } from "@patrol/i18n";
-import type { EngineName } from "../catalogue/capacity.js";
+import type {
+  BudgetAlertRow,
+  EngineName,
+  QuotaLedgerRow,
+} from "@patrol/budget";
 
 /**
- * Row types and JSON mappers for the budget read models. Every mapper
- * emits the contract's shape (Patrol.Domain.QuotaLedger,
- * Patrol.Http.BudgetAlert); omitted optionals stay absent rather than
- * null. The alert's message is composed here in the requesting operator's
- * language, the mail templates' interpolation pattern.
+ * JSON mappers for the budget read models: the API-local half of the
+ * serialize module, kept here because message composition is the API's
+ * concern. Every mapper emits the contract's shape (Patrol.Domain.
+ * QuotaLedger, Patrol.Http.BudgetAlert); omitted optionals stay absent
+ * rather than null. The alert's message is composed here in the
+ * requesting operator's language, the mail templates' interpolation
+ * pattern.
  */
 
 export type BudgetEngine = EngineName;
@@ -16,43 +22,7 @@ export type ReservationStateName = "held" | "committed" | "released" | "expired"
 export type AlertThresholdName = "warning" | "critical" | "exhausted" | "balance";
 export type AlertLevelName = "warning" | "critical";
 
-export interface QuotaLedgerRow {
-  id: string;
-  engine: BudgetEngine;
-  monthStart: string;
-  allowanceUnits: number;
-  scanReserved: number;
-  scanCommitted: number;
-  recheckReserved: number;
-  recheckCommitted: number;
-}
-
-export interface ReservationRow {
-  id: string;
-  scanId: string | null;
-  engine: BudgetEngine;
-  monthStart: string;
-  bucket: BudgetBucketName;
-  units: number;
-  state: ReservationStateName;
-  createdAt: Date;
-  expiresAt: Date;
-  settledAt: Date | null;
-  committedUnits: number | null;
-  releasedUnits: number | null;
-}
-
-export interface BudgetAlertRow {
-  id: string;
-  engine: BudgetEngine;
-  monthStart: string;
-  threshold: AlertThresholdName;
-  bucket: BudgetBucketName | null;
-  level: AlertLevelName;
-  percentUsed: number;
-  groupsNotScanned: number;
-  firedAt: Date;
-}
+export type { BudgetAlertRow, QuotaLedgerRow, ReservationRow } from "@patrol/budget";
 
 /** The contract's QuotaLedger shape. */
 export function quotaLedgerJson(row: QuotaLedgerRow): Record<string, unknown> {

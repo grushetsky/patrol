@@ -1,0 +1,26 @@
+{
+  "name": "@patrol/scans",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "The scan store and the re-check ladder, shared by the API (manual requests and read models) and the worker (scheduling and execution).",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@patrol/domain": "workspace:*",
+    "pg": "^8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "26.6.6",
+    "@types/pg": "^8.23.1",
+    "typescript": "5.9.3"
+  }
+}

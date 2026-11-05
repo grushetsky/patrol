@@ -11,8 +11,10 @@ import { authRoutes } from "./routes/auth.js";
 import { operatorRoutes } from "./routes/operators.js";
 import { catalogueRoutes } from "./routes/catalogue.js";
 import { settingsRoutes } from "./routes/settings.js";
+import { scansRoutes } from "./routes/scans.js";
 import { readSetupState } from "./domain/bootstrap.js";
 import type { MailTransport } from "./mail/transport.js";
+import { noopScanDispatcher, type ScanDispatcher } from "./queue/dispatch.js";
 
 export interface AppDeps {
   config: AppConfig;
@@ -22,6 +24,11 @@ export interface AppDeps {
   mail: MailTransport;
   /** Reads the patrol_meta stamp; null before any migration is recorded. */
   schemaStamp: () => Promise<number | null>;
+  /**
+   * How a manual scan request wakes the worker's engine queue. The server
+   * entry wires the pg-boss producer; tests inject a recorder or the no-op.
+   */
+  dispatcher?: ScanDispatcher;
 }
 
 /**
@@ -81,6 +88,14 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   );
   await app.register(
     settingsRoutes({ config: deps.config, pool: deps.pool }),
+    { prefix: "/api" },
+  );
+  await app.register(
+    scansRoutes({
+      config: deps.config,
+      pool: deps.pool,
+      dispatcher: deps.dispatcher ?? noopScanDispatcher(),
+    }),
     { prefix: "/api" },
   );
 

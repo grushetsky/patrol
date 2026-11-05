@@ -73,3 +73,57 @@ export function normalizeUrlKey(raw: string): string {
 export function hostForUrl(raw: string): string {
   return new URL(raw).hostname.toLowerCase().replace(/^www\./, "");
 }
+
+/**
+ * Second-level suffixes whose public suffix is two labels, so the
+ * registrable domain of "a.bbc.co.uk" is "bbc.co.uk", not "co.uk". The set
+ * covers the territories the design's engines and recipients operate in;
+ * slice 5's matcher replaces this derivation with the full Public Suffix
+ * List when reputation aggregates arrive.
+ */
+const TWO_LABEL_SUFFIXES = new Set([
+  "co.uk",
+  "org.uk",
+  "ac.uk",
+  "gov.uk",
+  "co.jp",
+  "or.jp",
+  "ne.jp",
+  "co.kr",
+  "com.au",
+  "net.au",
+  "org.au",
+  "co.nz",
+  "com.br",
+  "com.tr",
+  "com.ua",
+  "com.cn",
+  "com.mx",
+  "co.in",
+  "co.za",
+  "com.sg",
+  "com.hk",
+  "co.il",
+]);
+
+/**
+ * The host's registrable domain: the public suffix plus one label. This is
+ * the grouping reputation and reporting aggregate over; it is derived, so
+ * the stored host is never overwritten.
+ */
+export function registrableDomainFor(host: string): string {
+  const labels = host.toLowerCase().replace(/\.$/, "").split(".");
+  if (labels.length <= 2) {
+    return host.toLowerCase();
+  }
+  const lastTwo = labels.slice(-2).join(".");
+  if (TWO_LABEL_SUFFIXES.has(lastTwo) && labels.length >= 3) {
+    return labels.slice(-3).join(".");
+  }
+  return lastTwo;
+}
+
+/** The registrable domain of a URL's host, derived from the raw string. */
+export function registrableDomainForUrl(raw: string): string {
+  return registrableDomainFor(hostForUrl(raw));
+}
