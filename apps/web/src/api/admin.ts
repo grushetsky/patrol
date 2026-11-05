@@ -8,6 +8,7 @@ export type NoticeCard = Schemas["Http.NoticeCard"];
 export type NoticeDetail = Schemas["Http.NoticeDetail"];
 export type TrackedTitlePage = Schemas["Http.TrackedTitlePage"];
 export type TrackedTitleCard = Schemas["Http.TrackedTitleCard"];
+export type TitleGroup = Schemas["Domain.TitleGroup"];
 export type AllowlistPage = Schemas["Http.AllowlistEntryPage"];
 export type BudgetOverview = Schemas["Http.BudgetOverview"];
 
@@ -105,6 +106,24 @@ export async function setTitlePaused(
         header: { "X-Patrol-CSRF": csrfToken },
       },
       body: { paused },
+    }),
+  );
+}
+
+export const titleGroupsQuery = queryOptions({
+  queryKey: ["title-groups"],
+  queryFn: async () =>
+    unwrap(await api.GET("/title-groups", { params: { query: { pageSize: 200 } } })),
+});
+
+export async function createTitle(
+  csrfToken: string,
+  input: Schemas["Http.CreateTrackedTitleRequest"],
+) {
+  return unwrap(
+    await api.POST("/titles", {
+      params: { header: { "X-Patrol-CSRF": csrfToken } },
+      body: input,
     }),
   );
 }
