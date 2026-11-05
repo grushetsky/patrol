@@ -1,5 +1,5 @@
 import type { Locale, MessageKey } from "@patrol/i18n";
-import { t } from "@patrol/i18n";
+import { interpolate, t } from "@patrol/i18n";
 import type {
   BudgetAlertRow,
   EngineName,
@@ -36,16 +36,6 @@ export function quotaLedgerJson(row: QuotaLedgerRow): Record<string, unknown> {
     recheckReserved: row.recheckReserved,
     recheckCommitted: row.recheckCommitted,
   };
-}
-
-/** Fills a catalogue template's `{param}` placeholders. */
-function interpolate(
-  template: string,
-  values: Record<string, string>,
-): string {
-  return template.replace(/\{(\w+)\}/g, (match, key: string) =>
-    values[key] ?? match,
-  );
 }
 
 /** The catalogue key each threshold's message renders through. */

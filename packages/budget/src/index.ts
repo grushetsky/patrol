@@ -33,6 +33,7 @@ export type {
 export {
   dueAlerts,
   evaluateBudgetAlerts,
+  isBucketExhausted,
   listMonthAlerts,
 } from "./alerts.js";
 export type { AlertThreshold, DueAlert, SpendSnapshot } from "./alerts.js";

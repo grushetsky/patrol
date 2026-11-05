@@ -30,5 +30,21 @@ export function t(locale: Locale, key: MessageKey): string {
   return message;
 }
 
+/**
+ * Fills a catalogue template's `{param}` placeholders with the given
+ * values; a placeholder no value covers stays as written. The one
+ * interpolator every message-composing caller uses — the web's screens,
+ * the budget alert messages, the mail templates — so the substitution
+ * rule is defined once.
+ */
+export function interpolate(
+  template: string,
+  values: Record<string, string>,
+): string {
+  return template.replace(/\{(\w+)\}/g, (match, key: string) =>
+    values[key] ?? match,
+  );
+}
+
 /** The locale automated tests and screenshot baselines fix. */
 export const TEST_LOCALE: Locale = "en";

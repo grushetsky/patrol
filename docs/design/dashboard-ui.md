@@ -2,7 +2,7 @@
 
 This document fixes the operator-facing surface of Patrol: the screens, what each one shows, how the review queue is laid out, and what the title chart plots. It records the decisions reachable from the clickable prototype published at <https://grushetsky.github.io/patrol/dashboard-spec/> and built on `prototype/dashboard-spec` from "_prototype/index.html_". The terms are those of "_GLOSSARY.md_".
 
-The prototype is a rough artifact, not production UI. Its spacing, typography, and colour are illustrative; its information architecture, field sets, and chart definitions are the specification.
+The prototype is the basis of the dashboard UI, inseparably linked to it: its information architecture, field sets, chart definitions, layout, and visual language carry over into the built interface. The production UI is the prototype's surface implemented in TanStack Start — extended where the build adds screens and behaviour beyond the prototype, and finished for accessibility, responsiveness, and theme support — never replaced by an unrelated design. A deviation from the prototype's layout or visual language requires an explicit justification in this document.
 
 ## Shell
 

@@ -347,6 +347,7 @@ export async function updateTrackedTitle(
         throw new ApiError(404, "not_found");
       }
     }
+    const at = now().toISOString();
     await client.query(
       `update tracked_titles set
          title_group_id = coalesce($2, title_group_id),
@@ -354,6 +355,10 @@ export async function updateTrackedTitle(
          title_type = coalesce($4, title_type),
          runtime_minutes = coalesce($5, runtime_minutes),
          paused = coalesce($6, paused),
+         paused_at = case
+           when coalesce($6, paused) then (case when paused then paused_at else $8 end)
+           else null
+         end,
          updated_by = $7,
          updated_at = $8
        where id = $1`,
@@ -365,9 +370,28 @@ export async function updateTrackedTitle(
         input.runtimeMinutes ?? null,
         input.paused ?? null,
         actorId,
-        now().toISOString(),
+        at,
       ],
     );
+    // The pause history (0010's title_pause_periods), written in the same
+    // transaction as the state it explains: a pause opens a period, a resume
+    // closes the open one -- including one a backfilled pre-0010 pause opened.
+    // An edit that leaves `paused` alone (absent, or repeated) writes nothing,
+    // and a re-pause opens a fresh period beside the closed one. The chart
+    // reads these periods, so resuming never erases the days a title spent
+    // paused.
+    if (input.paused === true && !title.paused) {
+      await client.query(
+        "insert into title_pause_periods (tracked_title_id, paused_at) values ($1, $2)",
+        [id, at],
+      );
+    } else if (input.paused === false && title.paused) {
+      await client.query(
+        `update title_pause_periods set resumed_at = $2
+          where tracked_title_id = $1 and resumed_at is null`,
+        [id, at],
+      );
+    }
     await client.query("commit");
   } catch (error) {
     await client.query("rollback").catch(() => undefined);

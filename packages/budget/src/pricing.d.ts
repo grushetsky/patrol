@@ -8,8 +8,12 @@
 export type EngineName = "google" | "bing" | "yandex";
 /** The billable-unit price of an engine, in minor units per thousand. */
 export declare const UNIT_PRICE_MINOR_PER_THOUSAND: Record<Exclude<EngineName, "bing">, number>;
-/** One Google depth-20 query bills as two SERP units; a Yandex request is one. */
-export declare const GOOGLE_UNITS_PER_QUERY = 2;
+/**
+ * One Google depth-20 query bills as two SERP units. Single-sourced from
+ * the planner's per-engine table (@patrol/domain `UNITS_PER_QUERY`) so the
+ * plan a scan prices and the allowance a cap buys can never disagree.
+ */
+export declare const GOOGLE_UNITS_PER_QUERY: number;
 /** The billable units a monthly cap buys at the engine's price. */
 export declare function allowanceUnits(engine: EngineName, monthlyCapMinor: number): number;
 /** The queries an allowance of units issues. */

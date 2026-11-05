@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { t } from "@patrol/i18n";
 import { api } from "../../lib/api/client";
+import { NoticesBadge } from "../../lib/section-badge";
 import { useSession } from "../../lib/session";
 
 /**
@@ -72,7 +73,9 @@ function NoticesIndex() {
 
   return (
     <main>
-      <h1>{t(locale, "web.notices.title")}</h1>
+      <h1>
+        {t(locale, "web.notices.title")} <NoticesBadge />
+      </h1>
       <p>
         {/* The submissions screen: the delivery attempts this list's notices
             own, with the seven-day backlog filter. */}

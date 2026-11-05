@@ -9,7 +9,7 @@ import {
   type QuotaLedgerRow,
 } from "../budget/serialize.js";
 import { bucketShares, monthStartOf, readMonthLedgerRows } from "../budget/ledger.js";
-import { listMonthAlerts } from "../budget/alerts.js";
+import { isBucketExhausted, listMonthAlerts } from "../budget/alerts.js";
 
 /**
  * Settings reads and writes: the rights holder and its signatory, and the
@@ -256,8 +256,6 @@ function engineStatus(
   );
   const scanUsed = (row?.scanReserved ?? 0) + (row?.scanCommitted ?? 0);
   const recheckUsed = (row?.recheckReserved ?? 0) + (row?.recheckCommitted ?? 0);
-  const spent = (used: number, share: number): boolean =>
-    share <= 0 ? used > 0 : used >= share;
   return {
     engine,
     currency: "usd",
@@ -267,7 +265,9 @@ function engineStatus(
     recheckShareUnits: recheckShare,
     scanUsedUnits: scanUsed,
     recheckUsedUnits: recheckUsed,
-    exhausted: spent(scanUsed, scanShare) || spent(recheckUsed, recheckShare),
+    exhausted:
+      isBucketExhausted(scanUsed, scanShare) ||
+      isBucketExhausted(recheckUsed, recheckShare),
     // Route disable arrives with the acquisition adapters (slice 3b).
     routeDisabled: false,
   };

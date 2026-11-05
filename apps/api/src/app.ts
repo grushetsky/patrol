@@ -16,6 +16,7 @@ import { candidatesRoutes } from "./routes/candidates.js";
 import { violationsRoutes } from "./routes/violations.js";
 import { noticesRoutes } from "./routes/notices.js";
 import { submissionsRoutes } from "./routes/submissions.js";
+import { dashboardRoutes } from "./routes/dashboard.js";
 import { readSetupState } from "./domain/bootstrap.js";
 import type { MailTransport } from "./mail/transport.js";
 import { noopScanDispatcher, type ScanDispatcher } from "./queue/dispatch.js";
@@ -176,6 +177,10 @@ export async function buildApp(deps: AppDeps): Promise<FastifyInstance> {
   );
   await app.register(
     submissionsRoutes({ config: deps.config, pool: deps.pool }),
+    { prefix: "/api" },
+  );
+  await app.register(
+    dashboardRoutes({ config: deps.config, pool: deps.pool }),
     { prefix: "/api" },
   );
 

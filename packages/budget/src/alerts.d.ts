@@ -37,6 +37,14 @@ export interface SpendSnapshot {
     recheckCommitted: number;
 }
 /**
+ * A bucket reads as spent once its usage reaches its share, or once spend
+ * stands past a share a lowered cap has shrunk into nothing: the one
+ * exhaustion rule the alert evaluator, the settings overview, and the
+ * dashboard's engine row all answer from. Integer-safe comparisons keep
+ * boundary spends exact: 749 of 1,000 is not spent, 750 is.
+ */
+export declare function isBucketExhausted(used: number, share: number): boolean;
+/**
  * The pure threshold evaluation: which alerts the spend and balance have
  * crossed, in a fixed order (warning, scan critical, recheck critical,
  * scan exhaustion, recheck exhaustion, balance). Integer-safe comparisons

@@ -1,4 +1,4 @@
-import { t, type Locale } from "@patrol/i18n";
+import { interpolate, t, type Locale } from "@patrol/i18n";
 import type { AppConfig } from "../config.js";
 import type { MailTransport } from "./transport.js";
 
@@ -14,13 +14,6 @@ const EN: Locale = "en";
 /** Where a single-use token lands: the web's acceptance route. */
 export function inviteLink(config: AppConfig, token: string): string {
   return `${config.publicUrl.replace(/\/$/, "")}/auth/enrollment?token=${encodeURIComponent(token)}`;
-}
-
-/** Fills a `{placeholder}` catalogue template. */
-function fill(template: string, values: Record<string, string>): string {
-  return template.replace(/\{(\w+)\}/g, (match, key: string) =>
-    key in values ? values[key] : match,
-  );
 }
 
 export interface InvitationEmailInput {
@@ -43,7 +36,7 @@ export async function sendInvitationEmail(
     to: input.to,
     locale,
     subject: t(locale, "mail.invitation.subject"),
-    body: fill(t(locale, "mail.invitation.body"), {
+    body: interpolate(t(locale, "mail.invitation.body"), {
       rightsHolder: input.rightsHolderName ?? "the rights holder",
       link: input.link,
     }),
@@ -67,7 +60,7 @@ export async function sendResetEmail(
     to: input.to,
     locale,
     subject: t(locale, "mail.reset.subject"),
-    body: fill(t(locale, "mail.reset.body"), {
+    body: interpolate(t(locale, "mail.reset.body"), {
       rightsHolder: input.rightsHolderName ?? "the rights holder",
       link: input.link,
     }),

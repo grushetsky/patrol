@@ -6,6 +6,7 @@
 export {
   dueAlerts,
   evaluateBudgetAlerts,
+  isBucketExhausted,
   listMonthAlerts,
 } from "@patrol/budget";
 export type { AlertThreshold, DueAlert, SpendSnapshot } from "@patrol/budget";

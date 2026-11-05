@@ -7,7 +7,7 @@ export { RESERVATION_TTL_MS, bucketShares, commitReservation, ensureMonth, expir
 export type { ReserveResult } from "./ledger.js";
 export { balanceCriticalThresholdMinor, committedUnitsToMinor, isBalanceCritical, } from "./balance-probe.js";
 export type { ProviderBalanceProbe, ProviderBalanceResult, } from "./balance-probe.js";
-export { dueAlerts, evaluateBudgetAlerts, listMonthAlerts, } from "./alerts.js";
+export { dueAlerts, evaluateBudgetAlerts, isBucketExhausted, listMonthAlerts, } from "./alerts.js";
 export type { AlertThreshold, DueAlert, SpendSnapshot } from "./alerts.js";
 export { rollOverMonth } from "./rollover.js";
 export type { RolloverOutcome } from "./rollover.js";
