@@ -15,6 +15,15 @@ COPY apps/worker/package.json apps/worker/package.json
 COPY apps/web/package.json apps/web/package.json
 COPY packages/i18n/package.json packages/i18n/package.json
 COPY packages/db/package.json packages/db/package.json
+COPY packages/domain/package.json packages/domain/package.json
+COPY packages/evidence/package.json packages/evidence/package.json
+COPY packages/mail/package.json packages/mail/package.json
+COPY packages/notices/package.json packages/notices/package.json
+COPY packages/budget/package.json packages/budget/package.json
+COPY packages/scans/package.json packages/scans/package.json
+# Every workspace manifest must exist before the filtered install: the
+# `@patrol/api...` filter spans the packages above, and pnpm links their
+# node_modules only for projects whose package.json it can see here.
 RUN pnpm install --frozen-lockfile --filter '@patrol/api...'
 
 FROM deps AS build
@@ -29,4 +38,9 @@ EXPOSE 8080
 # node:26-slim ships neither curl nor wget, so the probe is plain Node.
 HEALTHCHECK --interval=10s --timeout=3s --start-period=15s --retries=6 \
   CMD node -e "fetch('http://127.0.0.1:8080/api/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"
-CMD ["node", "apps/api/dist/index.js"]
+# The workspace packages ship TypeScript source (their build is
+# declaration-only), so the runtime loads them with node's type stripping —
+# which does not rewrite the sources' ".js" specifiers to their ".ts" files.
+# tsx's loader supplies that resolution; it is pinned in the lockfile and
+# installed with the app's devDependencies (present in the runtime image).
+CMD ["node", "--import", "file:///app/apps/api/node_modules/tsx/dist/loader.mjs", "apps/api/dist/index.js"]

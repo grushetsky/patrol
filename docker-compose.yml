@@ -14,7 +14,11 @@ services:
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
-      - patrol-db-data:/var/lib/postgresql/data
+      # postgres:18 moved PGDATA to /var/lib/postgresql/18/docker and
+      # expects the mount at /var/lib/postgresql (docker-library/postgres#37);
+      # mounting at the old /var/lib/postgresql/data leaves the named volume
+      # unused and refuses to boot over pre-18 data.
+      - patrol-db-data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U patrol -d patrol"]
       interval: 5s
@@ -50,7 +54,9 @@ services:
     environment:
       NODE_ENV: production
       DATABASE_URL: postgres://patrol:patrol@db:5432/patrol
-    command: ["node", "apps/api/dist/db/migrate-cli.js"]
+    # The tsx loader is required here for the same reason as the API's CMD in
+    # docker/Dockerfile.api: the workspace packages ship TypeScript source.
+    command: ["node", "--import", "file:///app/apps/api/node_modules/tsx/dist/loader.mjs", "apps/api/dist/db/migrate-cli.js"]
     depends_on:
       db:
         condition: service_healthy
